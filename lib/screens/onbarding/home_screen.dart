@@ -1,9 +1,19 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
-import 'login_screen.dart';
+import '../../widgets/message_widget.dart';
+
+import 'sign_up_screen.dart';
 import 'splash_screen.dart';
+import 'welcome_onboarding.dart';
+
+final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+Future<void>? _googleSignInInitialization;
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
@@ -27,8 +37,137 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       barrierColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (_) => const _SignInOptionsSheet(),
+      builder: (_) => _SignInOptionsSheet(
+        onGoogle: () => _signInWithGoogle(context),
+        onApple: () => _signInWithProvider(
+          context,
+          AppleAuthProvider()
+            ..addScope('email')
+            ..addScope('name'),
+        ),
+      ),
     );
+  }
+
+  Future<void> _signInWithGoogle(BuildContext context) async {
+    try {
+      if (kDebugMode) debugPrint('[GoogleSignIn] Initializing');
+      _googleSignInInitialization ??= _googleSignIn.initialize();
+      await _googleSignInInitialization;
+
+      if (kDebugMode) debugPrint('[GoogleSignIn] Opening account picker');
+      final googleUser = await _googleSignIn.authenticate();
+      final googleAuth = googleUser.authentication;
+      final idToken = googleAuth.idToken;
+      if (idToken == null) {
+        throw StateError('Google Sign-In returned no ID token.');
+      }
+
+      if (kDebugMode) debugPrint('[GoogleSignIn] Signing in to Firebase');
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        credential,
+      );
+
+      final user = userCredential.user;
+      if (user == null) {
+        throw StateError('Firebase did not return the signed-in user.');
+      }
+
+      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        if (kDebugMode) {
+          debugPrint('[GoogleSignIn] Saving new user profile to Firestore');
+        }
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'name': user.displayName ?? googleUser.displayName ?? '',
+          'email': user.email ?? googleUser.email,
+          'authProvider': 'google',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      if (!context.mounted) return;
+      if (kDebugMode) {
+        debugPrint('[GoogleSignIn] Sign-in completed; opening welcome screen');
+      }
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => const WelcomeOnboarding()),
+      );
+    } on GoogleSignInException catch (error) {
+      if (error.code == GoogleSignInExceptionCode.canceled) {
+        if (kDebugMode) debugPrint('[GoogleSignIn] Cancelled by user');
+        return;
+      }
+      if (kDebugMode) {
+        debugPrint('[GoogleSignIn] Google error: ${error.code}');
+        debugPrint('[GoogleSignIn] ${error.description}');
+      }
+      if (!context.mounted) return;
+      showMessagePopup(
+        context,
+        message:
+            error.code == GoogleSignInExceptionCode.clientConfigurationError
+            ? 'Google Sign-In is not configured correctly.'
+            : 'Unable to sign in with Google. Please try again.',
+        type: MessageType.error,
+      );
+    } on FirebaseAuthException catch (error) {
+      if (kDebugMode) {
+        debugPrint('[GoogleSignIn] Firebase Auth error: ${error.code}');
+      }
+      if (!context.mounted) return;
+      showMessagePopup(
+        context,
+        message: error.message ?? 'Unable to sign in with Google.',
+        type: MessageType.error,
+      );
+    } on FirebaseException catch (error) {
+      if (kDebugMode) {
+        debugPrint('[GoogleSignIn] Firestore error: ${error.code}');
+      }
+      if (!context.mounted) return;
+      showMessagePopup(
+        context,
+        message:
+            'Google account connected, but the profile could not be saved.',
+        type: MessageType.error,
+      );
+    } catch (error, stackTrace) {
+      if (kDebugMode) {
+        debugPrint('[GoogleSignIn] Unexpected error: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
+      if (!context.mounted) return;
+      showMessagePopup(
+        context,
+        message: 'Unable to sign in with Google. Please try again.',
+        type: MessageType.error,
+      );
+    }
+  }
+
+  Future<void> _signInWithProvider(
+    BuildContext context,
+    AuthProvider provider,
+  ) async {
+    try {
+      await FirebaseAuth.instance.signInWithProvider(provider);
+      if (!context.mounted) return;
+
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute<void>(builder: (_) => const WelcomeOnboarding()),
+      );
+    } on FirebaseAuthException catch (error) {
+      if (!context.mounted || error.code == 'web-context-cancelled') return;
+
+      showMessagePopup(
+        context,
+        message: error.message ?? 'Unable to sign in. Please try again.',
+        type: MessageType.error,
+      );
+    }
   }
 
   @override
@@ -45,7 +184,7 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: ClassmatesColors.green,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(21, 44, 21, 25),
+            padding: const EdgeInsets.fromLTRB(21, 56, 21, 25),
             child: Column(
               children: [
                 Text(
@@ -53,35 +192,43 @@ class HomeScreen extends StatelessWidget {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.nunito(
                     color: Colors.white,
-                    fontSize: 44,
+                    fontSize: 38,
                     fontWeight: FontWeight.w900,
                     height: 1,
                     letterSpacing: 0,
                   ),
                 ),
-                const SizedBox(height: 42),
+                const SizedBox(height: 12),
                 Flexible(
                   flex: 5,
                   child: Center(
                     child: Image.asset(
                       'assets/homeimage.png',
-                      width: 260,
-                      height: 260,
+                      width: 300,
+                      height: 330,
                       fit: BoxFit.contain,
                       semanticLabel: 'Classmates hugging',
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
-                Text(
-                  'Homeschooling Adventures',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.w800,
-                    height: 1,
-                    letterSpacing: 0,
+                SizedBox(
+                  width: double.infinity,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'Homeschooling Adventures',
+                      maxLines: 1,
+                      softWrap: false,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.nunito(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        height: 1,
+                        letterSpacing: 0,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -128,39 +275,20 @@ class HomeScreen extends StatelessWidget {
                     child: Text(
                       'Let’s get started',
                       style: GoogleFonts.nunito(
-                        fontSize: 12,
+                        fontSize: 18,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 5),
-                TextButton(
-                  onPressed: onCancel ?? () {},
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 5,
-                    ),
-                    minimumSize: const Size(0, 30),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'Cancel anytime',
-                    style: GoogleFonts.nunito(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 25),
+
                 Text(
                   'By signing up, you agree with the Class Mates',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.nunito(
                     color: Colors.white,
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: FontWeight.w400,
                     height: 1.3,
                   ),
@@ -177,7 +305,7 @@ class HomeScreen extends StatelessWidget {
                       ' and ',
                       style: GoogleFonts.nunito(
                         color: Colors.white,
-                        fontSize: 10,
+                        fontSize: 11,
                       ),
                     ),
                     _FooterLink(
@@ -196,7 +324,10 @@ class HomeScreen extends StatelessWidget {
 }
 
 class _SignInOptionsSheet extends StatelessWidget {
-  const _SignInOptionsSheet();
+  const _SignInOptionsSheet({required this.onGoogle, required this.onApple});
+
+  final VoidCallback onGoogle;
+  final VoidCallback onApple;
 
   @override
   Widget build(BuildContext context) {
@@ -243,29 +374,31 @@ class _SignInOptionsSheet extends StatelessWidget {
                   navigator.pop();
                   navigator.push(
                     MaterialPageRoute<void>(
-                      builder: (_) => const LoginScreen(),
+                      builder: (_) => const SignUpScreen(),
                     ),
                   );
                 },
               ),
               _SignInOption(
-                icon: Text(
-                  'G',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    color: const Color(0xFF4285F4),
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    height: 1,
-                  ),
+                icon: Image.asset(
+                  'assets/googleIcon.svg.webp',
+                  width: 22,
+                  height: 22,
+                  fit: BoxFit.contain,
                 ),
                 label: 'Continue with Google',
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onGoogle();
+                },
               ),
               _SignInOption(
                 icon: const Icon(Icons.apple, color: Colors.black, size: 22),
                 label: 'Continue with Apple',
-                onTap: () {},
+                onTap: () {
+                  Navigator.of(context).pop();
+                  onApple();
+                },
               ),
             ],
           ),
@@ -291,22 +424,29 @@ class _SignInOption extends StatelessWidget {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(6),
-      child: SizedBox(
-        height: 40,
-        width: double.infinity,
-        child: Row(
-          children: [
-            SizedBox(width: 24, child: Center(child: icon)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: GoogleFonts.nunito(
-                color: const Color(0xFF3F3F46),
-                fontSize: 12,
-                fontWeight: FontWeight.w400,
+      child: Padding(
+        padding: const EdgeInsets.only(left: 14),
+        child: SizedBox(
+          height: 46,
+          width: double.infinity,
+          child: Row(
+            children: [
+              SizedBox(width: 24, child: Center(child: icon)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.nunito(
+                    color: const Color(0xFF3F3F46),
+                    fontSize: 16,
+                    fontWeight: FontWeight.w400,
+                  ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -329,7 +469,7 @@ class _FooterLink extends StatelessWidget {
           label,
           style: GoogleFonts.nunito(
             color: Colors.white,
-            fontSize: 10,
+            fontSize: 11,
             height: 1.3,
             decoration: TextDecoration.underline,
             decorationColor: Colors.white,

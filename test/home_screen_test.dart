@@ -15,7 +15,6 @@ void main() {
     expect(find.text('Homeschooling Adventures'), findsOneWidget);
     expect(find.text('Take a tour'), findsOneWidget);
     expect(find.text('Let’s get started'), findsOneWidget);
-    expect(find.text('Cancel anytime'), findsOneWidget);
     expect(find.byType(Scrollable), findsNothing);
 
     final buttonSize = tester.getSize(
@@ -38,8 +37,9 @@ void main() {
     await tester.tap(find.text('Continue with Email'));
     await tester.pumpAndSettle();
 
+    expect(find.text('Sign up'), findsOneWidget);
+    expect(find.text('Your name'), findsOneWidget);
     expect(find.text('Log in'), findsOneWidget);
-    expect(find.text('Forgot password?'), findsOneWidget);
 
     expect(tester.takeException(), isNull);
   });

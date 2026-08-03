@@ -1,7 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
+
+import '../../widgets/message_widget.dart';
+
+import 'welcome_onboarding.dart';
+
+final GoogleSignIn _loginGoogleSignIn = GoogleSignIn.instance;
+Future<void>? _loginGoogleSignInInitialization;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({
@@ -29,6 +39,10 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _obscurePassword = true;
   bool _isLoading = false;
 
+  void _log(String message) {
+    if (kDebugMode) debugPrint('[Login] $message');
+  }
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -38,28 +52,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _signIn() async {
     FocusScope.of(context).unfocus();
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      _log('Email/password validation failed');
+      return;
+    }
 
     setState(() => _isLoading = true);
+    _log('Email/password sign-in started');
 
     try {
       await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+      _log('Email/password sign-in succeeded');
 
-      if (!mounted) return;
-
-      if (widget.onContinue case final callback?) {
-        callback();
-      } else if (Navigator.of(context).canPop()) {
-        Navigator.of(context).pop();
-      } else {
-        _showMessage('Logged in successfully.');
+      if (!mounted) {
+        _log('Screen was disposed before navigation');
+        return;
       }
+
+      _openWelcomeScreen(onSignedIn: widget.onContinue);
     } on FirebaseAuthException catch (error) {
+      _log('Email/password sign-in failed: ${error.code}');
       if (mounted) _showMessage(_authErrorMessage(error), isError: true);
-    } catch (_) {
+    } catch (error, stackTrace) {
+      _log('Unexpected email/password sign-in error: $error');
+      if (kDebugMode) debugPrintStack(stackTrace: stackTrace);
       if (mounted) {
         _showMessage('Something went wrong. Please try again.', isError: true);
       }
@@ -71,23 +90,161 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _sendPasswordReset() async {
     final email = _emailController.text.trim();
     if (email.isEmpty || !_isValidEmail(email)) {
+      _log('Password reset validation failed');
       _showMessage('Enter a valid email address first.', isError: true);
       return;
     }
 
+    _log('Password reset request started');
     try {
       await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      _log('Password reset request succeeded');
       if (mounted) {
         _showMessage('Password reset email sent.');
         widget.onForgotPassword?.call();
       }
     } on FirebaseAuthException catch (error) {
+      _log('Password reset request failed: ${error.code}');
       if (mounted) _showMessage(_authErrorMessage(error), isError: true);
+    }
+  }
+
+  Future<void> _signInWithApple() async {
+    if (_isLoading) return;
+
+    FocusScope.of(context).unfocus();
+    setState(() => _isLoading = true);
+    _log('Apple sign-in started');
+
+    try {
+      final provider = AppleAuthProvider()
+        ..addScope('email')
+        ..addScope('name');
+
+      await FirebaseAuth.instance.signInWithProvider(provider);
+      _log('Apple sign-in succeeded');
+
+      if (!mounted) {
+        _log('Screen was disposed before navigation');
+        return;
+      }
+
+      _openWelcomeScreen(onSignedIn: widget.onApple);
+    } on FirebaseAuthException catch (error) {
+      if (error.code == 'web-context-cancelled') {
+        _log('Apple sign-in cancelled');
+        return;
+      }
+      _log('Apple sign-in failed: ${error.code}');
+      if (!mounted) return;
+      _showMessage(_authErrorMessage(error), isError: true);
+    } catch (error, stackTrace) {
+      _log('Unexpected Apple sign-in error: $error');
+      if (kDebugMode) debugPrintStack(stackTrace: stackTrace);
+      if (mounted) {
+        _showMessage(
+          'Unable to sign in with Apple. Please try again.',
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    if (_isLoading) return;
+
+    FocusScope.of(context).unfocus();
+    setState(() => _isLoading = true);
+    _log('Google sign-in started');
+
+    try {
+      _loginGoogleSignInInitialization ??= _loginGoogleSignIn.initialize();
+      await _loginGoogleSignInInitialization;
+
+      _log('Opening Google account picker');
+      final googleUser = await _loginGoogleSignIn.authenticate();
+      final idToken = googleUser.authentication.idToken;
+      if (idToken == null) {
+        throw StateError('Google Sign-In returned no ID token.');
+      }
+
+      final userCredential = await FirebaseAuth.instance.signInWithCredential(
+        GoogleAuthProvider.credential(idToken: idToken),
+      );
+      final user = userCredential.user;
+      if (user == null) {
+        throw StateError('Firebase did not return the signed-in user.');
+      }
+
+      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'name': user.displayName ?? googleUser.displayName ?? '',
+          'email': user.email ?? googleUser.email,
+          'authProvider': 'google',
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      _log('Google sign-in succeeded');
+      if (!mounted) return;
+      _openWelcomeScreen(onSignedIn: widget.onGoogle);
+    } on GoogleSignInException catch (error) {
+      if (error.code == GoogleSignInExceptionCode.canceled) {
+        _log('Google sign-in cancelled');
+        return;
+      }
+      _log('Google sign-in failed: ${error.code}');
+      if (!mounted) return;
+      _showMessage(
+        error.code == GoogleSignInExceptionCode.clientConfigurationError
+            ? 'Google Sign-In is not configured correctly.'
+            : 'Unable to sign in with Google. Please try again.',
+        isError: true,
+      );
+    } on FirebaseAuthException catch (error) {
+      _log('Firebase Google sign-in failed: ${error.code}');
+      if (mounted) _showMessage(_authErrorMessage(error), isError: true);
+    } on FirebaseException catch (error) {
+      _log('Saving Google profile failed: ${error.code}');
+      if (mounted) {
+        _showMessage(
+          'Google account connected, but the profile could not be saved.',
+          isError: true,
+        );
+      }
+    } catch (error, stackTrace) {
+      _log('Unexpected Google sign-in error: $error');
+      if (kDebugMode) debugPrintStack(stackTrace: stackTrace);
+      if (mounted) {
+        _showMessage(
+          'Unable to sign in with Google. Please try again.',
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   bool _isValidEmail(String email) {
     return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
+  }
+
+  void _openWelcomeScreen({VoidCallback? onSignedIn}) {
+    if (onSignedIn != null) {
+      _log('Successful sign-in handed off to callback');
+      onSignedIn();
+      return;
+    }
+
+    _log('Opening welcome screen');
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute<void>(builder: (_) => const WelcomeOnboarding()),
+    );
   }
 
   String _authErrorMessage(FirebaseAuthException error) {
@@ -100,20 +257,18 @@ class _LoginScreenState extends State<LoginScreen> {
       'too-many-requests' => 'Too many attempts. Please try again later.',
       'network-request-failed' => 'Check your internet connection.',
       'operation-not-allowed' =>
-        'Email login is not enabled in Firebase Authentication.',
+        'This sign-in method is not enabled in Firebase Authentication.',
+      'web-context-cancelled' => 'Apple sign-in was cancelled.',
       _ => error.message ?? 'Unable to log in. Please try again.',
     };
   }
 
   void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: isError ? const Color(0xFFB42318) : null,
-        ),
-      );
+    showMessagePopup(
+      context,
+      message: message,
+      type: isError ? MessageType.error : MessageType.success,
+    );
   }
 
   @override
@@ -220,7 +375,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFF52525B),
                         padding: const EdgeInsets.symmetric(vertical: 7),
-                        minimumSize: const Size(0, 30), 
+                        minimumSize: const Size(0, 30),
                         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                       child: Text(
@@ -282,16 +437,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 13),
                   _SocialLoginButton(
-                    icon: Text(
-                      'G',
-                      style: GoogleFonts.nunito(
-                        color: const Color(0xFF4285F4),
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                      ),
+                    icon: Image.asset(
+                      'assets/googleIcon.svg.webp',
+                      width: 22,
+                      height: 22,
+                      fit: BoxFit.contain,
                     ),
                     label: 'Continue with Google',
-                    onPressed: widget.onGoogle,
+                    onPressed: _isLoading ? null : _signInWithGoogle,
                   ),
                   const SizedBox(height: 8),
                   _SocialLoginButton(
@@ -301,7 +454,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.black,
                     ),
                     label: 'Continue with Apple',
-                    onPressed: widget.onApple,
+                    onPressed: _isLoading ? null : _signInWithApple,
                   ),
                 ],
               ),
@@ -390,7 +543,7 @@ class _SocialLoginButton extends StatelessWidget {
     return SizedBox(
       height: 52,
       child: OutlinedButton(
-        onPressed: onPressed ?? () {},
+        onPressed: onPressed,
         style: OutlinedButton.styleFrom(
           foregroundColor: const Color(0xFF3F3F46),
           side: const BorderSide(color: Color(0xFFE4E4E7)),
