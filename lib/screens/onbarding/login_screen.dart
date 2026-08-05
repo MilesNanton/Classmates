@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -6,8 +5,10 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
+import '../../services/auth_destination_service.dart';
 import '../../widgets/message_widget.dart';
-
+import '../../services/user_profile_service.dart';
+import '../Home/Home_screen.dart';
 import 'welcome_onboarding.dart';
 
 final GoogleSignIn _loginGoogleSignIn = GoogleSignIn.instance;
@@ -72,7 +73,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      _openWelcomeScreen(onSignedIn: widget.onContinue);
+      await _openPostLoginScreen(onSignedIn: widget.onContinue);
     } on FirebaseAuthException catch (error) {
       _log('Email/password sign-in failed: ${error.code}');
       if (mounted) _showMessage(_authErrorMessage(error), isError: true);
@@ -121,7 +122,14 @@ class _LoginScreenState extends State<LoginScreen> {
         ..addScope('email')
         ..addScope('name');
 
-      await FirebaseAuth.instance.signInWithProvider(provider);
+      final credential = await FirebaseAuth.instance.signInWithProvider(
+        provider,
+      );
+      final user = credential.user;
+      if (user == null) {
+        throw StateError('Firebase did not return the signed-in user.');
+      }
+      await saveSocialUserProfile(user: user, authProvider: 'apple');
       _log('Apple sign-in succeeded');
 
       if (!mounted) {
@@ -129,7 +137,7 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      _openWelcomeScreen(onSignedIn: widget.onApple);
+      await _openPostLoginScreen(onSignedIn: widget.onApple);
     } on FirebaseAuthException catch (error) {
       if (error.code == 'web-context-cancelled') {
         _log('Apple sign-in cancelled');
@@ -178,20 +186,15 @@ class _LoginScreenState extends State<LoginScreen> {
         throw StateError('Firebase did not return the signed-in user.');
       }
 
-      if (userCredential.additionalUserInfo?.isNewUser ?? false) {
-        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-          'uid': user.uid,
-          'name': user.displayName ?? googleUser.displayName ?? '',
-          'email': user.email ?? googleUser.email,
-          'authProvider': 'google',
-          'createdAt': FieldValue.serverTimestamp(),
-          'updatedAt': FieldValue.serverTimestamp(),
-        });
-      }
+      await saveSocialUserProfile(
+        user: user,
+        authProvider: 'google',
+        preferredName: googleUser.displayName,
+      );
 
       _log('Google sign-in succeeded');
       if (!mounted) return;
-      _openWelcomeScreen(onSignedIn: widget.onGoogle);
+      await _openPostLoginScreen(onSignedIn: widget.onGoogle);
     } on GoogleSignInException catch (error) {
       if (error.code == GoogleSignInExceptionCode.canceled) {
         _log('Google sign-in cancelled');
@@ -234,16 +237,30 @@ class _LoginScreenState extends State<LoginScreen> {
     return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email);
   }
 
-  void _openWelcomeScreen({VoidCallback? onSignedIn}) {
+  Future<void> _openPostLoginScreen({VoidCallback? onSignedIn}) async {
     if (onSignedIn != null) {
       _log('Successful sign-in handed off to callback');
       onSignedIn();
       return;
     }
 
-    _log('Opening welcome screen');
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute<void>(builder: (_) => const WelcomeOnboarding()),
+    final user = FirebaseAuth.instance.currentUser;
+    final onboardingCompleted =
+        user != null && await hasCompletedOnboarding(user);
+    if (!mounted) return;
+
+    _log(
+      onboardingCompleted
+          ? 'Returning user; opening community home'
+          : 'New user; opening onboarding',
+    );
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(
+        builder: (_) => onboardingCompleted
+            ? const CommunityHomeScreen(showGuidelines: true)
+            : const WelcomeOnboarding(),
+      ),
+      (_) => false,
     );
   }
 

@@ -1,12 +1,21 @@
-import 'dart:async';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class OnboardingStage12 extends StatefulWidget {
-  const OnboardingStage12({super.key, this.onContinue});
+import '../Home/Home_screen.dart';
 
+class OnboardingStage12 extends StatefulWidget {
+  const OnboardingStage12({
+    super.key,
+    required this.childCount,
+    required this.childAges,
+    this.onContinue,
+  });
+
+  final int childCount;
+  final List<int?> childAges;
   final ValueChanged<String>? onContinue;
 
   @override
@@ -38,7 +47,7 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
   bool _isSubjectStep = false;
   bool _isLocationStep = false;
   int? _loadingStep;
-  Timer? _loadingTimer;
+  bool _isSaving = false;
 
   static const _loadingMessages = [
     'Building your home feed...',
@@ -48,7 +57,6 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
 
   @override
   void dispose() {
-    _loadingTimer?.cancel();
     super.dispose();
   }
 
@@ -196,8 +204,8 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
               child: Text(
                 option,
                 style: GoogleFonts.nunito(
-                  fontSize: 16,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w400,
+                  color: const Color(0xFF525252),
+                  fontSize: 18,
                 ),
               ),
             ),
@@ -267,7 +275,7 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
       ),
       const Spacer(flex: 3),
       TextButton(
-        onPressed: () => widget.onContinue?.call(_selectedApproach!),
+        onPressed: _isSaving ? null : () => _completeOnboarding(false),
         child: Text(
           "I'll do this later",
           style: GoogleFonts.nunito(
@@ -279,8 +287,8 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
       const SizedBox(height: 18),
       _bottomButton(
         label: 'Share my location',
-        enabled: true,
-        onPressed: _startLoadingSequence,
+        enabled: !_isSaving,
+        onPressed: () => _completeOnboarding(true),
       ),
     ];
   }
@@ -310,25 +318,62 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
     );
   }
 
-  void _startLoadingSequence() {
-    _loadingTimer?.cancel();
-    setState(() => _loadingStep = 0);
+  Future<void> _completeOnboarding(bool locationSharingEnabled) async {
+    if (_isSaving) return;
 
-    _loadingTimer = Timer.periodic(const Duration(milliseconds: 1600), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-
-      final currentStep = _loadingStep ?? 0;
-      if (currentStep < _loadingMessages.length - 1) {
-        setState(() => _loadingStep = currentStep + 1);
-        return;
-      }
-
-      timer.cancel();
-      widget.onContinue?.call(_selectedApproach!);
+    setState(() {
+      _isSaving = true;
+      _loadingStep = 0;
     });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw StateError('You must be signed in to save your preferences.');
+      }
+
+      final saveFuture = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set({
+            'childCount': widget.childCount,
+            'childAges': widget.childAges,
+            'homeschoolApproach': _selectedApproach,
+            'subjects': _selectedSubjects.toList(),
+            'locationSharingEnabled': locationSharingEnabled,
+            'onboardingCompleted': true,
+            'onboardingCompletedAt': FieldValue.serverTimestamp(),
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+
+      for (var step = 1; step < _loadingMessages.length; step++) {
+        await Future<void>.delayed(const Duration(milliseconds: 800));
+        if (!mounted) return;
+        setState(() => _loadingStep = step);
+      }
+
+      await saveFuture;
+      if (!mounted) return;
+      if (widget.onContinue case final callback?) {
+        callback(_selectedApproach!);
+      } else {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute<void>(builder: (_) => const CommunityHomeScreen()),
+          (_) => false,
+        );
+      }
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isSaving = false;
+        _loadingStep = null;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not save your choices. Please try again.'),
+        ),
+      );
+    }
   }
 
   Widget _buildLoadingState(int step) {

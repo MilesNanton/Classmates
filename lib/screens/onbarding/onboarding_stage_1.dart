@@ -167,7 +167,10 @@ class _OnboardingStage1State extends State<OnboardingStage1> {
 
                       Navigator.of(context).push(
                         MaterialPageRoute<void>(
-                          builder: (_) => const OnboardingStage12(),
+                          builder: (_) => OnboardingStage12(
+                            childCount: _childCount,
+                            childAges: _ages.take(_childCount).toList(),
+                          ),
                         ),
                       );
                     },

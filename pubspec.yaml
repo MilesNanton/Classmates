@@ -4,7 +4,7 @@ description: "A new Flutter project."
 publish_to: 'none'
 
 
-version: 1.0.0+4
+version: 1.0.0+5
 
 environment:
   sdk: ^3.12.0
@@ -37,4 +37,10 @@ flutter:
     - assets/homeimage.png
     - assets/mailicon.webp
     - assets/googleIcon.svg.webp
-
+    - assets/1_icon.png
+    - assets/2_icon.png
+    - assets/3_icon.png
+    - assets/4_icon.png
+    - assets/postIcon.png
+    - assets/ExperienceIcon.png
+    - assets/resorcessIcon.png

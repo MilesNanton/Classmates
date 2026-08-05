@@ -1,0 +1,207 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    match /users/{userId} {
+      function isOwner() {
+        return request.auth != null
+          && request.auth.uid == userId;
+      }
+
+      function isValidName() {
+        return request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 100;
+      }
+
+      function isValidAge(age) {
+        return age == null
+          || (age is int && age >= 2 && age <= 18);
+      }
+
+      function hasValidChildAges() {
+        let ages = request.resource.data.childAges;
+        let count = request.resource.data.childCount;
+
+        return ages is list
+          && ages.size() == count
+          && (count < 1 || isValidAge(ages[0]))
+          && (count < 2 || isValidAge(ages[1]))
+          && (count < 3 || isValidAge(ages[2]))
+          && (count < 4 || isValidAge(ages[3]));
+      }
+
+      function hasValidOnboardingData() {
+        return request.resource.data.childCount is int
+          && request.resource.data.childCount >= 1
+          && request.resource.data.childCount <= 4
+          && hasValidChildAges()
+          && request.resource.data.homeschoolApproach is string
+          && request.resource.data.homeschoolApproach in [
+            'Traditional',
+            'Charlotte Mason',
+            'Montessori',
+            'Classical Education',
+            'Unschooling',
+            'Unit Studies',
+            'Other'
+          ]
+          && request.resource.data.subjects is list
+          && request.resource.data.subjects.size() > 0
+          && request.resource.data.subjects.size() <= 7
+          && request.resource.data.subjects.hasOnly([
+            'English',
+            'Mathematics',
+            'Science',
+            'History',
+            'Geography',
+            'Music',
+            'Art & Design'
+          ])
+          && request.resource.data.locationSharingEnabled is bool
+          && request.resource.data.onboardingCompleted == true
+          && request.resource.data.onboardingCompletedAt == request.time
+          && request.resource.data.updatedAt == request.time;
+      }
+
+      allow read: if isOwner();
+
+      allow create: if isOwner()
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'name',
+          'email',
+          'authProvider',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'name',
+          'email',
+          'authProvider',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid == userId
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.authProvider in [
+          'password',
+          'google',
+          'apple'
+        ]
+        && isValidName()
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if isOwner()
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['name', 'updatedAt'])
+        && isValidName()
+        && request.resource.data.updatedAt == request.time;
+
+      allow update: if isOwner()
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'childCount',
+            'childAges',
+            'homeschoolApproach',
+            'subjects',
+            'locationSharingEnabled',
+            'onboardingCompleted',
+            'onboardingCompletedAt',
+            'updatedAt'
+          ])
+        && hasValidOnboardingData();
+
+      // Community preferences can be adjusted after onboarding without
+      // rewriting the original onboarding completion timestamp.
+      allow update: if isOwner()
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'homeschoolApproach',
+            'subjects',
+            'locationSharingEnabled',
+            'updatedAt'
+          ])
+        && request.resource.data.homeschoolApproach is string
+        && request.resource.data.homeschoolApproach in [
+          'Traditional',
+          'Charlotte Mason',
+          'Montessori',
+          'Classical Education',
+          'Unschooling',
+          'Unit Studies',
+          'Other'
+        ]
+        && request.resource.data.subjects is list
+        && request.resource.data.subjects.size() <= 7
+        && request.resource.data.subjects.hasOnly([
+          'English',
+          'Mathematics',
+          'Science',
+          'History',
+          'Geography',
+          'Music',
+          'Art & Design'
+        ])
+        && request.resource.data.locationSharingEnabled is bool
+        && request.resource.data.updatedAt == request.time;
+
+      allow delete: if isOwner();
+    }
+
+    match /posts/{postId} {
+      allow read: if signedIn();
+
+      allow create: if signedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.authorName is string
+        && request.resource.data.content is string
+        && request.resource.data.content.size() > 0
+        && request.resource.data.content.size() <= 5000
+        && request.resource.data.replyCount == 0;
+
+      allow update: if signedIn() && (
+        resource.data.authorId == request.auth.uid
+        || (
+          request.resource.data.diff(resource.data).affectedKeys()
+            .hasOnly(['replyCount'])
+          && request.resource.data.replyCount == resource.data.replyCount + 1
+        )
+      );
+
+      allow delete: if signedIn()
+        && resource.data.authorId == request.auth.uid;
+
+      match /replies/{replyId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.content is string
+          && request.resource.data.content.size() > 0
+          && request.resource.data.content.size() <= 5000;
+        allow update, delete: if signedIn()
+          && resource.data.authorId == request.auth.uid;
+      }
+    }
+
+    match /postReports/{reportId} {
+      allow create: if signedIn()
+        && request.resource.data.reportedBy == request.auth.uid
+        && request.resource.data.postId is string;
+      allow read, update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
