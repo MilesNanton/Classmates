@@ -46,3 +46,7 @@ flutter:
     - assets/resorcessIcon.png
     - assets/profileIcon.png
     - assets/HomeIcon.png
+    - assets/Experiences_Active.png
+    - assets/Resources_Active.png
+    - assets/Profile_Active.png
+    - assets/Home_active.png

@@ -12,10 +12,22 @@ void showMessagePopup(
   MessageType type = MessageType.success,
   Duration duration = const Duration(seconds: 3),
 }) {
+  showMessagePopupInOverlay(
+    Overlay.of(context, rootOverlay: true),
+    message: message,
+    type: type,
+    duration: duration,
+  );
+}
+
+void showMessagePopupInOverlay(
+  OverlayState overlay, {
+  required String message,
+  MessageType type = MessageType.success,
+  Duration duration = const Duration(seconds: 3),
+}) {
   _activeMessageEntry?.remove();
   _activeMessageEntry = null;
-
-  final overlay = Overlay.of(context, rootOverlay: true);
   late final OverlayEntry entry;
 
   void removeEntry() {

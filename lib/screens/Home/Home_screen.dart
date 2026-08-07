@@ -9,6 +9,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/community_settings_popup.dart';
 import '../../widgets/home_pop_up.dart';
 import '../../widgets/home_post_popup.dart';
+import '../../widgets/message_widget.dart';
 import '../../widgets/post_interaction_popup.dart';
 
 class CommunityHomeScreen extends StatefulWidget {
@@ -337,50 +338,67 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                 child: InkWell(
                   onTap: () => setState(() => _bottomIndex = index),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
+                      const SizedBox(height: 8),
                       if (index == 0)
-                        const Image(
-                          image: AssetImage('assets/HomeIcon.png'),
+                        Image(
+                          image: AssetImage(
+                            selected
+                                ? 'assets/Home_active.png'
+                                : 'assets/HomeIcon.png',
+                          ),
                           width: 20,
                           height: 20,
                           fit: BoxFit.contain,
+                          color: selected ? null : const Color(0xFF7A7A7A),
+                          colorBlendMode: BlendMode.srcIn,
                         )
                       else if (index == 1)
-                        const Image(
-                          image: AssetImage('assets/ExperienceIcon.png'),
+                        Image(
+                          image: AssetImage(
+                            selected
+                                ? 'assets/Experiences_Active.png'
+                                : 'assets/ExperienceIcon.png',
+                          ),
                           width: 20,
                           height: 20,
                           fit: BoxFit.contain,
+                          color: selected ? null : const Color(0xFF7A7A7A),
+                          colorBlendMode: BlendMode.srcIn,
                         )
                       else if (index == 2)
-                        const Image(
-                          image: AssetImage('assets/resorcessIcon.png'),
+                        Image(
+                          image: AssetImage(
+                            selected
+                                ? 'assets/Resources_Active.png'
+                                : 'assets/resorcessIcon.png',
+                          ),
                           width: 20,
                           height: 20,
                           fit: BoxFit.contain,
+                          color: selected ? null : const Color(0xFF7A7A7A),
+                          colorBlendMode: BlendMode.srcIn,
                         )
                       else if (index == 3)
-                        const Image(
-                          image: AssetImage('assets/profileIcon.png'),
+                        Image(
+                          image: AssetImage(
+                            selected
+                                ? 'assets/Profile_Active.png'
+                                : 'assets/profileIcon.png',
+                          ),
                           width: 20,
                           height: 20,
                           fit: BoxFit.contain,
-                        )
-                      else
-                        Icon(
-                          item.$1,
-                          size: 20,
-                          color: selected
-                              ? const Color(0xFF111111)
-                              : const Color(0xFF4B4B4B),
+                          color: selected ? null : const Color(0xFF7A7A7A),
+                          colorBlendMode: BlendMode.srcIn,
                         ),
                       const SizedBox(height: 3),
                       Text(
                         item.$2,
                         style: GoogleFonts.lato(
                           color: const Color(0xFF111111),
-                          fontSize: 11,
+                          fontSize: 12,
                           fontWeight: selected
                               ? FontWeight.w700
                               : FontWeight.w500,
@@ -718,10 +736,56 @@ class _PostCard extends StatelessWidget {
 
   final Map<String, dynamic> post;
 
+  Future<void> _deletePost(BuildContext context) async {
+    final postId = post['_id'] as String?;
+    if (postId == null) return;
+    final overlay = Overlay.of(context, rootOverlay: true);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(
+          'Delete post?',
+          style: GoogleFonts.lato(fontWeight: FontWeight.w700),
+        ),
+        content: Text(
+          'This post will be permanently deleted.',
+          style: GoogleFonts.lato(),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFF444B),
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('posts').doc(postId).delete();
+      if (!overlay.mounted) return;
+      showMessagePopupInOverlay(overlay, message: 'Post deleted successfully.');
+    } on FirebaseException {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not delete this post.')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final author = _firstText(post, ['authorName', 'userName', 'name']);
     final body = _firstText(post, ['content', 'text', 'body']);
+    final isOwner = post['authorId'] == FirebaseAuth.instance.currentUser?.uid;
     final initials = author
         .split(RegExp(r'\s+'))
         .where((part) => part.isNotEmpty)
@@ -797,6 +861,7 @@ class _PostCard extends StatelessWidget {
         postContent: body,
         postId: post['_id'] as String?,
       ),
+      onDelete: isOwner ? () => _deletePost(context) : null,
       child: postContent,
     );
   }
@@ -834,18 +899,20 @@ class _SwipeablePost extends StatefulWidget {
     required this.child,
     required this.onReport,
     required this.onReply,
+    this.onDelete,
   });
 
   final Widget child;
   final VoidCallback onReport;
   final VoidCallback onReply;
+  final VoidCallback? onDelete;
 
   @override
   State<_SwipeablePost> createState() => _SwipeablePostState();
 }
 
 class _SwipeablePostState extends State<_SwipeablePost> {
-  static const double _actionsWidth = 96;
+  double get _actionsWidth => widget.onDelete == null ? 120 : 180;
   double _offset = 0;
 
   void _onDragUpdate(DragUpdateDetails details) {
@@ -872,22 +939,41 @@ class _SwipeablePostState extends State<_SwipeablePost> {
       child: Stack(
         alignment: Alignment.centerRight,
         children: [
-          SizedBox(
-            width: _actionsWidth,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _SwipeAction(
-                  icon: Icons.report_gmailerrorred_outlined,
-                  label: 'Report',
-                  onTap: () => _runAction(widget.onReport),
+          IgnorePointer(
+            ignoring: _offset == 0,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 100),
+              opacity: _offset == 0 ? 0 : 1,
+              child: SizedBox(
+                width: _actionsWidth,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _SwipeAction(
+                      icon: Icons.reply_rounded,
+                      label: 'Reply',
+                      backgroundColor: const Color(0xFF12B76A),
+                      foregroundColor: Colors.white,
+                      onTap: () => _runAction(widget.onReply),
+                    ),
+                    _SwipeAction(
+                      icon: Icons.error_outline_rounded,
+                      label: 'Flag',
+                      backgroundColor: const Color(0xFFA9A9A9),
+                      foregroundColor: Colors.white,
+                      onTap: () => _runAction(widget.onReport),
+                    ),
+                    if (widget.onDelete case final onDelete?)
+                      _SwipeAction(
+                        icon: Icons.delete_outline_rounded,
+                        label: 'Delete',
+                        backgroundColor: const Color(0xFFFF444B),
+                        foregroundColor: Colors.white,
+                        onTap: () => _runAction(onDelete),
+                      ),
+                  ],
                 ),
-                _SwipeAction(
-                  icon: Icons.reply_rounded,
-                  label: 'Reply',
-                  onTap: () => _runAction(widget.onReply),
-                ),
-              ],
+              ),
             ),
           ),
           AnimatedContainer(
@@ -916,11 +1002,15 @@ class _SwipeAction extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    required this.backgroundColor,
+    required this.foregroundColor,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color backgroundColor;
+  final Color foregroundColor;
 
   @override
   Widget build(BuildContext context) {
@@ -931,14 +1021,27 @@ class _SwipeAction extends StatelessWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(4),
         child: Container(
-          width: 40,
-          height: 40,
+          width: 54,
+          height: 58,
           decoration: BoxDecoration(
-            color: const Color(0xFFF8F8F8),
+            color: backgroundColor,
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: const Color(0xFFDADADA)),
           ),
-          child: Icon(icon, size: 19, color: const Color(0xFF222222)),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 22, color: foregroundColor),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: GoogleFonts.lato(
+                  color: foregroundColor,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
