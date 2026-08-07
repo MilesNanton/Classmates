@@ -231,7 +231,7 @@ class HomeScreen extends StatelessWidget {
                       maxLines: 1,
                       softWrap: false,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.lato(
                         color: Colors.white,
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
@@ -255,7 +255,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   child: Text(
                     'Take a tour',
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.lato(
                       fontSize: 22,
                       fontWeight: FontWeight.w700,
                       height: 1,
@@ -284,7 +284,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     child: Text(
                       'Let’s get started',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.lato(
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
                       ),
@@ -296,7 +296,7 @@ class HomeScreen extends StatelessWidget {
                 Text(
                   'By signing up, you agree with the Class Mates',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: Colors.white,
                     fontSize: 11,
                     fontWeight: FontWeight.w400,
@@ -313,7 +313,7 @@ class HomeScreen extends StatelessWidget {
                     ),
                     Text(
                       ' and ',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.lato(
                         color: Colors.white,
                         fontSize: 11,
                       ),
@@ -448,7 +448,7 @@ class _SignInOption extends StatelessWidget {
                   label,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF3F3F46),
                     fontSize: 16,
                     fontWeight: FontWeight.w400,
@@ -477,7 +477,7 @@ class _FooterLink extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 2),
         child: Text(
           label,
-          style: GoogleFonts.nunito(
+          style: GoogleFonts.lato(
             color: Colors.white,
             fontSize: 11,
             height: 1.3,

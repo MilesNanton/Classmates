@@ -146,7 +146,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                           icon: const Icon(Icons.chevron_left, size: 24),
                           label: Text(
                             'Back',
-                            style: GoogleFonts.nunito(
+                            style: GoogleFonts.lato(
                               fontSize: 16,
                               fontWeight: FontWeight.w400,
                             ),
@@ -155,7 +155,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       ),
                       Text(
                         'Sign up',
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.lato(
                           color: const Color(0xFF71717A),
                           fontSize: 20,
                           fontWeight: FontWeight.w700,
@@ -168,7 +168,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                 Text(
                   'Verify email',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF52525B),
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
@@ -180,7 +180,7 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                       ? "We've sent a verification email. Please\nverify and come back."
                       : "We've sent a verification email to\n${widget.email}. Please verify and come back.",
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF52525B),
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -203,20 +203,20 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                     ),
                     child: _isChecking
                         ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
                         : Text(
-                      'Check Verification',
-                      style: GoogleFonts.nunito(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                            'Check Verification',
+                            style: GoogleFonts.lato(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 44),
@@ -227,17 +227,17 @@ class _VerifyEmailScreenState extends State<VerifyEmailScreen> {
                   ),
                   child: _isResending
                       ? const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : Text(
-                    'Resend email',
-                    style: GoogleFonts.nunito(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
+                          'Resend email',
+                          style: GoogleFonts.lato(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
                 ),
               ],
             ),

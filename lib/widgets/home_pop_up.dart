@@ -95,7 +95,7 @@ class _HomeGuidelinesPopupState extends State<HomeGuidelinesPopup> {
               Text(
                 'Some Classmates Guidelines',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.lato(
                   color: const Color(0xFF171717),
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
@@ -119,7 +119,7 @@ class _HomeGuidelinesPopupState extends State<HomeGuidelinesPopup> {
               Text(
                 page.title,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.lato(
                   color: const Color(0xFF3F3F46),
                   fontSize: 17,
                   fontWeight: FontWeight.w800,
@@ -130,7 +130,7 @@ class _HomeGuidelinesPopupState extends State<HomeGuidelinesPopup> {
               Text(
                 page.description,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.lato(
                   color: const Color(0xFF52525B),
                   fontSize: 13,
                   height: 1.3,
@@ -141,7 +141,7 @@ class _HomeGuidelinesPopupState extends State<HomeGuidelinesPopup> {
                 Text(
                   footer,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF52525B),
                     fontSize: 13,
                     height: 1.3,
@@ -182,7 +182,7 @@ class _HomeGuidelinesPopupState extends State<HomeGuidelinesPopup> {
                   ),
                   child: Text(
                     'Continue',
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.lato(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                     ),

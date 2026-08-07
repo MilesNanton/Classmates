@@ -326,7 +326,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             icon: const Icon(Icons.chevron_left, size: 24),
                             label: Text(
                               'Back',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.lato(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -335,7 +335,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         Text(
                           'Log in',
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.lato(
                             color: const Color(0xFF71717A),
                             fontSize: 24,
                             fontWeight: FontWeight.w700,
@@ -397,7 +397,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       child: Text(
                         'Forgot password?',
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.lato(
                           fontSize: 14,
                           fontWeight: FontWeight.w400,
                         ),
@@ -427,7 +427,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             )
                           : Text(
                               'Continue',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.lato(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -442,7 +442,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         padding: const EdgeInsets.symmetric(horizontal: 13),
                         child: Text(
                           'OR',
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.lato(
                             color: const Color(0xFF52525B),
                             fontSize: 12,
                             fontWeight: FontWeight.w400,
@@ -517,10 +517,10 @@ class _LoginTextField extends StatelessWidget {
       obscuringCharacter: '•',
       validator: validator,
       onFieldSubmitted: onFieldSubmitted,
-      style: GoogleFonts.nunito(color: const Color(0xFF18181B), fontSize: 16),
+      style: GoogleFonts.lato(color: const Color(0xFF18181B), fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.nunito(
+        labelStyle: GoogleFonts.lato(
           color: const Color(0xFF18181B),
           fontSize: 16,
           fontWeight: FontWeight.w500,
@@ -576,7 +576,7 @@ class _SocialLoginButton extends StatelessWidget {
                 fit: BoxFit.scaleDown,
                 child: Text(
                   label,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     fontSize: 16,
                     fontWeight: FontWeight.w400,
                   ),

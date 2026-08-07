@@ -23,76 +23,6 @@ class CommunityHomeScreen extends StatefulWidget {
 class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
   static const _green = Color(0xFF0DA64A);
 
-  static final List<Map<String, dynamic>> _dummyPosts = [
-    {
-      'authorName': 'Rita Richards',
-      'content':
-          'My son has just turned 10 and absolutely loves science, but I feel like we\'re doing the same experiments over and over. Does anyone have any hands-on activities or places to visit that kept their children engaged?',
-      'createdAt': DateTime.now().subtract(const Duration(hours: 1)),
-      'replyCount': 0,
-      'homeschoolApproach': 'Traditional',
-      'subjects': ['Science'],
-      'communityRegion': 'UK',
-    },
-    {
-      'authorName': 'Hannah Lewis',
-      'content':
-          'We spent the morning at Epping Forest looking for different types of leaves and insects. The kids ended up creating a nature journal when we got home. Highly recommend if you\'re looking for a free science activity!',
-      'createdAt': DateTime.now().subtract(const Duration(hours: 2)),
-      'replyCount': 0,
-      'homeschoolApproach': 'Charlotte Mason',
-      'subjects': ['Science', 'Geography', 'Music'],
-      'communityRegion': 'UK',
-    },
-    {
-      'authorName': 'Danielle Brooks',
-      'content':
-          'Found an amazing volcano experiment using just baking soda and vinegar. My 8-year-old has already asked if we can do it again tomorrow! 😂',
-      'createdAt': DateTime.now().subtract(const Duration(hours: 2)),
-      'replyCount': 0,
-      'homeschoolApproach': 'Montessori',
-      'subjects': ['Science'],
-      'communityRegion': 'UK',
-    },
-    {
-      'authorName': 'Olivia Thompson',
-      'content':
-          'Visited the Natural History Museum today. The dinosaur gallery was definitely the highlight. We arrived just after opening and avoided most of the crowds.',
-      'createdAt': DateTime.now().subtract(const Duration(hours: 2)),
-      'replyCount': 0,
-      'homeschoolApproach': 'Unit Studies',
-      'subjects': ['History'],
-      'communityRegion': 'UK',
-    },
-  ];
-
-  static final List<Map<String, dynamic>> _dummyReplyThreads = [
-    {
-      'content':
-          'My son has just turned 10 and absolutely loves science, but I feel like we\'re doing the same experiments over and over. Does anyone have any hands-on activities or places to visit that kept their children engaged?',
-      'replies': [
-        {
-          'authorName': 'Rita Richards',
-          'content':
-              'We were in exactly the same position! Visiting science museums made a huge difference, especially ones with interactive exhibits. We also bought a Raspberry Pi starter kit, and building simple projects together has kept my son fascinated for weeks.',
-          'createdAt': DateTime.now().subtract(const Duration(minutes: 1)),
-        },
-      ],
-    },
-    {
-      'content':
-          'We\'ve recently started homeschooling our daughter (age 7) and one thing I\'m finding challenging is keeping a good routine. Some days go really well, but other days feel a bit unstructured. How do other families balance learning, activities, and having time to just enjoy the day?',
-      'replies': [
-        {
-          'authorName': 'Jessica Ball',
-          'content':
-              'We went through the same thing when we started. What helped us was creating a simple rhythm rather than a strict timetable — a morning learning block, some outdoor time, and then afternoons for projects, activities, or exploring interests.',
-          'createdAt': DateTime.now().subtract(const Duration(minutes: 1)),
-        },
-      ],
-    },
-  ];
-
   bool _showReplies = false;
   int _bottomIndex = 0;
 
@@ -157,66 +87,69 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
   }
 
   Widget _buildHeader() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 14, 18, 12),
-      child: Row(
-        children: [
-          Text(
-            'Home',
-            style: GoogleFonts.nunito(
-              color: const Color(0xFF171717),
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
-            ),
-          ),
-          const Spacer(),
-          Material(
-            color: Colors.white,
-            shape: CircleBorder(
-              side: BorderSide(color: const Color(0xFFE5E5E5)),
-            ),
-            child: InkWell(
-              onTap: () => showCommunitySettingsPopup(context),
-              customBorder: const CircleBorder(),
-              child: const SizedBox(
-                width: 36,
-                height: 36,
-                child: RotatedBox(
-                  quarterTurns: 1,
-                  child: Icon(Icons.tune_rounded, size: 17),
-                ),
+    return SizedBox(
+      height: 96,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 40, 18, 14),
+        child: Row(
+          children: [
+            Text(
+              'Home',
+              style: GoogleFonts.lato(
+                color: const Color(0xFF171717),
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
               ),
             ),
-          ),
-          const SizedBox(width: 10),
-          Material(
-            color: _green,
-            shape: const CircleBorder(),
-            child: InkWell(
-              onTap: () => showHomePostPopup(context),
-              customBorder: const CircleBorder(),
-              child: const SizedBox(
-                width: 36,
-                height: 36,
-                child: Center(
-                  child: Image(
-                    image: AssetImage('assets/postIcon.png'),
-                    width: 17,
-                    height: 17,
-                    fit: BoxFit.contain,
+            const Spacer(),
+            Material(
+              color: Colors.white,
+              shape: CircleBorder(
+                side: BorderSide(color: const Color(0xFFE5E5E5)),
+              ),
+              child: InkWell(
+                onTap: () => showCommunitySettingsPopup(context),
+                customBorder: const CircleBorder(),
+                child: const SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: RotatedBox(
+                    quarterTurns: 1,
+                    child: Icon(Icons.tune_rounded, size: 18),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+            Material(
+              color: _green,
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: () => showHomePostPopup(context),
+                customBorder: const CircleBorder(),
+                child: const SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Center(
+                    child: Image(
+                      image: AssetImage('assets/postIcon.png'),
+                      width: 17,
+                      height: 17,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildFeed() {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return _buildPostList(_dummyPosts);
+    if (user == null) return const _NoMatchingCommunity();
 
     return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
@@ -237,7 +170,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
             if (postsSnapshot.hasError) {
               return _showReplies
                   ? const _EmptyReplies()
-                  : _buildMatchingDummyPosts(preferences);
+                  : const _NoMatchingCommunity();
             }
 
             if (!postsSnapshot.hasData) {
@@ -253,7 +186,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
             if (_showReplies) {
               final replyPosts = posts.where(_isReplyForCurrentUser).toList();
               return replyPosts.isEmpty
-                  ? _buildDummyReplyThreads()
+                  ? const _EmptyReplies()
                   : _buildReplyThreads(replyPosts);
             }
 
@@ -265,7 +198,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                 .toList();
 
             if (visiblePosts.isEmpty) {
-              return _buildMatchingDummyPosts(preferences);
+              return const _NoMatchingCommunity();
             }
 
             return _buildPostList(
@@ -294,28 +227,6 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
     );
   }
 
-  Widget _buildDummyReplyThreads() {
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(14, 12, 14, 18),
-      itemCount: _dummyReplyThreads.length,
-      separatorBuilder: (_, _) =>
-          const Divider(height: 28, color: Color(0xFFE4E4E4)),
-      itemBuilder: (context, index) => _ReplyThread(
-        post: _dummyReplyThreads[index],
-        replies: (_dummyReplyThreads[index]['replies'] as List)
-            .whereType<Map<String, dynamic>>()
-            .toList(),
-      ),
-    );
-  }
-
-  Widget _buildMatchingDummyPosts(Map<String, dynamic> preferences) {
-    final posts = _dummyPosts
-        .where((post) => _matchesCommunity(post, preferences, null))
-        .toList();
-    return posts.isEmpty ? const _NoMatchingCommunity() : _buildPostList(posts);
-  }
-
   static bool _matchesCommunity(
     Map<String, dynamic> post,
     Map<String, dynamic> preferences,
@@ -341,7 +252,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   Widget _buildPostList(List<Map<String, dynamic>> posts) {
     return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 20),
+      padding: const EdgeInsets.fromLTRB(22, 16, 22, 20),
       itemCount: posts.length,
       separatorBuilder: (_, _) => const SizedBox(height: 18),
       itemBuilder: (context, index) => _PostCard(post: posts[index]),
@@ -428,16 +339,30 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      if (index == 1)
+                      if (index == 0)
+                        const Image(
+                          image: AssetImage('assets/HomeIcon.png'),
+                          width: 20,
+                          height: 20,
+                          fit: BoxFit.contain,
+                        )
+                      else if (index == 1)
                         const Image(
                           image: AssetImage('assets/ExperienceIcon.png'),
-                          width: 22,
-                          height: 22,
+                          width: 20,
+                          height: 20,
                           fit: BoxFit.contain,
                         )
                       else if (index == 2)
                         const Image(
                           image: AssetImage('assets/resorcessIcon.png'),
+                          width: 20,
+                          height: 20,
+                          fit: BoxFit.contain,
+                        )
+                      else if (index == 3)
+                        const Image(
+                          image: AssetImage('assets/profileIcon.png'),
                           width: 20,
                           height: 20,
                           fit: BoxFit.contain,
@@ -453,7 +378,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                       const SizedBox(height: 3),
                       Text(
                         item.$2,
-                        style: GoogleFonts.nunito(
+                        style: GoogleFonts.lato(
                           color: const Color(0xFF111111),
                           fontSize: 11,
                           fontWeight: selected
@@ -501,7 +426,7 @@ class _FilterChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.nunito(
+          style: GoogleFonts.lato(
             color: selected ? Colors.white : const Color(0xFF171717),
             fontSize: 14,
             fontWeight: FontWeight.w700,
@@ -593,7 +518,7 @@ class _FeedMessage extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.lato(
                 color: const Color(0xFF171717),
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
@@ -603,7 +528,7 @@ class _FeedMessage extends StatelessWidget {
             Text(
               description,
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.lato(
                 color: const Color(0xFF333333),
                 fontSize: 13,
                 height: 1.35,
@@ -614,7 +539,7 @@ class _FeedMessage extends StatelessWidget {
               Text(
                 text,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.lato(
                   color: const Color(0xFF0DA64A),
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
@@ -630,17 +555,13 @@ class _FeedMessage extends StatelessWidget {
 }
 
 class _ReplyThread extends StatelessWidget {
-  const _ReplyThread({required this.post, this.postId, this.replies});
+  const _ReplyThread({required this.post, required this.postId});
 
   final Map<String, dynamic> post;
-  final String? postId;
-  final List<Map<String, dynamic>>? replies;
+  final String postId;
 
   @override
   Widget build(BuildContext context) {
-    final postId = this.postId;
-    if (postId == null) return _buildThread(replies ?? const []);
-
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('posts')
@@ -668,7 +589,7 @@ class _ReplyThread extends StatelessWidget {
           color: const Color(0xFFF6F6F6),
           child: Text(
             original,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.lato(
               color: const Color(0xFF9A9A9A),
               fontSize: 14,
               height: 1.45,
@@ -679,7 +600,7 @@ class _ReplyThread extends StatelessWidget {
         if (threadReplies.isEmpty)
           Text(
             'Waiting for replies...',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.lato(
               color: const Color(0xFF8A8A8A),
               fontSize: 14,
             ),
@@ -716,7 +637,7 @@ class _ReplyThread extends StatelessWidget {
                 backgroundColor: const Color(0xFFEAF4FF),
                 child: Text(
                   initials.isEmpty ? '?' : initials,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF3478C9),
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
@@ -729,7 +650,7 @@ class _ReplyThread extends StatelessWidget {
                 children: [
                   Text(
                     author.isEmpty ? 'Community member' : author,
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.lato(
                       color: const Color(0xFF282828),
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -737,7 +658,7 @@ class _ReplyThread extends StatelessWidget {
                   ),
                   Text(
                     _timeAgo(reply['createdAt']),
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.lato(
                       color: const Color(0xFF8A8A8A),
                       fontSize: 11,
                     ),
@@ -749,7 +670,7 @@ class _ReplyThread extends StatelessWidget {
           const SizedBox(height: 9),
           Text(
             body,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.lato(
               color: const Color(0xFF333333),
               fontSize: 15,
               height: 1.45,
@@ -815,13 +736,13 @@ class _PostCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
-              radius: 13,
+              radius: 17,
               backgroundColor: const Color(0xFFEAF4FF),
               child: Text(
                 initials.isEmpty ? '?' : initials,
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.lato(
                   color: const Color(0xFF3478C9),
-                  fontSize: 12,
+                  fontSize: 14,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -833,9 +754,9 @@ class _PostCard extends StatelessWidget {
                 children: [
                   Text(
                     author.isEmpty ? 'Community member' : author,
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.lato(
                       color: const Color(0xFF333333),
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: FontWeight.w700,
                       height: 1.1,
                     ),
@@ -843,7 +764,7 @@ class _PostCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     _timeAgo(post['createdAt']),
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.lato(
                       color: const Color(0xFF8A8A8A),
                       fontSize: 11,
                     ),
@@ -857,9 +778,9 @@ class _PostCard extends StatelessWidget {
           const SizedBox(height: 9),
           Text(
             body,
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.lato(
               color: const Color(0xFF444444),
-              fontSize: 15,
+              fontSize: 16,
               height: 1.42,
             ),
           ),

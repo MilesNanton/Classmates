@@ -108,12 +108,143 @@ class _HomePostPopupState extends State<HomePostPopup> {
         child: SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            child: Stack(
               children: [
-                Align(
-                  alignment: Alignment.centerRight,
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 29),
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image(
+                          image: AssetImage('assets/1_icon.png'),
+                          width: 27,
+                          height: 27,
+                          fit: BoxFit.contain,
+                        ),
+                        SizedBox(width: 24),
+                        Image(
+                          image: AssetImage('assets/2_icon.png'),
+                          width: 27,
+                          height: 27,
+                          fit: BoxFit.contain,
+                        ),
+                        SizedBox(width: 24),
+                        Image(
+                          image: AssetImage('assets/3_icon.png'),
+                          width: 27,
+                          height: 27,
+                          fit: BoxFit.contain,
+                        ),
+                        SizedBox(width: 24),
+                        Image(
+                          image: AssetImage('assets/4_icon.png'),
+                          width: 27,
+                          height: 27,
+                          fit: BoxFit.contain,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 14),
+                    Text(
+                      'Share with your community',
+                      style: GoogleFonts.lato(
+                        color: const Color(0xFF171717),
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Ask a question or share an experience with fellow\n'
+                      'homeschooling parents.',
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lato(
+                        color: const Color(0xFF737373),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                        height: 1.35,
+                      ),
+                    ),
+                    const SizedBox(height: 86),
+                    TextField(
+                      controller: _messageController,
+                      autofocus: true,
+                      minLines: 1,
+                      maxLines: 4,
+                      textCapitalization: TextCapitalization.sentences,
+                      onChanged: (_) => setState(() => _errorMessage = null),
+                      decoration: InputDecoration(
+                        hintText: 'Message...',
+                        hintStyle: GoogleFonts.lato(
+                          color: const Color(0xFF737373),
+                          fontSize: 14,
+                        ),
+                        filled: true,
+                        fillColor: const Color(0xFFF7F7F7),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    if (_errorMessage case final message?) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        message,
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.lato(
+                          color: const Color(0xFFB42318),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: FilledButton(
+                        onPressed:
+                            _isSending || _messageController.text.trim().isEmpty
+                            ? null
+                            : _sendPost,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: _green,
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: const Color(0xFFC5C5C5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: _isSending
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Send to community',
+                                style: GoogleFonts.lato(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+                Positioned(
+                  top: 7,
+                  right: 0,
                   child: InkWell(
                     onTap: _isSending
                         ? null
@@ -129,131 +260,6 @@ class _HomePostPopupState extends State<HomePostPopup> {
                       ),
                       child: const Icon(Icons.close, size: 18),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image(
-                      image: AssetImage('assets/1_icon.png'),
-                      width: 27,
-                      height: 27,
-                      fit: BoxFit.contain,
-                    ),
-                    SizedBox(width: 24),
-                    Image(
-                      image: AssetImage('assets/2_icon.png'),
-                      width: 27,
-                      height: 27,
-                      fit: BoxFit.contain,
-                    ),
-                    SizedBox(width: 24),
-                    Image(
-                      image: AssetImage('assets/3_icon.png'),
-                      width: 27,
-                      height: 27,
-                      fit: BoxFit.contain,
-                    ),
-                    SizedBox(width: 24),
-                    Image(
-                      image: AssetImage('assets/4_icon.png'),
-                      width: 27,
-                      height: 27,
-                      fit: BoxFit.contain,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  'Share with your community',
-                  style: GoogleFonts.nunito(
-                    color: const Color(0xFF171717),
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Ask a question or share an experience with fellow\n'
-                  'homeschooling parents.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
-                    color: const Color(0xFF737373),
-                    fontSize: 12,
-                    height: 1.35,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  controller: _messageController,
-                  autofocus: true,
-                  minLines: 1,
-                  maxLines: 4,
-                  textCapitalization: TextCapitalization.sentences,
-                  onChanged: (_) => setState(() => _errorMessage = null),
-                  decoration: InputDecoration(
-                    hintText: 'Message...',
-                    hintStyle: GoogleFonts.nunito(
-                      color: const Color(0xFF737373),
-                      fontSize: 14,
-                    ),
-                    filled: true,
-                    fillColor: const Color(0xFFF7F7F7),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
-                ),
-                if (_errorMessage case final message?) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.nunito(
-                      color: const Color(0xFFB42318),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  height: 48,
-                  child: FilledButton(
-                    onPressed:
-                        _isSending || _messageController.text.trim().isEmpty
-                        ? null
-                        : _sendPost,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: _green,
-                      foregroundColor: Colors.white,
-                      disabledBackgroundColor: const Color(0xFFC5C5C5),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: _isSending
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.white,
-                            ),
-                          )
-                        : Text(
-                            'Send to community',
-                            style: GoogleFonts.nunito(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
                   ),
                 ),
               ],

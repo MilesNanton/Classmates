@@ -25,7 +25,7 @@ Future<void> showReplyPostPopup(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.transparent,
+    barrierColor: Colors.black54,
     builder: (_) => _ReplyPostPopup(
       authorName: authorName,
       postContent: postContent,
@@ -112,7 +112,7 @@ class _ReportPostPopupState extends State<_ReportPostPopup> {
                 const SizedBox(height: 24),
                 Text(
                   'Something not right?',
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     fontSize: 16,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF171717),
@@ -123,7 +123,7 @@ class _ReportPostPopupState extends State<_ReportPostPopup> {
                   "If you think this post is inappropriate, misleading, or doesn't\n"
                   'follow our Community Guidelines, you can report it for\nreview.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     fontSize: 10,
                     height: 1.45,
                     color: const Color(0xFF777777),
@@ -132,25 +132,28 @@ class _ReportPostPopupState extends State<_ReportPostPopup> {
                 const SizedBox(height: 22),
                 SizedBox(
                   width: double.infinity,
-                  height: 36,
+                  height: 51,
                   child: FilledButton(
                     onPressed: _sending ? null : _report,
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFFFFA9B1),
                       foregroundColor: const Color(0xFFB00013),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(7),
+                        borderRadius: BorderRadius.circular(8),
                       ),
                     ),
                     child: _sending
                         ? const SizedBox(
-                            width: 16,
-                            height: 16,
+                            width: 20,
+                            height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : Text(
                             'Report post',
-                            style: GoogleFonts.nunito(fontSize: 12),
+                            style: GoogleFonts.lato(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                   ),
                 ),
@@ -264,7 +267,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                   const SizedBox(height: 18),
                   Text(
                     'Message sent',
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.lato(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -272,18 +275,18 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                   const SizedBox(height: 46),
                   SizedBox(
                     width: double.infinity,
-                    height: 36,
+                    height: 70,
                     child: FilledButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: FilledButton.styleFrom(
                         backgroundColor: const Color(0xFF0DA64A),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(6),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                       ),
                       child: Text(
                         'Back to Home',
-                        style: GoogleFonts.nunito(fontSize: 12),
+                        style: GoogleFonts.lato(fontSize: 12),
                       ),
                     ),
                   ),
@@ -301,7 +304,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                 ] else ...[
                   Text(
                     'Reply to ${widget.authorName}',
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.lato(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
                     ),
@@ -313,7 +316,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                       widget.postContent,
                       maxLines: 5,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.lato(
                         color: const Color(0xFF4A4A4A),
                         fontSize: 12,
                         height: 1.45,
@@ -327,7 +330,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                     autofocus: true,
                     minLines: 1,
                     maxLines: 3,
-                    style: GoogleFonts.nunito(
+                    style: GoogleFonts.lato(
                       color: const Color(0xFF333333),
                       fontSize: 12,
                       fontWeight: FontWeight.w500,
@@ -349,7 +352,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                   const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
-                    height: 36,
+                    height: 42,
                     child: FilledButton(
                       onPressed: _sending ? null : _send,
                       style: FilledButton.styleFrom(
@@ -360,7 +363,10 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                       ),
                       child: Text(
                         _sending ? 'Sending...' : 'Send message',
-                        style: GoogleFonts.nunito(fontSize: 12),
+                        style: GoogleFonts.lato(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   ),
@@ -422,7 +428,7 @@ class _ConfirmPill extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.nunito(fontSize: 10, color: textColor),
+          style: GoogleFonts.lato(fontSize: 10, color: textColor),
         ),
       ),
     );

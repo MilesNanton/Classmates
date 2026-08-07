@@ -100,7 +100,7 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
                     icon: const Icon(Icons.chevron_left, size: 27),
                     label: Text(
                       'Back',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.lato(
                         fontSize: 18,
                         fontWeight: FontWeight.w400,
                       ),
@@ -141,7 +141,7 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
             ? 'Which subjects are you focusing\non?'
             : 'How do you like to\nhomeschool?',
         textAlign: TextAlign.center,
-        style: GoogleFonts.nunito(
+        style: GoogleFonts.lato(
           color: const Color(0xFF525252),
           fontSize: 25,
           fontWeight: FontWeight.w700,
@@ -154,7 +154,7 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
             ? "Select the subjects you'd like to see the most resources and experiences for."
             : 'Choose your educational approach to discover like-minded families, relevant resources and local experiences.',
         textAlign: TextAlign.center,
-        style: GoogleFonts.nunito(
+        style: GoogleFonts.lato(
           color: const Color(0xFF525252),
           fontSize: 18,
           fontWeight: FontWeight.w400,
@@ -203,8 +203,8 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
               ),
               child: Text(
                 option,
-                style: GoogleFonts.nunito(
-                  color: const Color(0xFF525252),
+                style: GoogleFonts.lato(
+                  color: isSelected ? Colors.white : const Color(0xFF525252),
                   fontSize: 18,
                 ),
               ),
@@ -235,7 +235,7 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
       Text(
         'Share your location',
         textAlign: TextAlign.center,
-        style: GoogleFonts.nunito(
+        style: GoogleFonts.lato(
           color: const Color(0xFF525252),
           fontSize: 25,
           fontWeight: FontWeight.w700,
@@ -245,7 +245,7 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
       Text(
         "We'll use your location to recommend nearby learning experiences and connect you with your local homeschooling community.",
         textAlign: TextAlign.center,
-        style: GoogleFonts.nunito(
+        style: GoogleFonts.lato(
           color: const Color(0xFF525252),
           fontSize: 15,
           fontWeight: FontWeight.w400,
@@ -278,10 +278,7 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
         onPressed: _isSaving ? null : () => _completeOnboarding(false),
         child: Text(
           "I'll do this later",
-          style: GoogleFonts.nunito(
-            color: const Color(0xFF737373),
-            fontSize: 15,
-          ),
+          style: GoogleFonts.lato(color: const Color(0xFF737373), fontSize: 15),
         ),
       ),
       const SizedBox(height: 18),
@@ -312,7 +309,7 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
         ),
         child: Text(
           label,
-          style: GoogleFonts.nunito(fontSize: 18, fontWeight: FontWeight.w600),
+          style: GoogleFonts.lato(fontSize: 18, fontWeight: FontWeight.w600),
         ),
       ),
     );
@@ -392,7 +389,7 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
             child: Text(
               _loadingMessages[step],
               textAlign: TextAlign.center,
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.lato(
                 color: Colors.white,
                 fontSize: 15,
                 fontWeight: FontWeight.w600,

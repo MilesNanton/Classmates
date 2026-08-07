@@ -40,7 +40,7 @@ class WelcomeOnboarding extends StatelessWidget {
                     Text(
                       'Welcome to Classmates',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.lato(
                         color: const Color(0xFF525252),
                         fontSize: 25,
                         fontWeight: FontWeight.w700,
@@ -53,7 +53,7 @@ class WelcomeOnboarding extends StatelessWidget {
                       "steps. We'll tailor the experience to suit\n"
                       "your family's homeschooling journey.",
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.lato(
                         color: const Color(0xFF525252),
                         fontSize: 18,
                         fontWeight: FontWeight.w400,
@@ -88,7 +88,7 @@ class WelcomeOnboarding extends StatelessWidget {
                         ),
                         child: Text(
                           'Continue',
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.lato(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
                           ),

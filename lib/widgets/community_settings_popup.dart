@@ -139,20 +139,21 @@ class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
                 const SizedBox(height: 20),
                 Text(
                   'Community settings',
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF171717),
-                    fontSize: 19,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 18),
                 Text(
-                  'Your community is built around these preferences. Update\n'
+                  'Your community is built around these preferences. Update '
                   'them anytime to keep your feed and experiences relevant.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF737373),
-                    fontSize: 12,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                     height: 1.4,
                   ),
                 ),
@@ -260,7 +261,7 @@ class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
           const SizedBox(height: 38),
           Text(
             'Current location',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.lato(
               color: const Color(0xFF171717),
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -277,7 +278,7 @@ class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
               _locationSharingEnabled
                   ? 'Using your current location'
                   : 'Location sharing is off',
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.lato(
                 color: _locationSharingEnabled
                     ? _green
                     : const Color(0xFF737373),
@@ -289,7 +290,7 @@ class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
           const SizedBox(height: 44),
           Text(
             'Discovery radius within',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.lato(
               color: const Color(0xFF171717),
               fontSize: 14,
               fontWeight: FontWeight.w500,
@@ -298,7 +299,7 @@ class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
           const SizedBox(height: 10),
           Text(
             'Anywhere in the UK',
-            style: GoogleFonts.nunito(
+            style: GoogleFonts.lato(
               color: _green,
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -340,7 +341,7 @@ class _SettingsOption extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 46,
+      height: 47,
       child: OutlinedButton(
         onPressed: onTap,
         style: OutlinedButton.styleFrom(
@@ -351,11 +352,11 @@ class _SettingsOption extends StatelessWidget {
           side: BorderSide(
             color: selected ? const Color(0xFF3159AA) : const Color(0xFFD4D4D4),
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(
           label,
-          style: GoogleFonts.nunito(fontSize: 14, fontWeight: FontWeight.w500),
+          style: GoogleFonts.lato(fontSize: 18, fontWeight: FontWeight.w400),
         ),
       ),
     );
@@ -389,10 +390,10 @@ class _SettingsTab extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.nunito(
+          style: GoogleFonts.lato(
             color: selected ? Colors.white : const Color(0xFF171717),
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
           ),
         ),
       ),

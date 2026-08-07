@@ -183,7 +183,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             icon: const Icon(Icons.chevron_left, size: 24),
                             label: Text(
                               'Back',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.lato(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -192,7 +192,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         ),
                         Text(
                           'Sign up',
-                          style: GoogleFonts.nunito(
+                          style: GoogleFonts.lato(
                             color: const Color(0xFF71717A),
                             fontSize: 20,
                             fontWeight: FontWeight.w700,
@@ -210,7 +210,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             ),
                             child: Text(
                               'Log in',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.lato(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w400,
                               ),
@@ -290,7 +290,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             )
                           : Text(
                               'Continue',
-                              style: GoogleFonts.nunito(
+                              style: GoogleFonts.lato(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -342,10 +342,10 @@ class _SignUpTextField extends StatelessWidget {
       obscuringCharacter: '•',
       validator: validator,
       onFieldSubmitted: onFieldSubmitted,
-      style: GoogleFonts.nunito(color: const Color(0xFF18181B), fontSize: 16),
+      style: GoogleFonts.lato(color: const Color(0xFF18181B), fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: GoogleFonts.nunito(
+        labelStyle: GoogleFonts.lato(
           color: const Color(0xFF18181B),
           fontSize: 16,
           fontWeight: FontWeight.w500,

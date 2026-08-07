@@ -45,7 +45,7 @@ class _OnboardingStage1State extends State<OnboardingStage1> {
                     icon: const Icon(Icons.chevron_left, size: 27),
                     label: Text(
                       'Back',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.lato(
                         fontSize: 18,
                         fontWeight: FontWeight.w400,
                       ),
@@ -66,7 +66,7 @@ class _OnboardingStage1State extends State<OnboardingStage1> {
                 Text(
                   'How many children are you\nhomeschooling?',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF525252),
                     fontSize: 25,
                     fontWeight: FontWeight.w700,
@@ -79,7 +79,7 @@ class _OnboardingStage1State extends State<OnboardingStage1> {
                   'managing so we can create a space for each '
                   'child.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF525252),
                     fontSize: 18,
                     fontWeight: FontWeight.w400,
@@ -118,7 +118,7 @@ class _OnboardingStage1State extends State<OnboardingStage1> {
                           ),
                           child: Text(
                             '$count',
-                            style: GoogleFonts.nunito(
+                            style: GoogleFonts.lato(
                               fontSize: 23,
                               fontWeight: FontWeight.w600,
                             ),
@@ -134,7 +134,7 @@ class _OnboardingStage1State extends State<OnboardingStage1> {
                 Text(
                   "Your child's privacy matters.",
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF737373),
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
@@ -147,7 +147,7 @@ class _OnboardingStage1State extends State<OnboardingStage1> {
                   'age, so we can personalise the app while helping '
                   'protect their privacy.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.nunito(
+                  style: GoogleFonts.lato(
                     color: const Color(0xFF737373),
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -183,7 +183,7 @@ class _OnboardingStage1State extends State<OnboardingStage1> {
                     ),
                     child: Text(
                       'Continue',
-                      style: GoogleFonts.nunito(
+                      style: GoogleFonts.lato(
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
                       ),
@@ -270,7 +270,7 @@ class _ChildAgeField extends StatelessWidget {
           Expanded(
             child: Text(
               'Child $childNumber',
-              style: GoogleFonts.nunito(
+              style: GoogleFonts.lato(
                 color: const Color(0xFF525252),
                 fontSize: 18,
               ),
@@ -289,7 +289,7 @@ class _ChildAgeField extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 12),
               child: Text(
                 age == null ? 'Select age' : '$age years',
-                style: GoogleFonts.nunito(
+                style: GoogleFonts.lato(
                   color: const Color(0xFF008A3F),
                   fontSize: 15,
                   fontWeight: FontWeight.w700,
