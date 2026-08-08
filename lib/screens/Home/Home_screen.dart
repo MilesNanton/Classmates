@@ -133,9 +133,9 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                   height: 40,
                   child: Center(
                     child: Image(
-                      image: AssetImage('assets/postIcon.png'),
-                      width: 17,
-                      height: 17,
+                      image: AssetImage('assets/Messageiconfinal.png'),
+                      width: 22,
+                      height: 22,
                       fit: BoxFit.contain,
                     ),
                   ),
@@ -461,7 +461,6 @@ class _EmptyReplies extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const _FeedMessage(
-      icon: Icons.mark_chat_unread_outlined,
       title: 'No replies yet',
       description:
           'Replies to your posts and mentions\nfrom other parents will appear here.',
@@ -476,29 +475,28 @@ class _NoMatchingCommunity extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _FeedMessage(
-      icon: Icons.groups_outlined,
-      title: 'Your community is growing',
+    return _FeedMessage(
+      title: 'No community posts yet',
       description:
-          'Posts matching your homeschool style, subjects,\nand location will appear here.',
-      actionText:
-          'Update Community settings anytime to\ndiscover more conversations.',
+          'Your community feed will appear here\nas parents start sharing.',
+      actionText: 'Ask a question, share an experience,\nor say hello.',
+      onActionTap: () => showHomePostPopup(context),
     );
   }
 }
 
 class _FeedMessage extends StatelessWidget {
   const _FeedMessage({
-    required this.icon,
     required this.title,
     required this.description,
     this.actionText,
+    this.onActionTap,
   });
 
-  final IconData icon;
   final String title;
   final String description;
   final String? actionText;
+  final VoidCallback? onActionTap;
 
   @override
   Widget build(BuildContext context) {
@@ -508,37 +506,12 @@ class _FeedMessage extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, color: const Color(0xFFA3A3A3), size: 24),
-                const SizedBox(width: 12),
-                const Icon(
-                  Icons.chat_bubble_outline_rounded,
-                  color: Color(0xFFA3A3A3),
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                const Icon(
-                  Icons.emoji_people_outlined,
-                  color: Color(0xFFA3A3A3),
-                  size: 25,
-                ),
-                const SizedBox(width: 12),
-                const Icon(
-                  Icons.help_outline_rounded,
-                  color: Color(0xFFA3A3A3),
-                  size: 24,
-                ),
-              ],
-            ),
-            const SizedBox(height: 14),
             Text(
               title,
               textAlign: TextAlign.center,
               style: GoogleFonts.lato(
                 color: const Color(0xFF171717),
-                fontSize: 18,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -548,20 +521,30 @@ class _FeedMessage extends StatelessWidget {
               textAlign: TextAlign.center,
               style: GoogleFonts.lato(
                 color: const Color(0xFF333333),
-                fontSize: 13,
+                fontSize: 16,
                 height: 1.35,
               ),
             ),
             if (actionText case final text?) ...[
               const SizedBox(height: 12),
-              Text(
-                text,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.lato(
-                  color: const Color(0xFF0DA64A),
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  height: 1.35,
+              InkWell(
+                onTap: onActionTap,
+                borderRadius: BorderRadius.circular(8),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  child: Text(
+                    text,
+                    textAlign: TextAlign.center,
+                    style: GoogleFonts.lato(
+                      color: const Color(0xFF0DA64A),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      height: 1.35,
+                    ),
+                  ),
                 ),
               ),
             ],

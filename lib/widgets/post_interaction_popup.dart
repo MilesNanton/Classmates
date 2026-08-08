@@ -113,18 +113,18 @@ class _ReportPostPopupState extends State<_ReportPostPopup> {
                 Text(
                   'Something not right?',
                   style: GoogleFonts.lato(
-                    fontSize: 16,
+                    fontSize: 22,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF171717),
                   ),
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  "If you think this post is inappropriate, misleading, or doesn't\n"
-                  'follow our Community Guidelines, you can report it for\nreview.',
+                  "If you think this post is inappropriate, misleading, or doesn't "
+                  'follow our Community Guidelines, you can report it for review.',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.lato(
-                    fontSize: 10,
+                    fontSize: 16,
                     height: 1.45,
                     color: const Color(0xFF777777),
                   ),
@@ -421,14 +421,18 @@ class _ConfirmPill extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+        padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 7),
         decoration: BoxDecoration(
           color: color,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text(
           label,
-          style: GoogleFonts.lato(fontSize: 10, color: textColor),
+          style: GoogleFonts.lato(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: textColor,
+          ),
         ),
       ),
     );

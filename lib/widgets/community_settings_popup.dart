@@ -153,7 +153,7 @@ class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
                   style: GoogleFonts.lato(
                     color: const Color(0xFF737373),
                     fontSize: 16,
-                    fontWeight: FontWeight.w700,
+                    fontWeight: FontWeight.w400,
                     height: 1.4,
                   ),
                 ),

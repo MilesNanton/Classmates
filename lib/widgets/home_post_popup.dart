@@ -134,8 +134,8 @@ class _HomePostPopupState extends State<HomePostPopup> {
                         SizedBox(width: 24),
                         Image(
                           image: AssetImage('assets/3_icon.png'),
-                          width: 27,
-                          height: 27,
+                          width: 34,
+                          height: 34,
                           fit: BoxFit.contain,
                         ),
                         SizedBox(width: 24),

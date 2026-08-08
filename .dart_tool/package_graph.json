@@ -5,7 +5,7 @@
   "packages": [
     {
       "name": "classmates",
-      "version": "1.0.0+7",
+      "version": "1.0.0+10",
       "dependencies": [
         "cloud_firestore",
         "cupertino_icons",
