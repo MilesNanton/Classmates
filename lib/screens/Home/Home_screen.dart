@@ -11,6 +11,7 @@ import '../../widgets/home_pop_up.dart';
 import '../../widgets/home_post_popup.dart';
 import '../../widgets/message_widget.dart';
 import '../../widgets/post_interaction_popup.dart';
+import '../Profile/profile_screen.dart';
 
 class CommunityHomeScreen extends StatefulWidget {
   const CommunityHomeScreen({super.key, this.showGuidelines = false});
@@ -64,6 +65,11 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_bottomIndex == 3) {
+      return ProfileScreen(
+        onTabSelected: (index) => setState(() => _bottomIndex = index),
+      );
+    }
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.white,
