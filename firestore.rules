@@ -189,16 +189,23 @@ service cloud.firestore {
         allow create: if isOwner()
           && request.resource.data.keys().hasOnly([
             'userId',
+            'name',
             'friendCode',
             'addedAt'
           ])
           && request.resource.data.userId == parentId
           && request.resource.data.userId != request.auth.uid
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 100
           && request.resource.data.friendCode is string
           && request.resource.data.friendCode.size() == 8
           && get(
             /databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode)
           ).data.userId == parentId
+          && request.resource.data.name == get(
+            /databases/$(database)/documents/friendCodes/$(request.resource.data.friendCode)
+          ).data.displayName
           && request.resource.data.addedAt == request.time;
         allow update: if false;
         allow delete: if isOwner();
@@ -211,13 +218,34 @@ service cloud.firestore {
       allow create: if signedIn()
         && !exists(/databases/$(database)/documents/friendCodes/$(friendCode))
         && friendCode.size() == 8
-        && request.resource.data.keys().hasOnly(['userId', 'createdAt'])
+        && request.resource.data.keys().hasOnly([
+          'userId',
+          'displayName',
+          'createdAt'
+        ])
         && request.resource.data.userId == request.auth.uid
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.displayName == getAfter(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.name
         && getAfter(
           /databases/$(database)/documents/users/$(request.auth.uid)
         ).data.friendCode == friendCode
         && request.resource.data.createdAt == request.time;
-      allow update, delete: if false;
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly(['displayName'])
+        && request.resource.data.displayName is string
+        && request.resource.data.displayName.size() > 0
+        && request.resource.data.displayName.size() <= 100
+        && request.resource.data.displayName == get(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.name;
+      allow delete: if false;
     }
 
     match /posts/{postId} {

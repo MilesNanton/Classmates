@@ -7,11 +7,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'add_parents_screen.dart';
 import 'setting_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.onTabSelected});
 
   static const green = Color(0xFF0DA64A);
   final ValueChanged<int> onTabSelected;
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  int _selectedProfileTab = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -30,7 +37,9 @@ class ProfileScreen extends StatelessWidget {
               const _ProfileHeader(),
               const Divider(height: 1, color: Color(0xFFEAEAEA)),
               Expanded(
-                child: user == null
+                child: _selectedProfileTab == 1
+                    ? _ConnectionsContent(userId: user?.uid)
+                    : user == null
                     ? const _ProfileContent(data: <String, dynamic>{})
                     : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                         stream: FirebaseFirestore.instance
@@ -48,10 +57,15 @@ class ProfileScreen extends StatelessWidget {
                         ),
                       ),
               ),
+              _ProfileTabs(
+                selectedIndex: _selectedProfileTab,
+                onSelected: (index) =>
+                    setState(() => _selectedProfileTab = index),
+              ),
             ],
           ),
         ),
-        bottomNavigationBar: _ProfileNavigation(onTap: onTabSelected),
+        bottomNavigationBar: _ProfileNavigation(onTap: widget.onTabSelected),
       ),
     );
   }
@@ -476,6 +490,228 @@ class _BioEditorState extends State<_BioEditor> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ProfileTabs extends StatelessWidget {
+  const _ProfileTabs({required this.selectedIndex, required this.onSelected});
+
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          _ProfileTab(
+            label: 'Info',
+            selected: selectedIndex == 0,
+            onTap: () => onSelected(0),
+          ),
+          const SizedBox(width: 12),
+          _ProfileTab(
+            label: 'Connections',
+            selected: selectedIndex == 1,
+            onTap: () => onSelected(1),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ProfileTab extends StatelessWidget {
+  const _ProfileTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? ProfileScreen.green : Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? ProfileScreen.green : const Color(0xFFD9D9D9),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.lato(
+            color: selected ? Colors.white : const Color(0xFF171717),
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ConnectionsContent extends StatelessWidget {
+  const _ConnectionsContent({required this.userId});
+
+  final String? userId;
+
+  @override
+  Widget build(BuildContext context) {
+    if (userId == null) return const _EmptyConnections();
+
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('parents')
+          .orderBy('addedAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const _ConnectionsMessage(
+            title: 'Could not load connections',
+            description: 'Please try again in a moment.',
+          );
+        }
+        if (!snapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(
+              color: ProfileScreen.green,
+              strokeWidth: 2,
+            ),
+          );
+        }
+        if (snapshot.data!.docs.isEmpty) return const _EmptyConnections();
+
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 28, 20, 32),
+          itemCount: snapshot.data!.docs.length,
+          separatorBuilder: (_, _) =>
+              const Divider(height: 1, color: Color(0xFFEAEAEA)),
+          itemBuilder: (context, index) {
+            return _ConnectionTile(data: snapshot.data!.docs[index].data());
+          },
+        );
+      },
+    );
+  }
+}
+
+class _ConnectionTile extends StatelessWidget {
+  const _ConnectionTile({required this.data});
+
+  final Map<String, dynamic> data;
+
+  @override
+  Widget build(BuildContext context) {
+    final storedName = data['name'];
+    final name = storedName is String && storedName.trim().isNotEmpty
+        ? storedName.trim()
+        : 'Connection';
+
+    return SizedBox(
+      height: 76,
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 22,
+            backgroundColor: const Color(0xFFEDF4FF),
+            child: Text(
+              _initials(name),
+              style: GoogleFonts.lato(
+                color: const Color(0xFF317ABE),
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Text(
+            name,
+            style: GoogleFonts.lato(
+              color: const Color(0xFF171717),
+              fontSize: 16,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  static String _initials(String value) {
+    return value
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .take(2)
+        .map((part) => part[0].toUpperCase())
+        .join();
+  }
+}
+
+class _EmptyConnections extends StatelessWidget {
+  const _EmptyConnections();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _ConnectionsMessage(
+      title: 'Your connections',
+      description:
+          'See experiences, questions and conversations\nshared by the people you’re connected with.',
+    );
+  }
+}
+
+class _ConnectionsMessage extends StatelessWidget {
+  const _ConnectionsMessage({required this.title, required this.description});
+
+  final String title;
+  final String description;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.lato(
+                color: const Color(0xFF171717),
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.lato(
+                color: const Color(0xFF444444),
+                fontSize: 16,
+                height: 1.42,
+              ),
+            ),
+          ],
         ),
       ),
     );

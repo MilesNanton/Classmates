@@ -49,6 +49,13 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
       final userSnapshot = await userReference.get();
       final existingCode = userSnapshot.data()?['friendCode'];
       if (existingCode is String && existingCode.isNotEmpty) {
+        final storedName = userSnapshot.data()?['name'];
+        if (storedName is String && storedName.trim().isNotEmpty) {
+          await FirebaseFirestore.instance
+              .collection('friendCodes')
+              .doc(existingCode)
+              .update({'displayName': storedName.trim()});
+        }
         if (mounted) {
           setState(() {
             _myFriendCode = existingCode;
@@ -78,6 +85,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
 
             transaction.set(codeReference, {
               'userId': user.uid,
+              'displayName': latestUser.data()?['name'] ?? 'Connection',
               'createdAt': FieldValue.serverTimestamp(),
             });
             transaction.set(userReference, {
@@ -123,7 +131,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
     final code = _friendCodeController.text.trim().toUpperCase();
     if (user == null || code.isEmpty || _isAdding) return;
     if (code == _myFriendCode) {
-      _showMessage('Enter another parent’s friend code.');
+      _showMessage('Enter another connection’s friend code.');
       return;
     }
 
@@ -134,6 +142,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
           .doc(code)
           .get();
       final parentId = codeSnapshot.data()?['userId'];
+      final parentName = codeSnapshot.data()?['displayName'];
       if (!codeSnapshot.exists || parentId is! String) {
         _showMessage('Friend code not found.');
         return;
@@ -146,13 +155,16 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
           .doc(parentId)
           .set({
             'userId': parentId,
+            'name': parentName is String && parentName.trim().isNotEmpty
+                ? parentName.trim()
+                : 'Connection',
             'friendCode': code,
             'addedAt': FieldValue.serverTimestamp(),
           });
       _friendCodeController.clear();
-      _showMessage('Parent added successfully.');
+      _showMessage('Connection added successfully.');
     } catch (_) {
-      _showMessage('Could not add this parent. Try again.');
+      _showMessage('Could not add this connection. Try again.');
     } finally {
       if (mounted) setState(() => _isAdding = false);
     }
@@ -186,7 +198,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
                   child: Column(
                     children: [
                       Text(
-                        'Add parents you’ve met',
+                        'Add Connections ',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.lato(
                           color: const Color(0xFF171717),
@@ -196,9 +208,10 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        'For your privacy and safety, only add parents you’ve '
-                        'met at a Classmates experience or event. This helps '
-                        'keep your community connected to people you know.',
+                        'For your privacy and safety, only add parents, carers '
+                        'or guardians you’ve met at a Classmates experience or '
+                        'event. This helps keep your community connected to '
+                        'people you know.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.lato(
                           color: const Color(0xFF444444),
@@ -213,7 +226,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
                         maxLength: 8,
                         textAlign: TextAlign.center,
                         decoration: InputDecoration(
-                          hintText: 'Enter friend code',
+                          hintText: 'Enter connection code',
                           counterText: '',
                           filled: true,
                           fillColor: const Color(0xFFF5F5F7),
@@ -245,7 +258,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
                                   ),
                                 )
                               : Text(
-                                  'Add a parent',
+                                  'Add a connection',
                                   style: GoogleFonts.lato(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w700,
@@ -255,7 +268,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
                       ),
                       const SizedBox(height: 46),
                       Text(
-                        'Your friend code',
+                        'Your connection code',
                         style: GoogleFonts.lato(
                           color: _green,
                           fontSize: 16,
@@ -305,7 +318,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
                         ),
                       const SizedBox(height: 12),
                       Text(
-                        'Share this code with another parent so they can add you.',
+                        'Share this code with another connection so they can add you.',
                         textAlign: TextAlign.center,
                         style: GoogleFonts.lato(
                           color: const Color(0xFF737373),
@@ -340,7 +353,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
             ),
           ),
           Text(
-            'Add parents',
+            'Add connections',
             style: GoogleFonts.lato(
               color: const Color(0xFF222222),
               fontSize: 15,

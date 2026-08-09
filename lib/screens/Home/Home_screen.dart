@@ -13,6 +13,8 @@ import '../../widgets/message_widget.dart';
 import '../../widgets/post_interaction_popup.dart';
 import '../Profile/profile_screen.dart';
 
+enum _FeedView { all, replies, connections }
+
 class CommunityHomeScreen extends StatefulWidget {
   const CommunityHomeScreen({super.key, this.showGuidelines = false});
 
@@ -25,7 +27,7 @@ class CommunityHomeScreen extends StatefulWidget {
 class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
   static const _green = Color(0xFF0DA64A);
 
-  bool _showReplies = false;
+  _FeedView _feedView = _FeedView.all;
   int _bottomIndex = 0;
 
   @override
@@ -175,7 +177,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
           stream: FirebaseFirestore.instance.collection('posts').snapshots(),
           builder: (context, postsSnapshot) {
             if (postsSnapshot.hasError) {
-              return _showReplies
+              return _feedView == _FeedView.replies
                   ? const _EmptyReplies()
                   : const _NoMatchingCommunity();
             }
@@ -190,11 +192,15 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
               ..sort(
                 (a, b) => _postDate(b.data()).compareTo(_postDate(a.data())),
               );
-            if (_showReplies) {
+            if (_feedView == _FeedView.replies) {
               final replyPosts = posts.where(_isReplyForCurrentUser).toList();
               return replyPosts.isEmpty
                   ? const _EmptyReplies()
                   : _buildReplyThreads(replyPosts);
+            }
+
+            if (_feedView == _FeedView.connections) {
+              return _buildConnectionsFeed(posts, user.uid);
             }
 
             final visiblePosts = posts
@@ -266,6 +272,41 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
     );
   }
 
+  Widget _buildConnectionsFeed(
+    List<QueryDocumentSnapshot<Map<String, dynamic>>> posts,
+    String userId,
+  ) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('parents')
+          .snapshots(),
+      builder: (context, connectionsSnapshot) {
+        if (connectionsSnapshot.hasError) {
+          return const _NoConnectionPosts();
+        }
+        if (!connectionsSnapshot.hasData) {
+          return const Center(
+            child: CircularProgressIndicator(color: _green, strokeWidth: 2),
+          );
+        }
+
+        final connectionIds = connectionsSnapshot.data!.docs
+            .map((document) => document.id)
+            .toSet();
+        final connectionPosts = posts
+            .where((post) => connectionIds.contains(post.data()['authorId']))
+            .map((post) => <String, dynamic>{...post.data(), '_id': post.id})
+            .toList();
+
+        return connectionPosts.isEmpty
+            ? const _NoConnectionPosts()
+            : _buildPostList(connectionPosts);
+      },
+    );
+  }
+
   static DateTime _postDate(Map<String, dynamic> post) {
     final value = post['createdAt'];
     return value is Timestamp
@@ -305,14 +346,20 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
         children: [
           _FilterChip(
             label: 'All',
-            selected: !_showReplies,
-            onTap: () => setState(() => _showReplies = false),
+            selected: _feedView == _FeedView.all,
+            onTap: () => setState(() => _feedView = _FeedView.all),
           ),
           const SizedBox(width: 12),
           _FilterChip(
             label: 'Replies',
-            selected: _showReplies,
-            onTap: () => setState(() => _showReplies = true),
+            selected: _feedView == _FeedView.replies,
+            onTap: () => setState(() => _feedView = _FeedView.replies),
+          ),
+          const SizedBox(width: 12),
+          _FilterChip(
+            label: 'Connections',
+            selected: _feedView == _FeedView.connections,
+            onTap: () => setState(() => _feedView = _FeedView.connections),
           ),
         ],
       ),
@@ -472,6 +519,19 @@ class _EmptyReplies extends StatelessWidget {
           'Replies to your posts and mentions\nfrom other parents will appear here.',
       actionText:
           'Join the conversation by asking a\nquestion or replying to a post.',
+    );
+  }
+}
+
+class _NoConnectionPosts extends StatelessWidget {
+  const _NoConnectionPosts();
+
+  @override
+  Widget build(BuildContext context) {
+    return const _FeedMessage(
+      title: 'Your connections',
+      description:
+          'See experiences, questions and conversations\nshared by the people you’re connected with.',
     );
   }
 }
