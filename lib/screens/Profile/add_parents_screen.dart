@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../widgets/message_widget.dart';
+
 class AddParentsScreen extends StatefulWidget {
   const AddParentsScreen({super.key});
 
@@ -112,8 +114,10 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not create your friend code.')),
+      showMessagePopup(
+        context,
+        message: 'Could not create your friend code.',
+        type: MessageType.error,
       );
     }
   }
@@ -131,7 +135,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
     final code = _friendCodeController.text.trim().toUpperCase();
     if (user == null || code.isEmpty || _isAdding) return;
     if (code == _myFriendCode) {
-      _showMessage('Enter another connection’s friend code.');
+      _showMessage('Enter another connection’s friend code.', isError: true);
       return;
     }
 
@@ -144,7 +148,7 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
       final parentId = codeSnapshot.data()?['userId'];
       final parentName = codeSnapshot.data()?['displayName'];
       if (!codeSnapshot.exists || parentId is! String) {
-        _showMessage('Friend code not found.');
+        _showMessage('Friend code not found.', isError: true);
         return;
       }
 
@@ -164,17 +168,19 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
       _friendCodeController.clear();
       _showMessage('Connection added successfully.');
     } catch (_) {
-      _showMessage('Could not add this connection. Try again.');
+      _showMessage('Could not add this connection. Try again.', isError: true);
     } finally {
       if (mounted) setState(() => _isAdding = false);
     }
   }
 
-  void _showMessage(String message) {
+  void _showMessage(String message, {bool isError = false}) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showMessagePopup(
+      context,
+      message: message,
+      type: isError ? MessageType.error : MessageType.success,
+    );
   }
 
   @override

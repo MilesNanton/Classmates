@@ -6,19 +6,13 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'add_parents_screen.dart';
 import 'setting_screen.dart';
+import '../../widgets/message_widget.dart';
 
-class ProfileScreen extends StatefulWidget {
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key, required this.onTabSelected});
 
   static const green = Color(0xFF0DA64A);
   final ValueChanged<int> onTabSelected;
-
-  @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  int _selectedProfileTab = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -37,9 +31,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const _ProfileHeader(),
               const Divider(height: 1, color: Color(0xFFEAEAEA)),
               Expanded(
-                child: _selectedProfileTab == 1
-                    ? _ConnectionsContent(userId: user?.uid)
-                    : user == null
+                child: user == null
                     ? const _ProfileContent(data: <String, dynamic>{})
                     : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                         stream: FirebaseFirestore.instance
@@ -57,15 +49,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                       ),
               ),
-              _ProfileTabs(
-                selectedIndex: _selectedProfileTab,
-                onSelected: (index) =>
-                    setState(() => _selectedProfileTab = index),
-              ),
             ],
           ),
         ),
-        bottomNavigationBar: _ProfileNavigation(onTap: widget.onTabSelected),
+        bottomNavigationBar: _ProfileNavigation(onTap: onTabSelected),
       ),
     );
   }
@@ -269,8 +256,10 @@ class _ProfileContent extends StatelessWidget {
       }, SetOptions(merge: true));
     } catch (_) {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not save your bio. Try again.')),
+      showMessagePopup(
+        context,
+        message: 'Could not save your bio. Try again.',
+        type: MessageType.error,
       );
     }
   }
@@ -496,6 +485,8 @@ class _BioEditorState extends State<_BioEditor> {
   }
 }
 
+// Retained for a possible future return of profile-level filters.
+// ignore: unused_element
 class _ProfileTabs extends StatelessWidget {
   const _ProfileTabs({required this.selectedIndex, required this.onSelected});
 
@@ -565,6 +556,8 @@ class _ProfileTab extends StatelessWidget {
   }
 }
 
+// The Home Connections feed remains active; this profile list is dormant.
+// ignore: unused_element
 class _ConnectionsContent extends StatelessWidget {
   const _ConnectionsContent({required this.userId});
 

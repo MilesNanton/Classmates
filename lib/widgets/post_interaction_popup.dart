@@ -17,7 +17,6 @@ Future<void> showReportPostPopup(BuildContext context, {String? postId}) {
 
 Future<void> showReplyPostPopup(
   BuildContext context, {
-  required String authorName,
   required String postContent,
   String? postId,
 }) {
@@ -26,11 +25,7 @@ Future<void> showReplyPostPopup(
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
     barrierColor: Colors.black54,
-    builder: (_) => _ReplyPostPopup(
-      authorName: authorName,
-      postContent: postContent,
-      postId: postId,
-    ),
+    builder: (_) => _ReplyPostPopup(postContent: postContent, postId: postId),
   );
 }
 
@@ -167,13 +162,8 @@ class _ReportPostPopupState extends State<_ReportPostPopup> {
 }
 
 class _ReplyPostPopup extends StatefulWidget {
-  const _ReplyPostPopup({
-    required this.authorName,
-    required this.postContent,
-    this.postId,
-  });
+  const _ReplyPostPopup({required this.postContent, this.postId});
 
-  final String authorName;
   final String postContent;
   final String? postId;
 
@@ -188,19 +178,6 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
   bool _sent = false;
 
   @override
-  void initState() {
-    super.initState();
-    final handle = widget.authorName.toLowerCase().replaceAll(
-      RegExp(r'[^a-z0-9]'),
-      '',
-    );
-    _controller.text = '@$handle ';
-    _controller.selection = TextSelection.collapsed(
-      offset: _controller.text.length,
-    );
-  }
-
-  @override
   void dispose() {
     _controller.dispose();
     _replyFocusNode.dispose();
@@ -208,10 +185,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
   }
 
   Future<void> _send() async {
-    final replyText = _controller.text
-        .trim()
-        .replaceFirst(RegExp(r'^@\S+\s*'), '')
-        .trim();
+    final replyText = _controller.text.trim();
     if (replyText.isEmpty || _sending) return;
     setState(() => _sending = true);
     try {
@@ -227,7 +201,14 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
         await post.update({'replyCount': FieldValue.increment(1)});
       }
     } catch (_) {
-      // Dummy posts still support the complete local interaction flow.
+      if (!mounted) return;
+      setState(() => _sending = false);
+      showMessagePopup(
+        context,
+        message: 'Could not post your reply. Try again.',
+        type: MessageType.error,
+      );
+      return;
     }
     if (!mounted) return;
     setState(() {
@@ -266,7 +247,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                 if (_sent) ...[
                   const SizedBox(height: 18),
                   Text(
-                    'Message sent',
+                    'Reply posted',
                     style: GoogleFonts.lato(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -275,7 +256,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                   const SizedBox(height: 46),
                   SizedBox(
                     width: double.infinity,
-                    height: 70,
+                    height: 45,
                     child: FilledButton(
                       onPressed: () => Navigator.of(context).pop(),
                       style: FilledButton.styleFrom(
@@ -286,7 +267,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                       ),
                       child: Text(
                         'Back to Home',
-                        style: GoogleFonts.lato(fontSize: 12),
+                        style: GoogleFonts.lato(fontSize: 14),
                       ),
                     ),
                   ),
@@ -303,7 +284,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                   ),
                 ] else ...[
                   Text(
-                    'Reply to ${widget.authorName}',
+                    'Add to the conversation',
                     style: GoogleFonts.lato(
                       fontSize: 16,
                       fontWeight: FontWeight.w800,
@@ -352,7 +333,7 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                   const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
-                    height: 42,
+                    height: 45,
                     child: FilledButton(
                       onPressed: _sending ? null : _send,
                       style: FilledButton.styleFrom(
@@ -362,9 +343,9 @@ class _ReplyPostPopupState extends State<_ReplyPostPopup> {
                         ),
                       ),
                       child: Text(
-                        _sending ? 'Sending...' : 'Send message',
+                        _sending ? 'Posting...' : 'Post reply',
                         style: GoogleFonts.lato(
-                          fontSize: 18,
+                          fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
                       ),

@@ -12,6 +12,7 @@ import '../../widgets/home_post_popup.dart';
 import '../../widgets/message_widget.dart';
 import '../../widgets/post_interaction_popup.dart';
 import '../Profile/profile_screen.dart';
+import 'conversation_screen.dart';
 
 enum _FeedView { all, replies, connections }
 
@@ -200,7 +201,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
             }
 
             if (_feedView == _FeedView.connections) {
-              return _buildConnectionsFeed(posts, user.uid);
+              return _buildConnectionsList(user.uid);
             }
 
             final visiblePosts = posts
@@ -272,10 +273,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
     );
   }
 
-  Widget _buildConnectionsFeed(
-    List<QueryDocumentSnapshot<Map<String, dynamic>>> posts,
-    String userId,
-  ) {
+  Widget _buildConnectionsList(String userId) {
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('users')
@@ -292,17 +290,36 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
           );
         }
 
-        final connectionIds = connectionsSnapshot.data!.docs
-            .map((document) => document.id)
-            .toSet();
-        final connectionPosts = posts
-            .where((post) => connectionIds.contains(post.data()['authorId']))
-            .map((post) => <String, dynamic>{...post.data(), '_id': post.id})
-            .toList();
+        final connections = connectionsSnapshot.data!.docs;
+        if (connections.isEmpty) return const _NoConnectionPosts();
 
-        return connectionPosts.isEmpty
-            ? const _NoConnectionPosts()
-            : _buildPostList(connectionPosts);
+        return ListView.separated(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
+          itemCount: connections.length,
+          separatorBuilder: (_, _) => const SizedBox(height: 4),
+          itemBuilder: (context, index) {
+            final connection = connections[index];
+            final data = connection.data();
+            final storedName = data['name'];
+            final name = storedName is String && storedName.trim().isNotEmpty
+                ? storedName.trim()
+                : 'Connection';
+            return _HomeConnectionTile(
+              name: name,
+              curriculum: data['curriculum'] is String
+                  ? data['curriculum'] as String
+                  : 'Custom curriculum',
+              onMessage: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => ConversationScreen(
+                    connectionId: connection.id,
+                    connectionName: name,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
       },
     );
   }
@@ -348,12 +365,6 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
             label: 'All',
             selected: _feedView == _FeedView.all,
             onTap: () => setState(() => _feedView = _FeedView.all),
-          ),
-          const SizedBox(width: 12),
-          _FilterChip(
-            label: 'Replies',
-            selected: _feedView == _FeedView.replies,
-            onTap: () => setState(() => _feedView = _FeedView.replies),
           ),
           const SizedBox(width: 12),
           _FilterChip(
@@ -523,6 +534,93 @@ class _EmptyReplies extends StatelessWidget {
   }
 }
 
+class _HomeConnectionTile extends StatelessWidget {
+  const _HomeConnectionTile({
+    required this.name,
+    required this.curriculum,
+    required this.onMessage,
+  });
+
+  final String name;
+  final String curriculum;
+  final VoidCallback onMessage;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((part) => part.isNotEmpty)
+        .take(2)
+        .map((part) => part[0].toUpperCase())
+        .join();
+    return SizedBox(
+      height: 62,
+      child: Row(
+        children: [
+          CircleAvatar(
+            radius: 20,
+            backgroundColor: const Color(0xFFEAF4FF),
+            child: Text(
+              initials.isEmpty ? '?' : initials,
+              style: GoogleFonts.lato(
+                color: const Color(0xFF3478C9),
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  name,
+                  style: GoogleFonts.lato(
+                    color: const Color(0xFF171717),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  curriculum,
+                  style: GoogleFonts.lato(
+                    color: const Color(0xFF737373),
+                    fontSize: 11,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Material(
+            color: const Color(0xFFBDBDBD),
+            shape: const CircleBorder(),
+            child: InkWell(
+              onTap: onMessage,
+              customBorder: const CircleBorder(),
+              child: SizedBox(
+                width: 36,
+                height: 36,
+                child: Center(
+                  child: Image.asset(
+                    'assets/Messageiconfinal.png',
+                    width: 20,
+                    height: 20,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _NoConnectionPosts extends StatelessWidget {
   const _NoConnectionPosts();
 
@@ -531,7 +629,7 @@ class _NoConnectionPosts extends StatelessWidget {
     return const _FeedMessage(
       title: 'Your connections',
       description:
-          'See experiences, questions and conversations\nshared by the people you’re connected with.',
+          'See the parents and carers you’ve connected with and message them directly.',
     );
   }
 }
@@ -824,8 +922,10 @@ class _PostCard extends StatelessWidget {
       showMessagePopupInOverlay(overlay, message: 'Post deleted successfully.');
     } on FirebaseException {
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not delete this post.')),
+      showMessagePopup(
+        context,
+        message: 'Could not delete this post.',
+        type: MessageType.error,
       );
     }
   }
@@ -901,17 +1001,19 @@ class _PostCard extends StatelessWidget {
       ],
     );
 
+    final postId = post['_id'] as String?;
     return _SwipeablePost(
-      onReport: () =>
-          showReportPostPopup(context, postId: post['_id'] as String?),
-      onReply: () => showReplyPostPopup(
-        context,
-        authorName: author.isEmpty ? 'Community member' : author,
-        postContent: body,
-        postId: post['_id'] as String?,
-      ),
+      onReport: () => showReportPostPopup(context, postId: postId),
+      onReply: () =>
+          showReplyPostPopup(context, postContent: body, postId: postId),
       onDelete: isOwner ? () => _deletePost(context) : null,
-      child: postContent,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          postContent,
+          if (postId != null) _PublicPostReplies(postId: postId),
+        ],
+      ),
     );
   }
 
@@ -940,6 +1042,158 @@ class _PostCard extends StatelessWidget {
       if (value is String && value.trim().isNotEmpty) return value.trim();
     }
     return '';
+  }
+}
+
+class _PublicPostReplies extends StatefulWidget {
+  const _PublicPostReplies({required this.postId});
+
+  final String postId;
+
+  @override
+  State<_PublicPostReplies> createState() => _PublicPostRepliesState();
+}
+
+class _PublicPostRepliesState extends State<_PublicPostReplies> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('posts')
+          .doc(widget.postId)
+          .collection('replies')
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final replies = snapshot.data!.docs.map((doc) => doc.data()).toList()
+          ..sort((a, b) => _date(a).compareTo(_date(b)));
+        final collapsible = replies.length >= 4;
+
+        if (collapsible && !_expanded) {
+          return Padding(
+            padding: const EdgeInsets.only(top: 12),
+            child: _RepliesToggle(
+              label: 'View ${replies.length} replies',
+              onTap: () => setState(() => _expanded = true),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(top: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${replies.length} ${replies.length == 1 ? 'Reply' : 'Replies'}',
+                style: GoogleFonts.lato(
+                  color: const Color(0xFF0DA64A),
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 10),
+              ...replies.map(_reply),
+              if (collapsible)
+                _RepliesToggle(
+                  label: 'Hide replies',
+                  onTap: () => setState(() => _expanded = false),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _reply(Map<String, dynamic> reply) {
+    final storedName = reply['authorName'];
+    final author = storedName is String && storedName.trim().isNotEmpty
+        ? storedName.trim()
+        : 'Community member';
+    final storedContent = reply['content'];
+    final content = storedContent is String ? storedContent.trim() : '';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            author,
+            style: GoogleFonts.lato(
+              color: const Color(0xFF333333),
+              fontSize: 14,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            _timeAgo(reply['createdAt']),
+            style: GoogleFonts.lato(
+              color: const Color(0xFF8A8A8A),
+              fontSize: 10,
+            ),
+          ),
+          if (content.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Text(
+              content,
+              style: GoogleFonts.lato(
+                color: const Color(0xFF444444),
+                fontSize: 14,
+                height: 1.42,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  static DateTime _date(Map<String, dynamic> reply) {
+    final value = reply['createdAt'];
+    return value is Timestamp
+        ? value.toDate()
+        : DateTime.fromMillisecondsSinceEpoch(0);
+  }
+
+  static String _timeAgo(Object? value) {
+    if (value is! Timestamp) return 'Just now';
+    final difference = DateTime.now().difference(value.toDate());
+    if (difference.inMinutes < 1) return 'Just now';
+    if (difference.inHours < 1) return '${difference.inMinutes} min ago';
+    if (difference.inDays < 1) return '${difference.inHours} hr ago';
+    return '${difference.inDays}d ago';
+  }
+}
+
+class _RepliesToggle extends StatelessWidget {
+  const _RepliesToggle({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Text(
+          label,
+          style: GoogleFonts.lato(
+            color: const Color(0xFF0DA64A),
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      ),
+    );
   }
 }
 

@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'message_widget.dart';
+
 Future<void> showCommunitySettingsPopup(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
@@ -97,8 +99,10 @@ class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
       }, SetOptions(merge: true));
     } on FirebaseException {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not update community settings.')),
+        showMessagePopup(
+          context,
+          message: 'Could not update community settings.',
+          type: MessageType.error,
         );
       }
     } finally {

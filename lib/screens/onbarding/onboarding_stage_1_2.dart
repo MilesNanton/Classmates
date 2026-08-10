@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../Home/Home_screen.dart';
+import '../../widgets/message_widget.dart';
 
 class OnboardingStage12 extends StatefulWidget {
   const OnboardingStage12({
@@ -365,10 +366,10 @@ class _OnboardingStage12State extends State<OnboardingStage12> {
         _isSaving = false;
         _loadingStep = null;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Could not save your choices. Please try again.'),
-        ),
+      showMessagePopup(
+        context,
+        message: 'Could not save your choices. Please try again.',
+        type: MessageType.error,
       );
     }
   }

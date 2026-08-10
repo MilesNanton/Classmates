@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../widgets/message_widget.dart';
+
 class SettingScreen extends StatelessWidget {
   const SettingScreen({super.key});
 
@@ -165,9 +167,7 @@ class _SettingsList extends StatelessWidget {
   }
 
   static void _showUnavailable(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$feature coming soon')));
+    showMessagePopup(context, message: '$feature coming soon');
   }
 }
 
