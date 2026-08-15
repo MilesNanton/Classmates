@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'subject_resources_screen.dart';
+
 enum _ResourcesView { bySubject, saved }
 
 class ResourcesScreen extends StatefulWidget {
@@ -35,7 +37,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     ('assets/resourcesIocns/english.png', Icons.circle_outlined, 'English'),
   ];
 
-  static const _savedResources = <(String, String)>[
+  final List<(String, String)> _savedResources = [
     ('1066: The Norman Conquest', 'History · PDF · 4 pages'),
     ('The Victorians: Life in Britain', 'History · PDF · 4 pages'),
     ('Life in Medieval Britain', 'History · PDF · 4 pages'),
@@ -90,7 +92,18 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
           color: const Color(0xFFF4F9F6),
           borderRadius: BorderRadius.circular(5),
           child: InkWell(
-            onTap: () {},
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => SubjectResourcesScreen(
+                  subject: subject.$3,
+                  onSave: (resource) => setState(() {
+                    if (!_savedResources.contains(resource)) {
+                      _savedResources.add(resource);
+                    }
+                  }),
+                ),
+              ),
+            ),
             borderRadius: BorderRadius.circular(5),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
