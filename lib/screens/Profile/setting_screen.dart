@@ -94,17 +94,17 @@ class _SettingsList extends StatelessWidget {
         _SettingsTile(
           iconAsset: 'assets/settingIcons/best_practices.png',
           label: 'Best practices',
-          onTap: () => _showUnavailable(context, 'Best practices'),
+          onTap: () => _showBestPractices(context),
         ),
         _SettingsTile(
           iconAsset: 'assets/settingIcons/community_guidline.png',
           label: 'Community guidelines',
-          onTap: () => _showUnavailable(context, 'Community guidelines'),
+          onTap: () => _showCommunityGuidelines(context),
         ),
         _SettingsTile(
           iconAsset: 'assets/settingIcons/meetup_safety.png',
           label: 'Meetup safety',
-          onTap: () => _showUnavailable(context, 'Meetup safety'),
+          onTap: () => _showMeetupSafety(context),
         ),
         const _SectionTitle('Share'),
         _SettingsTile(
@@ -126,7 +126,7 @@ class _SettingsList extends StatelessWidget {
         _SettingsTile(
           iconAsset: 'assets/settingIcons/manage_subscription.png',
           label: 'Manage subscription',
-          onTap: () => _showUnavailable(context, 'Manage subscription'),
+          onTap: () => _showManageSubscription(context),
         ),
         const _SectionTitle('Notifications'),
         _SettingsTile(
@@ -168,6 +168,524 @@ class _SettingsList extends StatelessWidget {
 
   static void _showUnavailable(BuildContext context, String feature) {
     showMessagePopup(context, message: '$feature coming soon');
+  }
+
+  static Future<void> _showBestPractices(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black45,
+      builder: (_) => const _SafetyGuidanceSheet(
+        title: 'Best practices',
+        items: _bestPractices,
+        heightFactor: 0.76,
+      ),
+    );
+  }
+
+  static Future<void> _showCommunityGuidelines(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black45,
+      builder: (_) => const _SafetyGuidanceSheet(
+        title: 'Community guidelines',
+        items: _communityGuidelines,
+        heightFactor: 0.80,
+      ),
+    );
+  }
+
+  static Future<void> _showMeetupSafety(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black45,
+      builder: (_) => const _SafetyGuidanceSheet(
+        title: 'Meetup safety',
+        items: _meetupSafety,
+        heightFactor: 0.76,
+      ),
+    );
+  }
+
+  static Future<void> _showManageSubscription(BuildContext context) {
+    return showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black45,
+      builder: (_) => const _SubscriptionSheet(),
+    );
+  }
+
+  static const _bestPractices = <(String, String)>[
+    (
+      'Keep your information private',
+      'Avoid sharing your home address, phone number, personal contact details or other sensitive information.',
+    ),
+    (
+      'Protect your child’s privacy',
+      'Never share your child’s full name, school, location or other identifying details with people you don’t know well.',
+    ),
+    (
+      'Connect with people you meet',
+      'Only add connections you’ve met through a Classmates event or trusted community setting.',
+    ),
+    (
+      'Keep conversations respectful',
+      'Be kind, respectful and considerate when messaging or interacting with other parents and carers.',
+    ),
+    (
+      'Meet safely',
+      'When meeting a connection outside of a Classmates event, choose a public place and let someone you trust know where you’re going.',
+    ),
+    (
+      'Trust your instincts',
+      'If something doesn’t feel right, you can stop communicating, remove the connection or report the user to Classmates.',
+    ),
+  ];
+
+  static const _communityGuidelines = <(String, String)>[
+    (
+      'Be respectful',
+      'Treat other parents and carers with kindness, even when you have different views or experiences.',
+    ),
+    (
+      'Keep it helpful',
+      'Share useful experiences, ask genuine questions and offer advice that could support the community.',
+    ),
+    (
+      'Protect privacy',
+      'Don’t share someone else’s personal information, photos or details without their permission.',
+    ),
+    (
+      'Keep children’s information private',
+      'Avoid posting children’s full names, school details, locations or other identifying information.',
+    ),
+    (
+      'No harassment or bullying',
+      'Don’t threaten, intimidate, shame or repeatedly target other members.',
+    ),
+    (
+      'Keep content appropriate',
+      'Don’t post offensive, harmful, discriminatory or inappropriate content.',
+    ),
+    (
+      'Respect the community',
+      'Avoid spam, advertising, misleading information or content that doesn’t belong on Classmates.',
+    ),
+    (
+      'Report concerns',
+      'If you see something that goes against these guidelines, report it so we can help keep Classmates welcoming and safe.',
+    ),
+  ];
+
+  static const _meetupSafety = <(String, String)>[
+    (
+      'Meet in public places',
+      'Choose a familiar, public location for your first meetup and avoid sharing your home address.',
+    ),
+    (
+      'Tell someone you trust',
+      'Let a friend or family member know where you’re going, who you’re meeting and when you expect to be back.',
+    ),
+    (
+      'Keep personal details private',
+      'Only share information you’re comfortable with. Never share your child’s school, address or other sensitive details.',
+    ),
+    (
+      'Meet on your terms',
+      'You’re never under any obligation to meet someone. If something doesn’t feel right, leave or cancel the meetup.',
+    ),
+    (
+      'Keep children safe',
+      'Stay responsible for your own children and follow the safety guidance of the venue or activity you’re attending.',
+    ),
+    (
+      'Trust your instincts',
+      'If someone makes you feel uncomfortable or behaves inappropriately, stop communicating and report them to Classmates.',
+    ),
+  ];
+}
+
+class _SafetyGuidanceSheet extends StatelessWidget {
+  const _SafetyGuidanceSheet({
+    required this.title,
+    required this.items,
+    required this.heightFactor,
+  });
+
+  final String title;
+  final List<(String, String)> items;
+  final double heightFactor;
+
+  @override
+  Widget build(BuildContext context) {
+    return FractionallySizedBox(
+      heightFactor: heightFactor,
+      child: Material(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 16, 16, 0),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: Text(
+                      title,
+                      textAlign: TextAlign.center,
+                      style: GoogleFonts.lato(
+                        color: const Color(0xFF181818),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Material(
+                      color: Colors.white,
+                      shape: const CircleBorder(
+                        side: BorderSide(color: Color(0xFFE2E2E2)),
+                      ),
+                      child: InkWell(
+                        onTap: () => Navigator.pop(context),
+                        customBorder: const CircleBorder(),
+                        child: const SizedBox(
+                          width: 38,
+                          height: 38,
+                          child: Icon(Icons.close, size: 20),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Expanded(
+              child: ListView.separated(
+                padding: const EdgeInsets.symmetric(horizontal: 28),
+                itemCount: items.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 22),
+                itemBuilder: (context, index) {
+                  final item = items[index];
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.$1,
+                        style: GoogleFonts.lato(
+                          color: const Color(0xFF181818),
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        item.$2,
+                        style: GoogleFonts.lato(
+                          color: const Color(0xFF222222),
+                          fontSize: 14,
+                          height: 1.55,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(30, 14, 30, 28),
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF08A948),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(9),
+                    ),
+                  ),
+                  child: Text(
+                    'I understand',
+                    style: GoogleFonts.lato(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SubscriptionSheet extends StatefulWidget {
+  const _SubscriptionSheet();
+
+  @override
+  State<_SubscriptionSheet> createState() => _SubscriptionSheetState();
+}
+
+class _SubscriptionSheetState extends State<_SubscriptionSheet> {
+  static const _features = <String>[
+    'Discover experiences & resources',
+    'Connect with parents',
+    'Join the conversation',
+    'Personalised recommendations',
+    'Build your family’s experience history',
+  ];
+
+  bool _yearly = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return FractionallySizedBox(
+      heightFactor: 0.76,
+      child: Material(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(0, 20, 20, 0),
+                child: Material(
+                  color: Colors.white,
+                  shape: const CircleBorder(
+                    side: BorderSide(color: Color(0xFFE2E2E2)),
+                  ),
+                  child: InkWell(
+                    onTap: () => Navigator.pop(context),
+                    customBorder: const CircleBorder(),
+                    child: const SizedBox(
+                      width: 38,
+                      height: 38,
+                      child: Icon(Icons.close, size: 20),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Subscribe to Classmates',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(
+                  color: const Color(0xFF181818),
+                  fontSize: 25,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+            const Spacer(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _PlanCard(
+                      price: '£4.99',
+                      period: 'per month',
+                      selected: !_yearly,
+                      onTap: () => setState(() => _yearly = false),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _PlanCard(
+                      price: '£49.99',
+                      period: 'per year',
+                      badge: '16% off',
+                      selected: _yearly,
+                      onTap: () => setState(() => _yearly = true),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 18),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 8),
+              padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F7F7),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(
+                children: [
+                  for (final feature in _features)
+                    SizedBox(
+                      height: 56,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.check, size: 18),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Text(
+                              feature,
+                              style: GoogleFonts.lato(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 46,
+                    child: FilledButton(
+                      onPressed: () => showMessagePopup(
+                        context,
+                        message: 'Subscription checkout coming soon',
+                      ),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: const Color(0xFF08A948),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Text(
+                        _yearly
+                            ? 'Subscribe for £49.99 / year'
+                            : 'Subscribe for £4.99 / month',
+                        style: GoogleFonts.lato(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text.rich(
+              TextSpan(
+                children: [
+                  TextSpan(
+                    text: _yearly
+                        ? '£49.99 billed yearly. '
+                        : '£4.99 billed monthly. ',
+                  ),
+                  const TextSpan(
+                    text: 'Terms apply',
+                    style: TextStyle(decoration: TextDecoration.underline),
+                  ),
+                ],
+              ),
+              style: GoogleFonts.lato(
+                color: const Color(0xFF6D6D6D),
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 28),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PlanCard extends StatelessWidget {
+  const _PlanCard({
+    required this.price,
+    required this.period,
+    required this.selected,
+    required this.onTap,
+    this.badge,
+  });
+
+  final String price;
+  final String period;
+  final String? badge;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 160),
+        height: 66,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? const Color(0xFFF4FCF7) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected ? const Color(0xFF08A948) : const Color(0xFFE0E0E0),
+            width: selected ? 2 : 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    price,
+                    style: GoogleFonts.lato(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  Text(
+                    period,
+                    style: GoogleFonts.lato(
+                      color: const Color(0xFF777777),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (badge != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE3F8EA),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  badge!,
+                  style: GoogleFonts.lato(
+                    color: const Color(0xFF08A948),
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

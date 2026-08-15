@@ -64,6 +64,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
         batch.update(thread, {
           'lastMessage': text,
           'lastMessageAt': FieldValue.serverTimestamp(),
+          'unreadFor': [widget.connectionId],
         });
       } else {
         batch.set(thread, {
@@ -71,6 +72,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
           'createdAt': FieldValue.serverTimestamp(),
           'lastMessage': text,
           'lastMessageAt': FieldValue.serverTimestamp(),
+          'unreadFor': [widget.connectionId],
         });
       }
       batch.set(thread.collection('messages').doc(), {
@@ -131,9 +133,29 @@ class _ConversationScreenState extends State<ConversationScreen> {
         if (!threadSnapshot.hasData || !threadSnapshot.data!.exists) {
           return const _SafetyCopy();
         }
+        final unreadFor = threadSnapshot.data!.data()?['unreadFor'];
+        if (unreadFor is List && unreadFor.contains(_userId)) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _markAsRead());
+        }
         return _messageStream();
       },
     );
+  }
+
+  Future<void> _markAsRead() async {
+    final userId = _userId;
+    final threadId = _threadId;
+    if (userId == null || threadId == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(threadId)
+          .update({
+            'unreadFor': FieldValue.arrayRemove([userId]),
+          });
+    } catch (_) {
+      // The next live snapshot will retry if the read state was not saved.
+    }
   }
 
   Widget _messageStream() {

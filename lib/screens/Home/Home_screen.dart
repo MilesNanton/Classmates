@@ -12,6 +12,7 @@ import '../../widgets/home_post_popup.dart';
 import '../../widgets/message_widget.dart';
 import '../../widgets/post_interaction_popup.dart';
 import '../Profile/profile_screen.dart';
+import '../Resources/resources_screen.dart';
 import 'conversation_screen.dart';
 
 enum _FeedView { all, replies, connections }
@@ -68,6 +69,11 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_bottomIndex == 2) {
+      return ResourcesScreen(
+        onTabSelected: (index) => setState(() => _bottomIndex = index),
+      );
+    }
     if (_bottomIndex == 3) {
       return ProfileScreen(
         onTabSelected: (index) => setState(() => _bottomIndex = index),
@@ -296,7 +302,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
           itemCount: connections.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 4),
+          separatorBuilder: (_, _) => const SizedBox(height: 24),
           itemBuilder: (context, index) {
             final connection = connections[index];
             final data = connection.data();
@@ -305,6 +311,8 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                 ? storedName.trim()
                 : 'Connection';
             return _HomeConnectionTile(
+              currentUserId: userId,
+              connectionId: connection.id,
               name: name,
               curriculum: data['curriculum'] is String
                   ? data['curriculum'] as String
@@ -317,11 +325,112 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                   ),
                 ),
               ),
+              onFlag: () => _flagConnection(context, connection.id, name),
+              onRemove: () =>
+                  _removeConnection(context, userId, connection.id, name),
             );
           },
         );
       },
     );
+  }
+
+  Future<void> _flagConnection(
+    BuildContext context,
+    String connectionId,
+    String connectionName,
+  ) async {
+    final confirmed = await _confirmConnectionAction(
+      context,
+      title: 'Flag $connectionName?',
+      message:
+          'This will privately report this connection to the Classmates moderation team.',
+      actionLabel: 'Flag',
+    );
+    if (!confirmed || !context.mounted) return;
+    try {
+      await FirebaseFirestore.instance.collection('connectionReports').add({
+        'reportedUserId': connectionId,
+        'reportedBy': FirebaseAuth.instance.currentUser!.uid,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      if (!context.mounted) return;
+      showMessagePopup(context, message: 'Connection flagged for review.');
+    } catch (_) {
+      if (!context.mounted) return;
+      showMessagePopup(
+        context,
+        message: 'Could not flag this connection.',
+        type: MessageType.error,
+      );
+    }
+  }
+
+  Future<void> _removeConnection(
+    BuildContext context,
+    String userId,
+    String connectionId,
+    String connectionName,
+  ) async {
+    final confirmed = await _confirmConnectionAction(
+      context,
+      title: 'Remove $connectionName?',
+      message: 'They will no longer appear in your Connections list.',
+      actionLabel: 'Remove',
+      destructive: true,
+    );
+    if (!confirmed || !context.mounted) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('parents')
+          .doc(connectionId)
+          .delete();
+      if (!context.mounted) return;
+      showMessagePopup(context, message: 'Connection removed.');
+    } catch (_) {
+      if (!context.mounted) return;
+      showMessagePopup(
+        context,
+        message: 'Could not remove this connection.',
+        type: MessageType.error,
+      );
+    }
+  }
+
+  Future<bool> _confirmConnectionAction(
+    BuildContext context, {
+    required String title,
+    required String message,
+    required String actionLabel,
+    bool destructive = false,
+  }) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            title: Text(title),
+            content: Text(message),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: Text(
+                  actionLabel,
+                  style: TextStyle(
+                    color: destructive
+                        ? const Color(0xFFFF444B)
+                        : const Color(0xFF0DA64A),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   static DateTime _postDate(Map<String, dynamic> post) {
@@ -536,14 +645,22 @@ class _EmptyReplies extends StatelessWidget {
 
 class _HomeConnectionTile extends StatelessWidget {
   const _HomeConnectionTile({
+    required this.currentUserId,
+    required this.connectionId,
     required this.name,
     required this.curriculum,
     required this.onMessage,
+    required this.onFlag,
+    required this.onRemove,
   });
 
+  final String currentUserId;
+  final String connectionId;
   final String name;
   final String curriculum;
   final VoidCallback onMessage;
+  final VoidCallback onFlag;
+  final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
@@ -554,69 +671,203 @@ class _HomeConnectionTile extends StatelessWidget {
         .take(2)
         .map((part) => part[0].toUpperCase())
         .join();
-    return SizedBox(
-      height: 62,
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 20,
-            backgroundColor: const Color(0xFFEAF4FF),
-            child: Text(
-              initials.isEmpty ? '?' : initials,
-              style: GoogleFonts.lato(
-                color: const Color(0xFF3478C9),
-                fontSize: 15,
-                fontWeight: FontWeight.w800,
+    return _SwipeableConnection(
+      onFlag: onFlag,
+      onRemove: onRemove,
+      child: SizedBox(
+        height: 72,
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: const Color(0xFFEAF4FF),
+              child: Text(
+                initials.isEmpty ? '?' : initials,
+                style: GoogleFonts.lato(
+                  color: const Color(0xFF3478C9),
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  name,
-                  style: GoogleFonts.lato(
-                    color: const Color(0xFF171717),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    name,
+                    style: GoogleFonts.lato(
+                      color: const Color(0xFF171717),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  curriculum,
-                  style: GoogleFonts.lato(
-                    color: const Color(0xFF737373),
-                    fontSize: 11,
+                  const SizedBox(height: 2),
+                  Text(
+                    curriculum,
+                    style: GoogleFonts.lato(
+                      color: const Color(0xFF737373),
+                      fontSize: 11,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Material(
-            color: const Color(0xFFBDBDBD),
-            shape: const CircleBorder(),
-            child: InkWell(
+            _ConnectionMessageButton(
+              currentUserId: currentUserId,
+              connectionId: connectionId,
               onTap: onMessage,
-              customBorder: const CircleBorder(),
-              child: SizedBox(
-                width: 36,
-                height: 36,
-                child: Center(
-                  child: Image.asset(
-                    'assets/Messageiconfinal.png',
-                    width: 20,
-                    height: 20,
-                    fit: BoxFit.contain,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SwipeableConnection extends StatefulWidget {
+  const _SwipeableConnection({
+    required this.child,
+    required this.onFlag,
+    required this.onRemove,
+  });
+
+  final Widget child;
+  final VoidCallback onFlag;
+  final VoidCallback onRemove;
+
+  @override
+  State<_SwipeableConnection> createState() => _SwipeableConnectionState();
+}
+
+class _SwipeableConnectionState extends State<_SwipeableConnection> {
+  static const _actionsWidth = 140.0;
+  double _offset = 0;
+
+  void _run(VoidCallback action) {
+    setState(() => _offset = 0);
+    action();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRect(
+      child: Stack(
+        alignment: Alignment.centerRight,
+        children: [
+          SizedBox(
+            width: _actionsWidth,
+            height: 72,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 16, right: 4),
+              child: Row(
+                children: [
+                  _SwipeAction(
+                    icon: Icons.error_outline_rounded,
+                    label: 'Flag',
+                    backgroundColor: const Color(0xFFA9A9A9),
+                    foregroundColor: Colors.white,
+                    onTap: () => _run(widget.onFlag),
                   ),
-                ),
+                  const SizedBox(width: 12),
+                  _SwipeAction(
+                    icon: Icons.person_remove_outlined,
+                    label: 'Remove',
+                    backgroundColor: const Color(0xFFFF444B),
+                    foregroundColor: Colors.white,
+                    onTap: () => _run(widget.onRemove),
+                  ),
+                ],
               ),
+            ),
+          ),
+          GestureDetector(
+            onHorizontalDragUpdate: (details) => setState(
+              () => _offset = (_offset + details.delta.dx).clamp(
+                -_actionsWidth,
+                0,
+              ),
+            ),
+            onHorizontalDragEnd: (details) {
+              final open =
+                  _offset.abs() > _actionsWidth / 3 ||
+                  (details.primaryVelocity ?? 0) < -250;
+              setState(() => _offset = open ? -_actionsWidth : 0);
+            },
+            child: Transform.translate(
+              offset: Offset(_offset, 0),
+              child: ColoredBox(color: Colors.white, child: widget.child),
             ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ConnectionMessageButton extends StatelessWidget {
+  const _ConnectionMessageButton({
+    required this.currentUserId,
+    required this.connectionId,
+    required this.onTap,
+  });
+
+  final String currentUserId;
+  final String connectionId;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final ids = [currentUserId, connectionId]..sort();
+    final threadId = '${ids.first}_${ids.last}';
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(threadId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final unreadFor = snapshot.data?.data()?['unreadFor'];
+        final hasUnread =
+            unreadFor is List && unreadFor.contains(currentUserId);
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (hasUnread) ...[
+              Container(
+                width: 7,
+                height: 7,
+                decoration: const BoxDecoration(
+                  color: Color(0xFF0DA64A),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 7),
+            ],
+            Material(
+              color: const Color(0xFFBDBDBD),
+              shape: const CircleBorder(),
+              child: InkWell(
+                onTap: onTap,
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: 36,
+                  height: 36,
+                  child: Center(
+                    child: Image.asset(
+                      'assets/Messageiconfinal.png',
+                      width: 20,
+                      height: 20,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }
