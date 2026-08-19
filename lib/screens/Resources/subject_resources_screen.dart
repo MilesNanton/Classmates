@@ -146,15 +146,15 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
     final filters = _mode == _FilterMode.age ? _ageFilters : _stageFilters;
     final selected = _mode == _FilterMode.age ? _age : _keyStage;
     return SizedBox(
-      height: 66,
+      height: 58,
       child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
         scrollDirection: Axis.horizontal,
         itemCount: filters.length,
         separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final filter = filters[index];
-          return _SmallFilterChip(
+          return _TopFilterChip(
             label: filter,
             selected: filter == selected,
             onTap: () => setState(() {
@@ -189,6 +189,43 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _TopFilterChip extends StatelessWidget {
+  const _TopFilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ActionChip(
+      onPressed: onTap,
+      label: Text(label),
+      backgroundColor: selected ? Colors.white : const Color(0xFFF4F9F6),
+      side: BorderSide(
+        color: selected
+            ? _SubjectResourcesScreenState._green
+            : Colors.transparent,
+        width: 1.5,
+      ),
+      shape: const StadiumBorder(),
+      labelStyle: GoogleFonts.lato(
+        color: selected
+            ? _SubjectResourcesScreenState._green
+            : const Color(0xFF087936),
+        fontSize: 12,
+        fontWeight: FontWeight.w700,
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      visualDensity: VisualDensity.compact,
     );
   }
 }

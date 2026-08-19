@@ -13,6 +13,7 @@ import '../../widgets/message_widget.dart';
 import '../../widgets/post_interaction_popup.dart';
 import '../Profile/profile_screen.dart';
 import '../Resources/resources_screen.dart';
+import '../Experiences/experiences_screen.dart';
 import 'conversation_screen.dart';
 
 enum _FeedView { all, replies, connections }
@@ -69,6 +70,11 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_bottomIndex == 1) {
+      return ExperiencesScreen(
+        onTabSelected: (index) => setState(() => _bottomIndex = index),
+      );
+    }
     if (_bottomIndex == 2) {
       return ResourcesScreen(
         onTabSelected: (index) => setState(() => _bottomIndex = index),

@@ -6,6 +6,11 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email == 'milesnantonfloat@gmail.com';
+    }
+
     match /users/{userId} {
       function isOwner() {
         return request.auth != null
@@ -74,7 +79,7 @@ service cloud.firestore {
           && request.resource.data.updatedAt == request.time;
       }
 
-      allow read: if isOwner();
+      allow read: if isOwner() || isAdmin();
 
       allow create: if isOwner()
         && request.resource.data.keys().hasAll([
@@ -387,7 +392,8 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.reportedBy == request.auth.uid
         && request.resource.data.postId is string;
-      allow read, update, delete: if false;
+      allow read: if isAdmin();
+      allow update, delete: if false;
     }
 
     match /connectionReports/{reportId} {
@@ -401,7 +407,20 @@ service cloud.firestore {
         && request.resource.data.reportedUserId is string
         && request.resource.data.reportedUserId != request.auth.uid
         && request.resource.data.createdAt == request.time;
-      allow read, update, delete: if false;
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    match /experiences/{experienceId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.status == 'published');
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /resources/{resourceId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.status == 'published');
+      allow create, update, delete: if isAdmin();
     }
 
     match /{document=**} {
