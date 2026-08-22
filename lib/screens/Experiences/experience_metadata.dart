@@ -23,3 +23,19 @@ List<String> experienceMetadataValues(Map<String, dynamic> experience) {
 
 String experienceMetadata(Map<String, dynamic> experience) =>
     experienceMetadataValues(experience).join(' · ');
+
+String experienceLocationLabel(Object? hostedBy) {
+  var location = hostedBy?.toString().trim() ?? '';
+  if (location.isEmpty) return 'Location to be confirmed';
+
+  location = location
+      .replaceFirst(RegExp(r'^hosted by\s+', caseSensitive: false), '')
+      .replaceFirst(
+        RegExp(r'^located at(?:\s+the)?\s+', caseSensitive: false),
+        '',
+      )
+      .trim();
+  return location.isEmpty
+      ? 'Location to be confirmed'
+      : 'Located at the $location';
+}

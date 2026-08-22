@@ -4,14 +4,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../widgets/screen_info_popup.dart';
 import 'add_parents_screen.dart';
 import 'setting_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key, required this.onTabSelected});
 
   static const green = Color(0xFF0DA64A);
   final ValueChanged<int> onTabSelected;
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        showScreenInfoOnFirstVisit(context, ScreenInfoType.profile);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +43,10 @@ class ProfileScreen extends StatelessWidget {
         body: SafeArea(
           child: Column(
             children: [
-              const _ProfileHeader(),
+              _ProfileHeader(
+                onInfoPressed: () =>
+                    showScreenInfoPopup(context, ScreenInfoType.profile),
+              ),
               const Divider(height: 1, color: Color(0xFFEAEAEA)),
               Expanded(
                 child: user == null
@@ -50,14 +69,16 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
         ),
-        bottomNavigationBar: _ProfileNavigation(onTap: onTabSelected),
+        bottomNavigationBar: _ProfileNavigation(onTap: widget.onTabSelected),
       ),
     );
   }
 }
 
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader();
+  const _ProfileHeader({required this.onInfoPressed});
+
+  final VoidCallback onInfoPressed;
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +97,8 @@ class _ProfileHeader extends StatelessWidget {
               ),
             ),
             const Spacer(),
+            ScreenInfoButton(onPressed: onInfoPressed),
+            const SizedBox(width: 10),
             Material(
               color: Colors.white,
               shape: const CircleBorder(
@@ -471,7 +494,7 @@ class _ProfileNavigation extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _items = [
-    ('assets/HomeIcon.png', 'Home'),
+    ('assets/HomeIcon.png', 'Community'),
     ('assets/ExperienceIcon.png', 'Experiences'),
     ('assets/resorcessIcon.png', 'Resources'),
     ('assets/Profile_Active.png', 'Profile'),

@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../widgets/screen_info_popup.dart';
 import 'experience_details_screen.dart';
 import 'experience_image_widgets.dart';
+import 'experience_metadata.dart';
 
 enum _ExperienceView { all, saved }
 
@@ -21,19 +23,28 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
   static const _green = Color(0xFF08A948);
   static const _categories = [
     'All',
-    'Museums',
-    'Workshops',
-    'Nature',
-    'Arts',
-    'STEM',
-    'Sport',
-    'Culture',
+    'Museums & galleries',
+    'Workshops & making',
+    'Nature & outdoors',
+    'Places & attractions',
+    'History & heritage',
+    'Active & sport',
     'Other',
   ];
 
   final Set<String> _savedIds = {};
   String _category = 'All';
   _ExperienceView _view = _ExperienceView.all;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        showScreenInfoOnFirstVisit(context, ScreenInfoType.experiences);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +90,11 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
               ),
             ),
             const Spacer(),
+            ScreenInfoButton(
+              onPressed: () =>
+                  showScreenInfoPopup(context, ScreenInfoType.experiences),
+            ),
+            const SizedBox(width: 10),
             Container(
               width: 40,
               height: 40,
@@ -264,6 +280,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     return <String>[
       ...valuesFor(data['subject']),
       ...valuesFor(data['category']),
+      ...valuesFor(data['experienceType']),
     ].any((value) => normalize(value) == selected);
   }
 }
@@ -323,7 +340,7 @@ class _ExperienceCard extends StatelessWidget {
             if (host?.isNotEmpty == true) ...[
               const SizedBox(height: 3),
               Text(
-                host!,
+                experienceLocationLabel(host),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: GoogleFonts.lato(
@@ -435,7 +452,7 @@ class _ExperiencesNavigation extends StatelessWidget {
 
   final ValueChanged<int> onTap;
   static const _items = [
-    ('assets/HomeIcon.png', 'Home'),
+    ('assets/HomeIcon.png', 'Community'),
     ('assets/Experiences_Active.png', 'Experiences'),
     ('assets/resorcessIcon.png', 'Resources'),
     ('assets/profileIcon.png', 'Profile'),

@@ -7,10 +7,10 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../widgets/community_settings_popup.dart';
-import '../../widgets/home_pop_up.dart';
 import '../../widgets/home_post_popup.dart';
 import '../../widgets/message_widget.dart';
 import '../../widgets/post_interaction_popup.dart';
+import '../../widgets/screen_info_popup.dart';
 import '../Profile/profile_screen.dart';
 import '../Resources/resources_screen.dart';
 import '../Experiences/experiences_screen.dart';
@@ -36,35 +36,9 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
   @override
   void initState() {
     super.initState();
-    if (!widget.showGuidelines) return;
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      showGeneralDialog<void>(
-        context: context,
-        barrierDismissible: false,
-        barrierColor: Colors.black54,
-        barrierLabel: 'Community guidelines',
-        transitionDuration: const Duration(milliseconds: 320),
-        pageBuilder: (_, _, _) => const HomeGuidelinesPopup(),
-        transitionBuilder: (_, animation, _, child) {
-          final curvedAnimation = CurvedAnimation(
-            parent: animation,
-            curve: Curves.easeOutCubic,
-            reverseCurve: Curves.easeInCubic,
-          );
-          return FadeTransition(
-            opacity: curvedAnimation,
-            child: SlideTransition(
-              position: Tween<Offset>(
-                begin: const Offset(0, 1),
-                end: Offset.zero,
-              ).animate(curvedAnimation),
-              child: child,
-            ),
-          );
-        },
-      );
+      showScreenInfoOnFirstVisit(context, ScreenInfoType.community);
     });
   }
 
@@ -116,7 +90,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
         child: Row(
           children: [
             Text(
-              'Home',
+              'Community',
               style: GoogleFonts.lato(
                 color: const Color(0xFF171717),
                 fontSize: 26,
@@ -124,6 +98,11 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
               ),
             ),
             const Spacer(),
+            ScreenInfoButton(
+              onPressed: () =>
+                  showScreenInfoPopup(context, ScreenInfoType.community),
+            ),
+            const SizedBox(width: 10),
             Material(
               color: Colors.white,
               shape: CircleBorder(
@@ -494,7 +473,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   Widget _buildBottomNavigation() {
     const items = [
-      (Icons.home_rounded, 'Home'),
+      (Icons.home_rounded, 'Community'),
       (Icons.waving_hand_outlined, 'Experiences'),
       (Icons.business_center_outlined, 'Resources'),
       (Icons.person_outline_rounded, 'Profile'),

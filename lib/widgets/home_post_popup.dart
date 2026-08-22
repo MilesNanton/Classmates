@@ -8,7 +8,7 @@ Future<void> showHomePostPopup(BuildContext context) {
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    barrierColor: Colors.black54,
+    barrierColor: Colors.transparent,
     builder: (_) => const HomePostPopup(),
   );
 }

@@ -143,7 +143,7 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Hosted by ${_text('hostedBy', 'Event organiser')}',
+                      experienceLocationLabel(data['hostedBy']),
                       style: GoogleFonts.lato(
                         fontSize: 13,
                         color: const Color(0xFF777777),

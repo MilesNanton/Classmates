@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../widgets/screen_info_popup.dart';
 import 'subject_resources_screen.dart';
 
 enum _ResourcesView { bySubject, saved }
@@ -47,6 +48,16 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   _ResourcesView _view = _ResourcesView.bySubject;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        showScreenInfoOnFirstVisit(context, ScreenInfoType.resources);
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(
@@ -59,7 +70,10 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
         body: SafeArea(
           child: Column(
             children: [
-              const _ResourcesHeader(),
+              _ResourcesHeader(
+                onInfoPressed: () =>
+                    showScreenInfoPopup(context, ScreenInfoType.resources),
+              ),
               const Divider(height: 1, color: Color(0xFFEAEAEA)),
               Expanded(
                 child: _view == _ResourcesView.bySubject
@@ -203,24 +217,29 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
 }
 
 class _ResourcesHeader extends StatelessWidget {
-  const _ResourcesHeader();
+  const _ResourcesHeader({required this.onInfoPressed});
+
+  final VoidCallback onInfoPressed;
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
       height: 96,
-      child: Align(
-        alignment: Alignment.bottomLeft,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-          child: Text(
-            'Resources',
-            style: GoogleFonts.lato(
-              color: const Color(0xFF171717),
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 40, 18, 14),
+        child: Row(
+          children: [
+            Text(
+              'Resources',
+              style: GoogleFonts.lato(
+                color: const Color(0xFF171717),
+                fontSize: 26,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
+            const Spacer(),
+            ScreenInfoButton(onPressed: onInfoPressed),
+          ],
         ),
       ),
     );
@@ -274,7 +293,7 @@ class _ResourcesNavigation extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _items = [
-    ('assets/HomeIcon.png', 'Home'),
+    ('assets/HomeIcon.png', 'Community'),
     ('assets/ExperienceIcon.png', 'Experiences'),
     ('assets/Resources_Active.png', 'Resources'),
     ('assets/profileIcon.png', 'Profile'),
