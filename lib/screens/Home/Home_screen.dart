@@ -133,7 +133,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                   height: 40,
                   child: Center(
                     child: Image(
-                      image: AssetImage('assets/Messageiconfinal.png'),
+                      image: AssetImage('assets/updatedmessageicon.png'),
                       width: 22,
                       height: 22,
                       fit: BoxFit.contain,
@@ -509,7 +509,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                           width: 20,
                           height: 20,
                           fit: BoxFit.contain,
-                          color: selected ? null : const Color(0xFF7A7A7A),
+                          color: const Color(0xFF111111),
                           colorBlendMode: BlendMode.srcIn,
                         )
                       else if (index == 1)
@@ -522,7 +522,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                           width: 20,
                           height: 20,
                           fit: BoxFit.contain,
-                          color: selected ? null : const Color(0xFF7A7A7A),
+                          color: const Color(0xFF111111),
                           colorBlendMode: BlendMode.srcIn,
                         )
                       else if (index == 2)
@@ -535,7 +535,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                           width: 20,
                           height: 20,
                           fit: BoxFit.contain,
-                          color: selected ? null : const Color(0xFF7A7A7A),
+                          color: const Color(0xFF111111),
                           colorBlendMode: BlendMode.srcIn,
                         )
                       else if (index == 3)
@@ -548,7 +548,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                           width: 20,
                           height: 20,
                           fit: BoxFit.contain,
-                          color: selected ? null : const Color(0xFF7A7A7A),
+                          color: const Color(0xFF111111),
                           colorBlendMode: BlendMode.srcIn,
                         ),
                       const SizedBox(height: 3),
@@ -841,7 +841,7 @@ class _ConnectionMessageButton extends StatelessWidget {
                   height: 36,
                   child: Center(
                     child: Image.asset(
-                      'assets/Messageiconfinal.png',
+                      'assets/updatedmessageicon.png',
                       width: 20,
                       height: 20,
                       fit: BoxFit.contain,

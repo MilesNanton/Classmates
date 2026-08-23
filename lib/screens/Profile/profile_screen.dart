@@ -523,13 +523,14 @@ class _ProfileNavigation extends StatelessWidget {
                       item.$1,
                       width: 20,
                       height: 20,
-                      color: index == 3 ? null : const Color(0xFF7A7A7A),
+                      color: const Color(0xFF111111),
                       colorBlendMode: BlendMode.srcIn,
                     ),
                     const SizedBox(height: 3),
                     Text(
                       item.$2,
                       style: GoogleFonts.lato(
+                        color: const Color(0xFF111111),
                         fontSize: 12,
                         fontWeight: index == 3
                             ? FontWeight.w700

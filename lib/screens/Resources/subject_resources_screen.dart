@@ -449,19 +449,19 @@ class _SmallFilterChip extends StatelessWidget {
         side: BorderSide(
           color: selected
               ? _SubjectResourcesScreenState._green
-              : const Color(0xFFE1E7E3),
+              : const Color(0xFFE0E0E0),
         ),
       ),
       child: InkWell(
         onTap: onTap,
         customBorder: const StadiumBorder(),
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
           child: Text(
             label,
             style: GoogleFonts.lato(
-              color: selected ? Colors.white : const Color(0xFF08A948),
-              fontSize: 12,
+              color: selected ? Colors.white : const Color(0xFF181818),
+              fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
           ),

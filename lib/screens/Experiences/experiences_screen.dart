@@ -21,6 +21,8 @@ class ExperiencesScreen extends StatefulWidget {
 
 class _ExperiencesScreenState extends State<ExperiencesScreen> {
   static const _green = Color(0xFF08A948);
+  static const _categoryGreen = Color(0xFF00A246);
+  static const _categoryBackground = Color(0xFFF6FBF7);
   static const _categories = [
     'All',
     'Museums & galleries',
@@ -127,14 +129,11 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
           return ActionChip(
             onPressed: () => setState(() => _category = category),
             label: Text(category),
-            backgroundColor: selected ? Colors.white : const Color(0xFFF4F9F6),
-            side: BorderSide(
-              color: selected ? _green : Colors.transparent,
-              width: 1.5,
-            ),
+            backgroundColor: _categoryBackground,
+            side: BorderSide(color: _categoryGreen, width: selected ? 1.5 : 1),
             shape: const StadiumBorder(),
             labelStyle: GoogleFonts.lato(
-              color: selected ? _green : const Color(0xFF087936),
+              color: _categoryGreen,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -155,7 +154,6 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return const _ExperienceMessage(
-            icon: Icons.cloud_off_outlined,
             title: 'Experiences unavailable',
             subtitle: 'Please check your connection and try again.',
           );
@@ -184,9 +182,6 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
 
         if (experiences.isEmpty) {
           return _ExperienceMessage(
-            icon: _view == _ExperienceView.saved
-                ? Icons.bookmark_border_rounded
-                : Icons.explore_outlined,
             title: _view == _ExperienceView.saved
                 ? 'No saved experiences'
                 : 'No experiences found',
@@ -370,13 +365,8 @@ class _ExperienceCard extends StatelessWidget {
 }
 
 class _ExperienceMessage extends StatelessWidget {
-  const _ExperienceMessage({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
+  const _ExperienceMessage({required this.title, required this.subtitle});
 
-  final IconData icon;
   final String title;
   final String subtitle;
 
@@ -387,8 +377,6 @@ class _ExperienceMessage extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 40, color: const Color(0xFF8A8A8A)),
-          const SizedBox(height: 12),
           Text(
             title,
             style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.w800),
@@ -480,13 +468,14 @@ class _ExperiencesNavigation extends StatelessWidget {
                     item.$1,
                     width: 20,
                     height: 20,
-                    color: index == 1 ? null : const Color(0xFF7A7A7A),
+                    color: const Color(0xFF111111),
                     colorBlendMode: BlendMode.srcIn,
                   ),
                   const SizedBox(height: 3),
                   Text(
                     item.$2,
                     style: GoogleFonts.lato(
+                      color: const Color(0xFF111111),
                       fontSize: 12,
                       fontWeight: index == 1
                           ? FontWeight.w700
