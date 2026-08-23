@@ -81,9 +81,9 @@ class ScreenInfoButton extends StatelessWidget {
       onTap: onPressed,
       customBorder: const CircleBorder(),
       child: const SizedBox(
-        width: 34,
-        height: 34,
-        child: Icon(Icons.info_outline_rounded, size: 17),
+        width: 40,
+        height: 40,
+        child: Icon(Icons.info_outline_rounded, size: 20),
       ),
     ),
   );

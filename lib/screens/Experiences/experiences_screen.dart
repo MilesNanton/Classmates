@@ -130,7 +130,10 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
             onPressed: () => setState(() => _category = category),
             label: Text(category),
             backgroundColor: _categoryBackground,
-            side: BorderSide(color: _categoryGreen, width: selected ? 1.5 : 1),
+            side: BorderSide(
+              color: selected ? _categoryGreen : Colors.transparent,
+              width: 1.5,
+            ),
             shape: const StadiumBorder(),
             labelStyle: GoogleFonts.lato(
               color: _categoryGreen,
