@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../widgets/message_widget.dart';
 import '../../widgets/screen_info_popup.dart';
 import 'add_parents_screen.dart';
 import 'setting_screen.dart';
@@ -50,13 +51,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const Divider(height: 1, color: Color(0xFFEAEAEA)),
               Expanded(
                 child: user == null
-                    ? const _ProfileContent(data: <String, dynamic>{})
+                    ? const _ProfileContent(
+                        data: <String, dynamic>{},
+                        userId: null,
+                      )
                     : StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
                         stream: FirebaseFirestore.instance
                             .collection('users')
                             .doc(user.uid)
                             .snapshots(),
                         builder: (context, snapshot) => _ProfileContent(
+                          userId: user.uid,
                           data:
                               snapshot.data?.data() ??
                               <String, dynamic>{
@@ -146,9 +151,10 @@ class _ProfileHeader extends StatelessWidget {
 }
 
 class _ProfileContent extends StatelessWidget {
-  const _ProfileContent({required this.data});
+  const _ProfileContent({required this.data, required this.userId});
 
   final Map<String, dynamic> data;
+  final String? userId;
 
   String get name {
     final value = data['name'];
@@ -208,12 +214,7 @@ class _ProfileContent extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 42),
-        Text(
-          'Experiences',
-          style: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w800),
-        ),
-        const SizedBox(height: 14),
-        const _ExperiencesCard(),
+        _ExperiencesCard(userId: userId),
       ],
     );
   }
@@ -226,39 +227,226 @@ class _ProfileContent extends StatelessWidget {
 }
 
 class _ExperiencesCard extends StatelessWidget {
-  const _ExperiencesCard();
+  const _ExperiencesCard({required this.userId});
+
+  final String? userId;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 126,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 17),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF7F7F7),
-        borderRadius: BorderRadius.circular(6),
+    if (userId == null) return _buildEmptyCard();
+    return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('completedExperiences')
+          .orderBy('completedAt', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final experiences = snapshot.data?.docs ?? const [];
+        if (experiences.isEmpty) return _buildEmptyCard();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Experiences (${experiences.length})',
+              style: GoogleFonts.lato(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ...experiences.map(
+              (experience) => _CompletedExperienceRow(
+                key: ValueKey(experience.id),
+                data: experience.data(),
+                onRemove: () => experience.reference.delete(),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyCard() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Experiences',
+        style: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w800),
       ),
-      child: Column(
-        children: [
-          Text(
-            'Once you join an experience, it’ll appear here\non your profile.',
-            textAlign: TextAlign.center,
-            style: GoogleFonts.lato(fontSize: 14, height: 1.5),
+      const SizedBox(height: 14),
+      Transform.translate(
+        offset: const Offset(12, 0),
+        child: Container(
+          height: 126,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 17),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF7F7F7),
+            borderRadius: BorderRadius.circular(6),
           ),
-          const Spacer(),
-          TextButton(
-            onPressed: () {},
-            child: const Text(
-              'What are experiences?',
-              style: TextStyle(
-                fontSize: 17,
-                color: ProfileScreen.green,
-                fontWeight: FontWeight.w700,
+          child: Column(
+            children: [
+              Text(
+                'Once you join an experience, it’ll appear here\non your profile.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(fontSize: 14, height: 1.5),
+              ),
+              const Spacer(),
+              TextButton(
+                onPressed: () {},
+                child: const Text(
+                  'What are experiences?',
+                  style: TextStyle(
+                    fontSize: 17,
+                    color: ProfileScreen.green,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+class _CompletedExperienceRow extends StatefulWidget {
+  const _CompletedExperienceRow({
+    super.key,
+    required this.data,
+    required this.onRemove,
+  });
+
+  final Map<String, dynamic> data;
+  final Future<void> Function() onRemove;
+
+  @override
+  State<_CompletedExperienceRow> createState() =>
+      _CompletedExperienceRowState();
+}
+
+class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
+  double _dragOffset = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final data = widget.data;
+    final name = data['name']?.toString() ?? 'Experience';
+    final host = data['hostedBy']?.toString() ?? '';
+    final category = data['category']?.toString() ?? '';
+    return ClipRect(
+      child: Stack(
+        alignment: Alignment.centerRight,
+        children: [
+          Material(
+            color: const Color(0xFFE00014),
+            borderRadius: BorderRadius.circular(4),
+            child: InkWell(
+              onTap: _removeExperience,
+              child: const SizedBox(
+                width: 76,
+                height: 68,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.close, color: Colors.white, size: 20),
+                    SizedBox(height: 4),
+                    Text(
+                      'Remove',
+                      style: TextStyle(color: Colors.white, fontSize: 11),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            transform: Matrix4.translationValues(_dragOffset, 0, 0),
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) => setState(() {
+                _dragOffset = (_dragOffset + details.delta.dx).clamp(-84, 0);
+              }),
+              onHorizontalDragEnd: (_) => setState(() {
+                _dragOffset = _dragOffset < -35 ? -84 : 0;
+              }),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 13,
+                  horizontal: 2,
+                ),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Color(0xFFE4E4E4))),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      name,
+                      style: GoogleFonts.lato(
+                        color: ProfileScreen.green,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (host.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        host,
+                        style: GoogleFonts.lato(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                    if (category.isNotEmpty) ...[
+                      const SizedBox(height: 5),
+                      DecoratedBox(
+                        decoration: const BoxDecoration(
+                          color: Color(0xFFF1F1F1),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 5,
+                            vertical: 2,
+                          ),
+                          child: Text(
+                            category,
+                            style: GoogleFonts.lato(fontSize: 10),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _removeExperience() async {
+    try {
+      await widget.onRemove();
+      if (!mounted) return;
+      showMessagePopup(
+        context,
+        message: 'Experience removed from your profile.',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      showMessagePopup(
+        context,
+        message: 'Unable to remove the experience. Try again.',
+        type: MessageType.error,
+      );
+    }
   }
 }
 

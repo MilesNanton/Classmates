@@ -1,14 +1,16 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../widgets/message_widget.dart';
 import '../../widgets/screen_info_popup.dart';
 import 'experience_details_screen.dart';
 import 'experience_image_widgets.dart';
 import 'experience_metadata.dart';
 
-enum _ExperienceView { all, saved }
+enum _ExperienceView { today, categories, saved }
 
 class ExperiencesScreen extends StatefulWidget {
   const ExperiencesScreen({super.key, required this.onTabSelected});
@@ -25,18 +27,19 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
   static const _categoryBackground = Color(0xFFF6FBF7);
   static const _categories = [
     'All',
-    'Museums & galleries',
-    'Workshops & making',
-    'Nature & outdoors',
-    'Places & attractions',
-    'History & heritage',
-    'Active & sport',
-    'Other',
+    'Museums',
+    'Making',
+    'Nature',
+    'History',
+    'Arts',
+    'Science',
+    'Sport',
+    'Places',
   ];
 
   final Set<String> _savedIds = {};
   String _category = 'All';
-  _ExperienceView _view = _ExperienceView.all;
+  _ExperienceView _view = _ExperienceView.today;
 
   @override
   void initState() {
@@ -63,8 +66,22 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
             children: [
               _buildHeader(),
               const Divider(height: 1, color: Color(0xFFEAEAEA)),
-              _buildCategories(),
-              Expanded(child: _buildExperiences()),
+              if (_view != _ExperienceView.today) _buildCategories(),
+              Expanded(
+                child: _view == _ExperienceView.today
+                    ? Center(
+                        child: Text(
+                          'What should we do today?',
+                          textAlign: TextAlign.center,
+                          style: GoogleFonts.lato(
+                            color: const Color(0xFF171717),
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      )
+                    : _buildExperiences(),
+              ),
               _buildViewSelector(),
             ],
           ),
@@ -201,7 +218,11 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
           itemBuilder: (context, index) {
             final experience = experiences[index];
             return _ExperienceCard(
+              experienceId: experience.id,
               data: experience.data(),
+              onSave: () => setState(() => _savedIds.add(experience.id)),
+              onDone: () =>
+                  _markExperienceDone(experience.id, experience.data()),
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => ExperienceDetailsScreen(
@@ -224,6 +245,27 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     );
   }
 
+  Future<void> _markExperienceDone(
+    String experienceId,
+    Map<String, dynamic> experience,
+  ) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('completedExperiences')
+        .doc(experienceId)
+        .set({
+          'experienceId': experienceId,
+          'name': experience['name'] ?? 'Experience',
+          'hostedBy': experience['hostedBy'] ?? '',
+          'category': experience['category'] ?? experience['subject'] ?? '',
+          'subject': experience['subject'] ?? experience['category'] ?? '',
+          'completedAt': FieldValue.serverTimestamp(),
+        });
+  }
+
   Widget _buildViewSelector() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
@@ -231,9 +273,15 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _ViewChip(
-            label: 'All',
-            selected: _view == _ExperienceView.all,
-            onTap: () => setState(() => _view = _ExperienceView.all),
+            label: 'Today',
+            selected: _view == _ExperienceView.today,
+            onTap: () => setState(() => _view = _ExperienceView.today),
+          ),
+          const SizedBox(width: 12),
+          _ViewChip(
+            label: 'Categories',
+            selected: _view == _ExperienceView.categories,
+            onTap: () => setState(() => _view = _ExperienceView.categories),
           ),
           const SizedBox(width: 12),
           _ViewChip(
@@ -275,19 +323,48 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     }
 
     final selected = normalize(selectedCategory);
+    const categoryAliases = <String, Set<String>>{
+      'museum': {'museum', 'museumgallery', 'museumsgallerie'},
+      'making': {'making', 'workshopmaking', 'workshopsmaking', 'workshop'},
+      'nature': {'nature', 'natureoutdoor', 'outdoor'},
+      'history': {'history', 'historyheritage', 'heritage'},
+      'art': {'art', 'artdesign'},
+      'science': {'science', 'stem'},
+      'sport': {'sport', 'activesport', 'active'},
+      'place': {'place', 'placeattraction', 'placesattraction', 'attraction'},
+    };
+    final acceptedValues = categoryAliases[selected] ?? {selected};
     return <String>[
       ...valuesFor(data['subject']),
       ...valuesFor(data['category']),
       ...valuesFor(data['experienceType']),
-    ].any((value) => normalize(value) == selected);
+    ].any((value) => acceptedValues.contains(normalize(value)));
   }
 }
 
-class _ExperienceCard extends StatelessWidget {
-  const _ExperienceCard({required this.data, required this.onTap});
+class _ExperienceCard extends StatefulWidget {
+  const _ExperienceCard({
+    required this.experienceId,
+    required this.data,
+    required this.onTap,
+    required this.onSave,
+    required this.onDone,
+  });
 
+  final String experienceId;
   final Map<String, dynamic> data;
   final VoidCallback onTap;
+  final VoidCallback onSave;
+  final Future<void> Function() onDone;
+
+  @override
+  State<_ExperienceCard> createState() => _ExperienceCardState();
+}
+
+class _ExperienceCardState extends State<_ExperienceCard> {
+  double _dragOffset = 0;
+
+  Map<String, dynamic> get data => widget.data;
 
   @override
   Widget build(BuildContext context) {
@@ -296,75 +373,183 @@ class _ExperienceCard extends StatelessWidget {
     final host = data['hostedBy']?.toString().trim();
     final schedule = data['schedule']?.toString().trim();
 
-    return Material(
-      color: Colors.white,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(5),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(5),
-              child: SizedBox(
-                width: double.infinity,
-                height: 174,
-                child: thumbnail.isEmpty
-                    ? const ExperienceImageFallback()
-                    : Image.network(
-                        thumbnail,
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) =>
-                            const ExperienceImageFallback(),
-                        loadingBuilder: (context, child, progress) =>
-                            progress == null
-                            ? child
-                            : const ExperienceImageSkeleton(),
+    return ClipRect(
+      child: Stack(
+        alignment: Alignment.topRight,
+        children: [
+          Positioned(
+            top: 72,
+            right: 0,
+            child: Row(
+              children: [
+                _SwipeAction(
+                  label: 'Save',
+                  icon: Icons.favorite_border,
+                  color: const Color(0xFF315AAF),
+                  onTap: () {
+                    widget.onSave();
+                    setState(() => _dragOffset = 0);
+                    showMessagePopup(
+                      context,
+                      message: 'Experience saved successfully.',
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+                _SwipeAction(
+                  label: 'Done',
+                  icon: Icons.check_box_outlined,
+                  color: const Color(0xFF16AD58),
+                  onTap: () async {
+                    try {
+                      await widget.onDone();
+                      if (!mounted) return;
+                      setState(() => _dragOffset = 0);
+                      showMessagePopup(
+                        this.context,
+                        message: 'Experience added to your profile.',
+                      );
+                    } catch (_) {
+                      if (!mounted) return;
+                      showMessagePopup(
+                        this.context,
+                        message: 'Unable to add the experience. Try again.',
+                        type: MessageType.error,
+                      );
+                    }
+                  },
+                ),
+              ],
+            ),
+          ),
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            transform: Matrix4.translationValues(_dragOffset, 0, 0),
+            child: GestureDetector(
+              onHorizontalDragUpdate: (details) => setState(() {
+                _dragOffset = (_dragOffset + details.delta.dx).clamp(-150, 0);
+              }),
+              onHorizontalDragEnd: (_) => setState(() {
+                _dragOffset = _dragOffset < -55 ? -150 : 0;
+              }),
+              child: Material(
+                color: Colors.white,
+                child: InkWell(
+                  onTap: widget.onTap,
+                  borderRadius: BorderRadius.circular(5),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(5),
+                        child: SizedBox(
+                          width: double.infinity,
+                          height: 216,
+                          child: thumbnail.isEmpty
+                              ? const ExperienceImageFallback()
+                              : Image.network(
+                                  thumbnail,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (_, _, _) =>
+                                      const ExperienceImageFallback(),
+                                  loadingBuilder: (context, child, progress) =>
+                                      progress == null
+                                      ? child
+                                      : const ExperienceImageSkeleton(),
+                                ),
+                        ),
                       ),
-              ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              name?.isNotEmpty == true ? name! : 'Experience',
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lato(
-                color: const Color(0xFF171717),
-                fontSize: 16,
-                fontWeight: FontWeight.w800,
-                height: 1.2,
-              ),
-            ),
-            if (host?.isNotEmpty == true) ...[
-              const SizedBox(height: 3),
-              Text(
-                experienceLocationLabel(host),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.lato(
-                  fontSize: 12,
-                  color: const Color(0xFF333333),
+                      const SizedBox(height: 10),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          name?.isNotEmpty == true ? name! : 'Experience',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.lato(
+                            color: const Color(0xFF171717),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            height: 1.2,
+                          ),
+                        ),
+                      ),
+                      if (host?.isNotEmpty == true) ...[
+                        const SizedBox(height: 3),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            experienceLocationLabel(host),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.lato(
+                              fontSize: 12,
+                              color: const Color(0xFF333333),
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 3),
+                      const SizedBox(height: 3),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          schedule?.isNotEmpty == true
+                              ? schedule!
+                              : 'Schedule to be confirmed',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.lato(
+                            fontSize: 11,
+                            color: const Color(0xFF333333),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ],
-            const SizedBox(height: 3),
-            const SizedBox(height: 3),
-            Text(
-              schedule?.isNotEmpty == true
-                  ? schedule!
-                  : 'Schedule to be confirmed',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.lato(
-                fontSize: 11,
-                color: const Color(0xFF333333),
-              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _SwipeAction extends StatelessWidget {
+  const _SwipeAction({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+    color: color,
+    borderRadius: BorderRadius.circular(4),
+    child: InkWell(
+      onTap: onTap,
+      child: SizedBox(
+        width: 68,
+        height: 72,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, color: Colors.white, size: 25),
+            const SizedBox(height: 5),
+            Text(label, style: const TextStyle(color: Colors.white)),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _ExperienceMessage extends StatelessWidget {

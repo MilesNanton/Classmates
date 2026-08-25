@@ -117,7 +117,7 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                       borderRadius: BorderRadius.circular(6),
                       child: SizedBox(
                         width: double.infinity,
-                        height: 220,
+                        height: 216,
                         child: thumbnail.isEmpty
                             ? const ExperienceImageFallback(iconSize: 38)
                             : Image.network(

@@ -215,6 +215,22 @@ service cloud.firestore {
         allow update: if false;
         allow delete: if isOwner();
       }
+
+      match /completedExperiences/{experienceId} {
+        allow read, delete: if isOwner();
+        allow create, update: if isOwner()
+          && request.resource.data.keys().hasOnly([
+            'experienceId',
+            'name',
+            'hostedBy',
+            'category',
+            'subject',
+            'completedAt'
+          ])
+          && request.resource.data.experienceId == experienceId
+          && request.resource.data.name is string
+          && request.resource.data.completedAt == request.time;
+      }
     }
 
     match /friendCodes/{friendCode} {
