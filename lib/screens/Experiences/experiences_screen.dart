@@ -10,7 +10,7 @@ import 'experience_details_screen.dart';
 import 'experience_image_widgets.dart';
 import 'experience_metadata.dart';
 
-enum _ExperienceView { today, categories, saved }
+enum _ExperienceView { categories, saved }
 
 class ExperiencesScreen extends StatefulWidget {
   const ExperiencesScreen({super.key, required this.onTabSelected});
@@ -39,7 +39,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
 
   final Set<String> _savedIds = {};
   String _category = 'All';
-  _ExperienceView _view = _ExperienceView.today;
+  _ExperienceView _view = _ExperienceView.categories;
 
   @override
   void initState() {
@@ -66,22 +66,8 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
             children: [
               _buildHeader(),
               const Divider(height: 1, color: Color(0xFFEAEAEA)),
-              if (_view != _ExperienceView.today) _buildCategories(),
-              Expanded(
-                child: _view == _ExperienceView.today
-                    ? Center(
-                        child: Text(
-                          'What should we do today?',
-                          textAlign: TextAlign.center,
-                          style: GoogleFonts.lato(
-                            color: const Color(0xFF171717),
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      )
-                    : _buildExperiences(),
-              ),
+              _buildCategories(),
+              Expanded(child: _buildExperiences()),
               _buildViewSelector(),
             ],
           ),
@@ -220,6 +206,10 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
             return _ExperienceCard(
               experienceId: experience.id,
               data: experience.data(),
+              onMetadataTap: () {
+                final tab = _categoryTabFor(experience.data());
+                if (tab != null) setState(() => _category = tab);
+              },
               onSave: () => setState(() => _savedIds.add(experience.id)),
               onDone: () =>
                   _markExperienceDone(experience.id, experience.data()),
@@ -272,12 +262,6 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _ViewChip(
-            label: 'Today',
-            selected: _view == _ExperienceView.today,
-            onTap: () => setState(() => _view = _ExperienceView.today),
-          ),
-          const SizedBox(width: 12),
           _ViewChip(
             label: 'Categories',
             selected: _view == _ExperienceView.categories,
@@ -340,6 +324,17 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
       ...valuesFor(data['experienceType']),
     ].any((value) => acceptedValues.contains(normalize(value)));
   }
+
+  static String? _categoryTabFor(Map<String, dynamic> data) {
+    final subjectOnly = <String, dynamic>{'subject': data['subject']};
+    for (final category in _categories.skip(1)) {
+      if (_matchesCategory(subjectOnly, category)) return category;
+    }
+    for (final category in _categories.skip(1)) {
+      if (_matchesCategory(data, category)) return category;
+    }
+    return null;
+  }
 }
 
 class _ExperienceCard extends StatefulWidget {
@@ -347,6 +342,7 @@ class _ExperienceCard extends StatefulWidget {
     required this.experienceId,
     required this.data,
     required this.onTap,
+    required this.onMetadataTap,
     required this.onSave,
     required this.onDone,
   });
@@ -354,6 +350,7 @@ class _ExperienceCard extends StatefulWidget {
   final String experienceId;
   final Map<String, dynamic> data;
   final VoidCallback onTap;
+  final VoidCallback onMetadataTap;
   final VoidCallback onSave;
   final Future<void> Function() onDone;
 
@@ -372,6 +369,7 @@ class _ExperienceCardState extends State<_ExperienceCard> {
     final name = data['name']?.toString().trim();
     final host = data['hostedBy']?.toString().trim();
     final schedule = data['schedule']?.toString().trim();
+    final metadata = experienceMetadata(data);
 
     return ClipRect(
       child: Stack(
@@ -475,7 +473,7 @@ class _ExperienceCardState extends State<_ExperienceCard> {
                         ),
                       ),
                       if (host?.isNotEmpty == true) ...[
-                        const SizedBox(height: 3),
+                        const SizedBox(height: 6),
                         Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 4),
                           child: Text(
@@ -489,22 +487,46 @@ class _ExperienceCardState extends State<_ExperienceCard> {
                           ),
                         ),
                       ],
-                      const SizedBox(height: 3),
-                      const SizedBox(height: 3),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                        child: Text(
-                          schedule?.isNotEmpty == true
-                              ? schedule!
-                              : 'Schedule to be confirmed',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.lato(
-                            fontSize: 11,
-                            color: const Color(0xFF333333),
+                      if (metadata.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: InkWell(
+                            onTap: widget.onMetadataTap,
+                            borderRadius: BorderRadius.circular(4),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 1),
+                              child: Text(
+                                metadata,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: GoogleFonts.lato(
+                                  fontSize: 14,
+                                  color: const Color(0xFF171717),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                      ],
+                      if (metadata.isEmpty) ...[
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            schedule?.isNotEmpty == true
+                                ? schedule!
+                                : 'Schedule to be confirmed',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.lato(
+                              fontSize: 11,
+                              color: const Color(0xFF333333),
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -567,15 +589,21 @@ class _ExperienceMessage extends StatelessWidget {
         children: [
           Text(
             title,
-            style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.w800),
+            textAlign: TextAlign.center,
+            style: GoogleFonts.lato(
+              color: const Color(0xFF171717),
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+            ),
           ),
-          const SizedBox(height: 5),
+          const SizedBox(height: 12),
           Text(
             subtitle,
             textAlign: TextAlign.center,
             style: GoogleFonts.lato(
-              fontSize: 13,
-              color: const Color(0xFF777777),
+              fontSize: 16,
+              height: 1.35,
+              color: const Color(0xFF333333),
             ),
           ),
         ],
@@ -628,8 +656,8 @@ class _ExperiencesNavigation extends StatelessWidget {
 
   final ValueChanged<int> onTap;
   static const _items = [
-    ('assets/HomeIcon.png', 'Community'),
-    ('assets/Experiences_Active.png', 'Experiences'),
+    ('assets/HomeIcon.png', 'Home'),
+    ('assets/experienceIconSelected.png', 'Experiences'),
     ('assets/resorcessIcon.png', 'Resources'),
     ('assets/profileIcon.png', 'Profile'),
   ];

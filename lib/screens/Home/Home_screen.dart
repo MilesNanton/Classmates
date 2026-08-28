@@ -430,7 +430,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
         child: Row(
           children: [
             Text(
-              'Community',
+              'Home',
               style: GoogleFonts.lato(
                 color: const Color(0xFF171717),
                 fontSize: 26,
@@ -1020,13 +1020,15 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
   }
 
   Widget _buildFeedFilter() {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+    return Container(
+      width: double.infinity,
+      color: Colors.white,
+      padding: const EdgeInsets.only(top: 28, bottom: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           _FilterChip(
-            label: 'All',
+            label: 'Community',
             selected: _feedView == _FeedView.all,
             onTap: () => setState(() => _feedView = _FeedView.all),
           ),
@@ -1049,7 +1051,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   Widget _buildBottomNavigation() {
     const items = [
-      (Icons.home_rounded, 'Community'),
+      (Icons.home_rounded, 'Home'),
       (Icons.waving_hand_outlined, 'Experiences'),
       (Icons.business_center_outlined, 'Resources'),
       (Icons.person_outline_rounded, 'Profile'),
@@ -1092,8 +1094,8 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                         Image(
                           image: AssetImage(
                             selected
-                                ? 'assets/Experiences_Active.png'
-                                : 'assets/ExperienceIcon.png',
+                                ? 'assets/experienceIconSelected.png'
+                                : 'assets/experienceIconUpdated.png',
                           ),
                           width: 20,
                           height: 20,

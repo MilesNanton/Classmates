@@ -293,8 +293,8 @@ class _ResourcesNavigation extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _items = [
-    ('assets/HomeIcon.png', 'Community'),
-    ('assets/ExperienceIcon.png', 'Experiences'),
+    ('assets/HomeIcon.png', 'Home'),
+    ('assets/experienceIconUpdated.png', 'Experiences'),
     ('assets/Resources_Active.png', 'Resources'),
     ('assets/profileIcon.png', 'Profile'),
   ];

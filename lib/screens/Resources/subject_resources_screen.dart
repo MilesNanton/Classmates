@@ -485,19 +485,19 @@ class _NoSubjectResources extends StatelessWidget {
             Text(
               'No resources yet',
               style: GoogleFonts.lato(
-                color: const Color(0xFF181818),
-                fontSize: 18,
+                color: const Color(0xFF171717),
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 12),
             Text(
               'We’re adding resources to this subject. Check back soon for helpful activities, guides and learning materials.',
               textAlign: TextAlign.center,
               style: GoogleFonts.lato(
                 color: const Color(0xFF333333),
-                fontSize: 14,
-                height: 1.4,
+                fontSize: 16,
+                height: 1.35,
               ),
             ),
           ],

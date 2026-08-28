@@ -35,7 +35,5 @@ String experienceLocationLabel(Object? hostedBy) {
         '',
       )
       .trim();
-  return location.isEmpty
-      ? 'Location to be confirmed'
-      : 'Located at the $location';
+  return location.isEmpty ? 'Location to be confirmed' : 'Location: $location';
 }

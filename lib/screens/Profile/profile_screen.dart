@@ -250,7 +250,7 @@ class _ExperiencesCard extends StatelessWidget {
             Text(
               'Experiences (${experiences.length})',
               style: GoogleFonts.lato(
-                fontSize: 14,
+                fontSize: 18,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -273,39 +273,22 @@ class _ExperiencesCard extends StatelessWidget {
     children: [
       Text(
         'Experiences',
-        style: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w800),
+        style: GoogleFonts.lato(fontSize: 18, fontWeight: FontWeight.w800),
       ),
       const SizedBox(height: 14),
-      Transform.translate(
-        offset: const Offset(12, 0),
-        child: Container(
-          height: 126,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 17),
-          decoration: BoxDecoration(
-            color: const Color(0xFFF7F7F7),
-            borderRadius: BorderRadius.circular(6),
-          ),
-          child: Column(
-            children: [
-              Text(
-                'Once you join an experience, it’ll appear here\non your profile.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.lato(fontSize: 14, height: 1.5),
-              ),
-              const Spacer(),
-              TextButton(
-                onPressed: () {},
-                child: const Text(
-                  'What are experiences?',
-                  style: TextStyle(
-                    fontSize: 17,
-                    color: ProfileScreen.green,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
-          ),
+      Container(
+        width: double.infinity,
+        height: 96,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 17),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF7F7F7),
+          borderRadius: BorderRadius.circular(6),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          'Once you join an experience, it’ll appear here\non your profile.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.lato(fontSize: 14, height: 1.5),
         ),
       ),
     ],
@@ -335,7 +318,10 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
     final data = widget.data;
     final name = data['name']?.toString() ?? 'Experience';
     final host = data['hostedBy']?.toString() ?? '';
-    final category = data['category']?.toString() ?? '';
+    final subject = data['subject']?.toString().trim() ?? '';
+    final category = subject.isNotEmpty
+        ? subject
+        : data['category']?.toString().trim() ?? '';
     return ClipRect(
       child: Stack(
         alignment: Alignment.centerRight,
@@ -682,8 +668,8 @@ class _ProfileNavigation extends StatelessWidget {
   final ValueChanged<int> onTap;
 
   static const _items = [
-    ('assets/HomeIcon.png', 'Community'),
-    ('assets/ExperienceIcon.png', 'Experiences'),
+    ('assets/HomeIcon.png', 'Home'),
+    ('assets/experienceIconUpdated.png', 'Experiences'),
     ('assets/resorcessIcon.png', 'Resources'),
     ('assets/Profile_Active.png', 'Profile'),
   ];
