@@ -187,6 +187,49 @@ service cloud.firestore {
         && request.resource.data.locationSharingEnabled is bool
         && request.resource.data.updatedAt == request.time;
 
+      // Community settings can update child ages and location discovery.
+      allow update: if isOwner()
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'childCount',
+            'childAges',
+            'locationSharingEnabled',
+            'discoveryRadius',
+            'updatedAt'
+          ])
+        && request.resource.data.childCount is int
+        && request.resource.data.childCount >= 1
+        && request.resource.data.childCount <= 4
+        && hasValidChildAges()
+        && request.resource.data.locationSharingEnabled is bool
+        && request.resource.data.discoveryRadius == 'Anywhere in the UK'
+        && request.resource.data.updatedAt == request.time;
+
+      // Profile settings can update the avatar colour and homeschool style.
+      allow update: if isOwner()
+        && request.resource.data.diff(resource.data)
+          .affectedKeys()
+          .hasOnly([
+            'avatarColorIndex',
+            'homeschoolApproach',
+            'updatedAt'
+          ])
+        && request.resource.data.avatarColorIndex is int
+        && request.resource.data.avatarColorIndex >= 0
+        && request.resource.data.avatarColorIndex <= 3
+        && request.resource.data.homeschoolApproach is string
+        && request.resource.data.homeschoolApproach in [
+          'Traditional',
+          'Charlotte Mason',
+          'Montessori',
+          'Classical Education',
+          'Unschooling',
+          'Unit Studies',
+          'Other'
+        ]
+        && request.resource.data.updatedAt == request.time;
+
       allow delete: if isOwner();
 
       match /parents/{parentId} {

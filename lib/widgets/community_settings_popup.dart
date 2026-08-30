@@ -5,15 +5,14 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'message_widget.dart';
 
-Future<void> showCommunitySettingsPopup(BuildContext context) {
-  return showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: Colors.transparent,
-    barrierColor: Colors.black54,
-    builder: (_) => const CommunitySettingsPopup(),
-  );
-}
+Future<void> showCommunitySettingsPopup(BuildContext context) =>
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black45,
+      builder: (_) => const CommunitySettingsPopup(),
+    );
 
 class CommunitySettingsPopup extends StatefulWidget {
   const CommunitySettingsPopup({super.key});
@@ -23,30 +22,10 @@ class CommunitySettingsPopup extends StatefulWidget {
 }
 
 class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
-  static const _green = Color(0xFF0DA64A);
-  static const _approaches = [
-    'Traditional',
-    'Charlotte Mason',
-    'Montessori',
-    'Classical Education',
-    'Unschooling',
-    'Unit Studies',
-    'Other',
-  ];
-  static const _subjects = [
-    'English',
-    'Mathematics',
-    'Science',
-    'History',
-    'Geography',
-    'Music',
-    'Art & Design',
-  ];
-
-  int _tabIndex = 0;
-  String? _selectedApproach;
-  final Set<String> _selectedSubjects = {};
-  bool _locationSharingEnabled = false;
+  static const green = Color(0xFF00AD4D);
+  static const blue = Color(0xFF315DB5);
+  int _childCount = 1;
+  final List<int> _childAges = [9, 9, 9, 9];
   bool _isLoading = true;
   bool _isSaving = false;
 
@@ -62,24 +41,26 @@ class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
       if (mounted) setState(() => _isLoading = false);
       return;
     }
-
     try {
       final profile = await FirebaseFirestore.instance
           .collection('users')
           .doc(user.uid)
           .get();
-      final data = profile.data();
+      final saved = profile.data()?['childAges'];
       if (!mounted) return;
       setState(() {
-        _selectedApproach = data?['homeschoolApproach'] as String?;
-        _selectedSubjects
-          ..clear()
-          ..addAll(
-            data?['subjects'] is Iterable
-                ? (data!['subjects'] as Iterable).whereType<String>()
-                : const <String>[],
-          );
-        _locationSharingEnabled = data?['locationSharingEnabled'] == true;
+        if (saved is Iterable) {
+          final ages = saved
+              .whereType<num>()
+              .map((age) => age.toInt())
+              .toList();
+          if (ages.isNotEmpty) {
+            _childCount = ages.length.clamp(1, 4);
+            for (var i = 0; i < _childCount; i++) {
+              _childAges[i] = ages[i].clamp(2, 18);
+            }
+          }
+        }
         _isLoading = false;
       });
     } on FirebaseException {
@@ -87,26 +68,35 @@ class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
     }
   }
 
-  Future<void> _save(Map<String, Object> values) async {
+  Future<void> _updateSettings() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null || _isSaving) return;
-
+    final overlay = Overlay.of(context, rootOverlay: true);
     setState(() => _isSaving = true);
     try {
       await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        ...values,
+        'childCount': _childCount,
+        'childAges': _childAges.take(_childCount).toList(),
+        'locationSharingEnabled': true,
+        'discoveryRadius': 'Anywhere in the UK',
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
+      if (mounted) {
+        Navigator.of(context).pop();
+        showMessagePopupInOverlay(
+          overlay,
+          message: 'Community settings updated successfully.',
+        );
+      }
     } on FirebaseException {
       if (mounted) {
+        setState(() => _isSaving = false);
         showMessagePopup(
           context,
           message: 'Could not update community settings.',
           type: MessageType.error,
         );
       }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
   }
 
@@ -114,293 +104,258 @@ class _CommunitySettingsPopupState extends State<CommunitySettingsPopup> {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(22)),
       clipBehavior: Clip.antiAlias,
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: MediaQuery.sizeOf(context).height * 0.78,
+          height: MediaQuery.sizeOf(context).height * 0.73,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 18),
-            child: Column(
-              children: [
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: InkWell(
-                    onTap: () => Navigator.of(context).pop(),
-                    borderRadius: BorderRadius.circular(20),
-                    child: Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: const Color(0xFFE5E5E5)),
+            padding: const EdgeInsets.fromLTRB(30, 16, 30, 18),
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      color: green,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Column(
+                    children: [
+                      Expanded(
+                        child: ListView(
+                          padding: EdgeInsets.zero,
+                          children: [
+                            Align(
+                              alignment: Alignment.centerRight,
+                              child: InkWell(
+                                onTap: () => Navigator.of(context).pop(),
+                                customBorder: const CircleBorder(),
+                                child: Container(
+                                  width: 36,
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color(0xFFDDDDDD),
+                                    ),
+                                  ),
+                                  child: const Icon(Icons.close, size: 19),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              'Community settings',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.lato(
+                                fontSize: 20,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Your child’s age and your location help us connect '
+                              'you with the right community and show you relevant '
+                              'posts and conversations nearby.',
+                              textAlign: TextAlign.center,
+                              style: GoogleFonts.lato(
+                                fontSize: 13,
+                                height: 1.55,
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(4, (index) {
+                                final count = index + 1;
+                                final selected = count == _childCount;
+                                return Padding(
+                                  padding: EdgeInsets.only(
+                                    right: index == 3 ? 0 : 10,
+                                  ),
+                                  child: InkWell(
+                                    onTap: () =>
+                                        setState(() => _childCount = count),
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: Container(
+                                      width: 54,
+                                      height: 56,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: selected ? blue : Colors.white,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: selected
+                                              ? blue
+                                              : const Color(0xFFD7D7D7),
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '$count',
+                                        style: GoogleFonts.lato(
+                                          color: selected
+                                              ? Colors.white
+                                              : const Color(0xFF777777),
+                                          fontSize: 19,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                            const SizedBox(height: 20),
+                            ...List.generate(
+                              _childCount,
+                              (index) => Padding(
+                                padding: const EdgeInsets.only(bottom: 10),
+                                child: _ChildAgeField(
+                                  index: index,
+                                  age: _childAges[index],
+                                  onChanged: (age) =>
+                                      setState(() => _childAges[index] = age),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 54),
+                            const _SettingSummary(
+                              title: 'Current location',
+                              value: 'Using your current location',
+                            ),
+                            const SizedBox(height: 44),
+                            const _SettingSummary(
+                              title: 'Discovery radius within',
+                              value: 'Anywhere in the UK',
+                            ),
+                            const SizedBox(height: 28),
+                          ],
+                        ),
                       ),
-                      child: const Icon(Icons.close, size: 18),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Community settings',
-                  style: GoogleFonts.lato(
-                    color: const Color(0xFF171717),
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Text(
-                  'Your community is built around these preferences. Update '
-                  'them anytime to keep your feed and experiences relevant.',
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.lato(
-                    color: const Color(0xFF737373),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w400,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: _isLoading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                            color: _green,
-                            strokeWidth: 2,
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 43,
+                        child: ElevatedButton(
+                          onPressed: _isSaving ? null : _updateSettings,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: green,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: green.withValues(
+                              alpha: 0.6,
+                            ),
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(9),
+                            ),
                           ),
-                        )
-                      : _buildSelectedTab(),
-                ),
-                if (_isSaving)
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 8),
-                    child: LinearProgressIndicator(color: _green, minHeight: 2),
+                          child: _isSaving
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  'Update',
+                                  style: GoogleFonts.lato(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ],
                   ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _SettingsTab(
-                      label: 'Homeschool style',
-                      selected: _tabIndex == 0,
-                      onTap: () => setState(() => _tabIndex = 0),
-                    ),
-                    const SizedBox(width: 10),
-                    _SettingsTab(
-                      label: 'Subjects',
-                      selected: _tabIndex == 1,
-                      onTap: () => setState(() => _tabIndex = 1),
-                    ),
-                    const SizedBox(width: 10),
-                    _SettingsTab(
-                      label: 'Location',
-                      selected: _tabIndex == 2,
-                      onTap: () => setState(() => _tabIndex = 2),
-                    ),
-                  ],
-                ),
-              ],
-            ),
           ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSelectedTab() {
-    if (_tabIndex == 1) {
-      return ListView.separated(
-        itemCount: _subjects.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (context, index) {
-          final subject = _subjects[index];
-          final selected = _selectedSubjects.contains(subject);
-          return _SettingsOption(
-            label: subject,
-            selected: selected,
-            onTap: () {
-              setState(() {
-                selected
-                    ? _selectedSubjects.remove(subject)
-                    : _selectedSubjects.add(subject);
-              });
-              _save({'subjects': _selectedSubjects.toList()});
-            },
-          );
-        },
-      );
-    }
-
-    if (_tabIndex == 2) {
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          InkWell(
-            onTap: () {
-              setState(() => _locationSharingEnabled = true);
-              _save({'locationSharingEnabled': true});
-            },
-            borderRadius: BorderRadius.circular(40),
-            child: Container(
-              width: 66,
-              height: 66,
-              decoration: const BoxDecoration(
-                color: Color(0xFFDCE8FF),
-                shape: BoxShape.circle,
-              ),
-              alignment: Alignment.center,
-              child: Container(
-                width: 29,
-                height: 29,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF4285F4),
-                  shape: BoxShape.circle,
-                  border: Border.fromBorderSide(
-                    BorderSide(color: Colors.white, width: 4),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(height: 38),
-          Text(
-            'Current location',
-            style: GoogleFonts.lato(
-              color: const Color(0xFF171717),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 10),
-          InkWell(
-            onTap: () {
-              final enabled = !_locationSharingEnabled;
-              setState(() => _locationSharingEnabled = enabled);
-              _save({'locationSharingEnabled': enabled});
-            },
-            child: Text(
-              _locationSharingEnabled
-                  ? 'Using your current location'
-                  : 'Location sharing is off',
-              style: GoogleFonts.lato(
-                color: _locationSharingEnabled
-                    ? _green
-                    : const Color(0xFF737373),
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-          const SizedBox(height: 44),
-          Text(
-            'Discovery radius within',
-            style: GoogleFonts.lato(
-              color: const Color(0xFF171717),
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            'Anywhere in the UK',
-            style: GoogleFonts.lato(
-              color: _green,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      );
-    }
-
-    return ListView.separated(
-      itemCount: _approaches.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (context, index) {
-        final approach = _approaches[index];
-        return _SettingsOption(
-          label: approach,
-          selected: approach == _selectedApproach,
-          onTap: () {
-            setState(() => _selectedApproach = approach);
-            _save({'homeschoolApproach': approach});
-          },
-        );
-      },
-    );
-  }
-}
-
-class _SettingsOption extends StatelessWidget {
-  const _SettingsOption({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 47,
-      child: OutlinedButton(
-        onPressed: onTap,
-        style: OutlinedButton.styleFrom(
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 14),
-          backgroundColor: selected ? const Color(0xFF3159AA) : Colors.white,
-          foregroundColor: selected ? Colors.white : const Color(0xFF737373),
-          side: BorderSide(
-            color: selected ? const Color(0xFF3159AA) : const Color(0xFFD4D4D4),
-          ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.lato(fontSize: 18, fontWeight: FontWeight.w400),
         ),
       ),
     );
   }
 }
 
-class _SettingsTab extends StatelessWidget {
-  const _SettingsTab({
-    required this.label,
-    required this.selected,
-    required this.onTap,
+class _ChildAgeField extends StatelessWidget {
+  const _ChildAgeField({
+    required this.index,
+    required this.age,
+    required this.onChanged,
   });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
+  final int index;
+  final int age;
+  final ValueChanged<int> onChanged;
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(22),
+    return Center(
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 9),
+        width: 284,
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF0DA64A) : Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          border: Border.all(
-            color: selected ? const Color(0xFF0DA64A) : const Color(0xFFD9D9D9),
-          ),
+          border: Border.all(color: const Color(0xFFD7D7D7)),
+          borderRadius: BorderRadius.circular(10),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.lato(
-            color: selected ? Colors.white : const Color(0xFF171717),
-            fontSize: 14,
-            fontWeight: FontWeight.w900,
-          ),
+        child: Row(
+          children: [
+            Text(
+              'Child ${index + 1}',
+              style: GoogleFonts.lato(
+                fontSize: 16,
+                color: const Color(0xFF505050),
+              ),
+            ),
+            const Spacer(),
+            DropdownButtonHideUnderline(
+              child: DropdownButton<int>(
+                value: age,
+                icon: const SizedBox.shrink(),
+                borderRadius: BorderRadius.circular(10),
+                style: GoogleFonts.lato(
+                  fontSize: 14,
+                  color: _CommunitySettingsPopupState.green,
+                  fontWeight: FontWeight.w700,
+                ),
+                items: List.generate(
+                  17,
+                  (index) => DropdownMenuItem(
+                    value: index + 2,
+                    child: Text('${index + 2} years'),
+                  ),
+                ),
+                onChanged: (value) {
+                  if (value != null) onChanged(value);
+                },
+              ),
+            ),
+          ],
         ),
       ),
+    );
+  }
+}
+
+class _SettingSummary extends StatelessWidget {
+  const _SettingSummary({required this.title, required this.value});
+  final String title;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Text(title, style: GoogleFonts.lato(fontSize: 15)),
+        const SizedBox(height: 12),
+        Text(
+          value,
+          style: GoogleFonts.lato(
+            color: _CommunitySettingsPopupState.green,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
     );
   }
 }

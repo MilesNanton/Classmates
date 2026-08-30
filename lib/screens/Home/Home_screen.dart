@@ -652,8 +652,8 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                                 topic,
                                 style: GoogleFonts.lato(
                                   color: const Color(0xFF171717),
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
                                 ),
                               ),
                             ),

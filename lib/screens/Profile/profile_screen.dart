@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../widgets/message_widget.dart';
+import '../../widgets/profile_settings_popup.dart';
 import '../../widgets/screen_info_popup.dart';
 import 'add_parents_screen.dart';
 import 'setting_screen.dart';
@@ -170,6 +171,28 @@ class _ProfileContent extends StatelessWidget {
         : 'Custom curriculum';
   }
 
+  Color get avatarColor {
+    const colors = [
+      Color(0xFFEDF4FF),
+      Color(0xFFE9FBF2),
+      Color(0xFFF8EAFB),
+      Color(0xFFFFF3E9),
+    ];
+    final index = (data['avatarColorIndex'] as num?)?.toInt() ?? 0;
+    return colors[index.clamp(0, colors.length - 1)];
+  }
+
+  Color get avatarTextColor {
+    const colors = [
+      Color(0xFF317ABE),
+      Color(0xFF00AD35),
+      Color(0xFF8025C7),
+      Color(0xFFEB6D00),
+    ];
+    final index = (data['avatarColorIndex'] as num?)?.toInt() ?? 0;
+    return colors[index.clamp(0, colors.length - 1)];
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView(
@@ -179,11 +202,11 @@ class _ProfileContent extends StatelessWidget {
           children: [
             CircleAvatar(
               radius: 25,
-              backgroundColor: const Color(0xFFEDF4FF),
+              backgroundColor: avatarColor,
               child: Text(
                 _initials(name),
                 style: GoogleFonts.lato(
-                  color: const Color(0xFF317ABE),
+                  color: avatarTextColor,
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
                 ),
@@ -210,6 +233,27 @@ class _ProfileContent extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+            const SizedBox(width: 12),
+            InkWell(
+              onTap: userId == null
+                  ? null
+                  : () => showProfileSettingsPopup(
+                      context,
+                      userId: userId!,
+                      data: data,
+                    ),
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 32,
+                height: 32,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: const Color(0xFFE1E1E1)),
+                ),
+                child: Image.asset('assets/editIcon.png'),
+              ),
             ),
           ],
         ),
@@ -272,23 +316,23 @@ class _ExperiencesCard extends StatelessWidget {
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
-        'Experiences',
+        'Experiences (0)',
         style: GoogleFonts.lato(fontSize: 18, fontWeight: FontWeight.w800),
       ),
       const SizedBox(height: 14),
       Container(
         width: double.infinity,
-        height: 96,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 17),
+        height: 126,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
         decoration: BoxDecoration(
           color: const Color(0xFFF7F7F7),
           borderRadius: BorderRadius.circular(6),
         ),
         alignment: Alignment.center,
         child: Text(
-          'Once you join an experience, it’ll appear here\non your profile.',
+          'Swipe left on an experience and tap Done when\nyou’ve explored it. It’ll then be added to your profile.',
           textAlign: TextAlign.center,
-          style: GoogleFonts.lato(fontSize: 14, height: 1.5),
+          style: GoogleFonts.lato(fontSize: 13, height: 1.5),
         ),
       ),
     ],
