@@ -374,6 +374,11 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
     final category = subject.isNotEmpty
         ? subject
         : data['category']?.toString().trim() ?? '';
+    final hasNote =
+        data['note'] is String && (data['note'] as String).trim().isNotEmpty;
+    final hasPhoto =
+        data['photoPath'] is String &&
+        (data['photoPath'] as String).trim().isNotEmpty;
     return ClipRect(
       child: Stack(
         alignment: Alignment.centerRight,
@@ -467,13 +472,11 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
                     ),
                     const SizedBox(width: 10),
                     _ExperienceAttachmentButton(
-                      hasNote:
-                          data['note'] is String &&
-                          (data['note'] as String).trim().isNotEmpty,
-                      hasPhoto:
-                          data['photoPath'] is String &&
-                          (data['photoPath'] as String).trim().isNotEmpty,
-                      onTap: _showDocumentationOptions,
+                      hasNote: hasNote,
+                      hasPhoto: hasPhoto,
+                      onTap: hasNote || hasPhoto
+                          ? () => _showDocumentation(pickPhotoOnOpen: false)
+                          : _showDocumentationOptions,
                     ),
                   ],
                 ),
@@ -623,10 +626,10 @@ class _ExperienceAttachmentButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (hasNote)
-                const _DocumentationIndicator(icon: Icons.note_outlined),
+                const _DocumentationIndicator.asset('assets/noteicon.png'),
               if (hasNote && hasPhoto) const SizedBox(width: 5),
               if (hasPhoto)
-                const _DocumentationIndicator(icon: Icons.image_outlined),
+                const _DocumentationIndicator.asset('assets/pictureIocn.png'),
             ],
           ),
         ),
@@ -636,18 +639,28 @@ class _ExperienceAttachmentButton extends StatelessWidget {
 }
 
 class _DocumentationIndicator extends StatelessWidget {
-  const _DocumentationIndicator({required this.icon});
+  const _DocumentationIndicator({required this.icon}) : assetPath = null;
 
-  final IconData icon;
+  const _DocumentationIndicator.asset(this.assetPath) : icon = null;
+
+  final IconData? icon;
+  final String? assetPath;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 32,
       height: 32,
-      color: const Color(0xFFF1F1F1),
-      alignment: Alignment.center,
-      child: Icon(icon, color: Colors.black, size: 19),
+      child: Center(
+        child: assetPath != null
+            ? Image.asset(
+                assetPath!,
+                width: 19,
+                height: 19,
+                fit: BoxFit.contain,
+              )
+            : Icon(icon, color: Colors.black, size: 19),
+      ),
     );
   }
 }
@@ -881,7 +894,12 @@ class _ExperienceDocumentationSheetState
             ] else
               OutlinedButton.icon(
                 onPressed: _pickPhoto,
-                icon: const Icon(Icons.add_photo_alternate_outlined),
+                icon: Image.asset(
+                  'assets/pictureIocn.png',
+                  width: 16,
+                  height: 16,
+                  fit: BoxFit.contain,
+                ),
                 label: const Text('Add one photo'),
               ),
             const SizedBox(height: 14),
