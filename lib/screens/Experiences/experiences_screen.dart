@@ -466,7 +466,7 @@ class _ExperienceCardState extends State<_ExperienceCard> {
                           overflow: TextOverflow.ellipsis,
                           style: GoogleFonts.lato(
                             color: const Color(0xFF171717),
-                            fontSize: 16,
+                            fontSize: 20,
                             fontWeight: FontWeight.w800,
                             height: 1.2,
                           ),

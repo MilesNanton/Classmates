@@ -261,7 +261,7 @@ service cloud.firestore {
 
       match /completedExperiences/{experienceId} {
         allow read, delete: if isOwner();
-        allow create, update: if isOwner()
+        allow create: if isOwner()
           && request.resource.data.keys().hasOnly([
             'experienceId',
             'name',
@@ -273,6 +273,18 @@ service cloud.firestore {
           && request.resource.data.experienceId == experienceId
           && request.resource.data.name is string
           && request.resource.data.completedAt == request.time;
+
+        allow update: if isOwner()
+          && request.resource.data.diff(resource.data)
+            .affectedKeys()
+            .hasOnly(['note', 'photoPath', 'documentationUpdatedAt'])
+          && (!('note' in request.resource.data)
+            || (request.resource.data.note is string
+              && request.resource.data.note.size() <= 1000))
+          && (!('photoPath' in request.resource.data)
+            || (request.resource.data.photoPath is string
+              && request.resource.data.photoPath.size() <= 500))
+          && request.resource.data.documentationUpdatedAt == request.time;
       }
     }
 

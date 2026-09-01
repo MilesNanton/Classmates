@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../widgets/message_widget.dart';
 
@@ -110,7 +111,7 @@ class _SettingsList extends StatelessWidget {
         _SettingsTile(
           iconAsset: 'assets/settingIcons/invite_others.png',
           label: 'Invite others',
-          onTap: () => _showUnavailable(context, 'Invite others'),
+          onTap: () => _inviteOthers(context),
         ),
         const _SectionTitle('Account'),
         _SettingsTile(
@@ -129,16 +130,6 @@ class _SettingsList extends StatelessWidget {
           onTap: () => _showManageSubscription(context),
         ),
         const _SectionTitle('Notifications'),
-        _SettingsTile(
-          iconAsset: 'assets/settingIcons/Reminders.png',
-          label: 'Reminders',
-          onTap: () => _showUnavailable(context, 'Reminders'),
-        ),
-        _SettingsTile(
-          iconAsset: 'assets/settingIcons/reminder_time.png',
-          label: 'Reminder time',
-          onTap: () => _showUnavailable(context, 'Reminder time'),
-        ),
         const _SectionTitle('Danger'),
         _SettingsTile(
           iconAsset: 'assets/settingIcons/delete.png',
@@ -168,6 +159,22 @@ class _SettingsList extends StatelessWidget {
 
   static void _showUnavailable(BuildContext context, String feature) {
     showMessagePopup(context, message: '$feature coming soon');
+  }
+
+  static Future<void> _inviteOthers(BuildContext context) async {
+    final box = context.findRenderObject() as RenderBox?;
+    final origin = box == null
+        ? null
+        : box.localToGlobal(Offset.zero) & box.size;
+
+    await SharePlus.instance.share(
+      ShareParams(
+        text:
+            'Join me on Classmates — a place for parents and carers to connect, share experiences and support each other.',
+        subject: 'Join me on Classmates',
+        sharePositionOrigin: origin,
+      ),
+    );
   }
 
   static Future<void> _showBestPractices(BuildContext context) {

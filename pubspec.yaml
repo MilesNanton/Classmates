@@ -4,7 +4,7 @@ description: "A new Flutter project."
 publish_to: 'none'
 
 
-version: 1.0.0+30
+version: 1.0.0+31
 
 environment:
   sdk: ^3.12.0
@@ -16,12 +16,15 @@ dependencies:
 
   cupertino_icons: ^1.0.8
   google_fonts: ^8.2.0
-  firebase_core: ^4.12.1
+  firebase_core: 4.13.0
   cloud_firestore: ^6.7.1
-  firebase_auth: ^6.5.6
+  firebase_auth: 6.5.7
+  firebase_storage: 13.4.6
   google_sign_in: ^7.2.0
+  image_picker: ^1.2.3
   url_launcher: ^6.3.2
   shared_preferences: ^2.5.4
+  share_plus: ^13.3.0
 
 dev_dependencies:
   flutter_test:
@@ -46,6 +49,12 @@ flutter:
     - assets/postIcon.png
     - assets/editIcon.png
     - assets/updatedmessageicon.png
+    - assets/messageiconupdateone.png
+    - assets/messagesendicon.png
+    - assets/noteicon.png
+    - assets/paperclipicon.png
+    - assets/pictureIocn.png
+    - assets/new_updated_image.jpeg
     - assets/ExperienceIcon.png
     - assets/experienceIconUpdated.png
     - assets/resorcessIcon.png

@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../widgets/message_widget.dart';
 import '../../widgets/profile_settings_popup.dart';
@@ -302,6 +304,8 @@ class _ExperiencesCard extends StatelessWidget {
             ...experiences.map(
               (experience) => _CompletedExperienceRow(
                 key: ValueKey(experience.id),
+                userId: userId!,
+                experienceId: experience.id,
                 data: experience.data(),
                 onRemove: () => experience.reference.delete(),
               ),
@@ -342,10 +346,14 @@ class _ExperiencesCard extends StatelessWidget {
 class _CompletedExperienceRow extends StatefulWidget {
   const _CompletedExperienceRow({
     super.key,
+    required this.userId,
+    required this.experienceId,
     required this.data,
     required this.onRemove,
   });
 
+  final String userId;
+  final String experienceId;
   final Map<String, dynamic> data;
   final Future<void> Function() onRemove;
 
@@ -412,45 +420,61 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
                   color: Colors.white,
                   border: Border(bottom: BorderSide(color: Color(0xFFE4E4E4))),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Text(
-                      name,
-                      style: GoogleFonts.lato(
-                        color: ProfileScreen.green,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            name,
+                            style: GoogleFonts.lato(
+                              color: ProfileScreen.green,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          if (host.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              host,
+                              style: GoogleFonts.lato(
+                                fontSize: 11,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                          if (category.isNotEmpty) ...[
+                            const SizedBox(height: 5),
+                            DecoratedBox(
+                              decoration: const BoxDecoration(
+                                color: Color(0xFFF1F1F1),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 2,
+                                ),
+                                child: Text(
+                                  category,
+                                  style: GoogleFonts.lato(fontSize: 10),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    if (host.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        host,
-                        style: GoogleFonts.lato(
-                          fontSize: 11,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ],
-                    if (category.isNotEmpty) ...[
-                      const SizedBox(height: 5),
-                      DecoratedBox(
-                        decoration: const BoxDecoration(
-                          color: Color(0xFFF1F1F1),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 5,
-                            vertical: 2,
-                          ),
-                          child: Text(
-                            category,
-                            style: GoogleFonts.lato(fontSize: 10),
-                          ),
-                        ),
-                      ),
-                    ],
+                    const SizedBox(width: 10),
+                    _ExperienceAttachmentButton(
+                      hasNote:
+                          data['note'] is String &&
+                          (data['note'] as String).trim().isNotEmpty,
+                      hasPhoto:
+                          data['photoPath'] is String &&
+                          (data['photoPath'] as String).trim().isNotEmpty,
+                      onTap: _showDocumentationOptions,
+                    ),
                   ],
                 ),
               ),
@@ -461,8 +485,77 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
     );
   }
 
+  Future<void> _showDocumentationOptions() async {
+    final action = await showModalBottomSheet<_DocumentationAction>(
+      context: context,
+      backgroundColor: Colors.white,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Image.asset(
+                  'assets/noteicon.png',
+                  width: 16,
+                  height: 16,
+                  fit: BoxFit.contain,
+                ),
+                title: const Text('Add a note'),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _DocumentationAction.note),
+              ),
+              ListTile(
+                leading: Image.asset(
+                  'assets/pictureIocn.png',
+                  width: 16,
+                  height: 16,
+                  fit: BoxFit.contain,
+                ),
+                title: const Text('Add a picture'),
+                subtitle: const Text('One picture per experience'),
+                onTap: () =>
+                    Navigator.pop(sheetContext, _DocumentationAction.photo),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (action == null || !mounted) return;
+    await _showDocumentation(
+      pickPhotoOnOpen: action == _DocumentationAction.photo,
+    );
+  }
+
+  Future<void> _showDocumentation({required bool pickPhotoOnOpen}) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _ExperienceDocumentationSheet(
+          userId: widget.userId,
+          experienceId: widget.experienceId,
+          experienceName: widget.data['name']?.toString() ?? 'Experience',
+          initialNote: widget.data['note']?.toString() ?? '',
+          initialPhotoPath: widget.data['photoPath']?.toString() ?? '',
+          pickPhotoOnOpen: pickPhotoOnOpen,
+        ),
+      );
+
   Future<void> _removeExperience() async {
     try {
+      final photoPath = widget.data['photoPath'];
+      if (photoPath is String && photoPath.isNotEmpty) {
+        try {
+          await FirebaseStorage.instance.ref(photoPath).delete();
+        } catch (_) {
+          // Continue removing the experience if its photo is already gone.
+        }
+      }
       await widget.onRemove();
       if (!mounted) return;
       showMessagePopup(
@@ -477,6 +570,345 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
         type: MessageType.error,
       );
     }
+  }
+}
+
+enum _DocumentationAction { note, photo }
+
+class _ExperienceAttachmentButton extends StatelessWidget {
+  const _ExperienceAttachmentButton({
+    required this.hasNote,
+    required this.hasPhoto,
+    required this.onTap,
+  });
+
+  final bool hasNote;
+  final bool hasPhoto;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasDocumentation = hasNote || hasPhoto;
+    if (!hasDocumentation) {
+      return Material(
+        color: Colors.transparent,
+        shape: const CircleBorder(),
+        child: InkWell(
+          onTap: onTap,
+          customBorder: const CircleBorder(),
+          child: SizedBox(
+            width: 32,
+            height: 32,
+            child: Center(
+              child: Image.asset(
+                'assets/paperclipicon.png',
+                width: 18,
+                height: 18,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(4),
+        child: Padding(
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasNote)
+                const _DocumentationIndicator(icon: Icons.note_outlined),
+              if (hasNote && hasPhoto) const SizedBox(width: 5),
+              if (hasPhoto)
+                const _DocumentationIndicator(icon: Icons.image_outlined),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DocumentationIndicator extends StatelessWidget {
+  const _DocumentationIndicator({required this.icon});
+
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      color: const Color(0xFFF1F1F1),
+      alignment: Alignment.center,
+      child: Icon(icon, color: Colors.black, size: 19),
+    );
+  }
+}
+
+class _ExperienceDocumentationSheet extends StatefulWidget {
+  const _ExperienceDocumentationSheet({
+    required this.userId,
+    required this.experienceId,
+    required this.experienceName,
+    required this.initialNote,
+    required this.initialPhotoPath,
+    required this.pickPhotoOnOpen,
+  });
+
+  final String userId;
+  final String experienceId;
+  final String experienceName;
+  final String initialNote;
+  final String initialPhotoPath;
+  final bool pickPhotoOnOpen;
+
+  @override
+  State<_ExperienceDocumentationSheet> createState() =>
+      _ExperienceDocumentationSheetState();
+}
+
+class _ExperienceDocumentationSheetState
+    extends State<_ExperienceDocumentationSheet> {
+  late final TextEditingController _noteController;
+  XFile? _selectedPhoto;
+  Uint8List? _selectedPhotoBytes;
+  Uint8List? _existingPhotoBytes;
+  late bool _keepExistingPhoto;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _noteController = TextEditingController(text: widget.initialNote);
+    _keepExistingPhoto = widget.initialPhotoPath.isNotEmpty;
+    if (_keepExistingPhoto) _loadExistingPhoto();
+    if (widget.pickPhotoOnOpen) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _pickPhoto());
+    }
+  }
+
+  Future<void> _loadExistingPhoto() async {
+    try {
+      final bytes = await FirebaseStorage.instance
+          .ref(widget.initialPhotoPath)
+          .getData(10 * 1024 * 1024);
+      if (mounted) setState(() => _existingPhotoBytes = bytes);
+    } catch (_) {
+      // Keep the attachment available if its preview cannot load.
+    }
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickPhoto() async {
+    final photo = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 82,
+    );
+    if (photo == null) return;
+    final bytes = await photo.readAsBytes();
+    if (!mounted) return;
+    setState(() {
+      _selectedPhoto = photo;
+      _selectedPhotoBytes = bytes;
+      _keepExistingPhoto = false;
+    });
+  }
+
+  void _removePhoto() => setState(() {
+    _selectedPhoto = null;
+    _selectedPhotoBytes = null;
+    _keepExistingPhoto = false;
+  });
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    Reference? newPhotoReference;
+    try {
+      var photoPath = _keepExistingPhoto ? widget.initialPhotoPath : '';
+      final photo = _selectedPhoto;
+      final photoBytes = _selectedPhotoBytes;
+      if (photo != null && photoBytes != null) {
+        final extension = photo.name.contains('.')
+            ? photo.name.split('.').last.toLowerCase()
+            : 'jpg';
+        newPhotoReference = FirebaseStorage.instance.ref(
+          'users/${widget.userId}/experienceDocumentation/'
+          '${widget.experienceId}/photo_${DateTime.now().millisecondsSinceEpoch}.$extension',
+        );
+        await newPhotoReference.putData(
+          photoBytes,
+          SettableMetadata(contentType: photo.mimeType ?? 'image/jpeg'),
+        );
+        photoPath = newPhotoReference.fullPath;
+      }
+
+      final note = _noteController.text.trim();
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .collection('completedExperiences')
+          .doc(widget.experienceId)
+          .update({
+            'note': note.isEmpty ? FieldValue.delete() : note,
+            'photoPath': photoPath.isEmpty ? FieldValue.delete() : photoPath,
+            'documentationUpdatedAt': FieldValue.serverTimestamp(),
+          });
+
+      if (widget.initialPhotoPath.isNotEmpty &&
+          widget.initialPhotoPath != photoPath) {
+        try {
+          await FirebaseStorage.instance.ref(widget.initialPhotoPath).delete();
+        } catch (_) {
+          // The updated document no longer references the old photo.
+        }
+      }
+      if (mounted) Navigator.pop(context);
+    } catch (_) {
+      if (newPhotoReference != null) {
+        try {
+          await newPhotoReference.delete();
+        } catch (_) {
+          // Best-effort cleanup after a failed save.
+        }
+      }
+      if (mounted) {
+        showMessagePopup(
+          context,
+          message: 'Unable to save your note and photo. Try again.',
+          type: MessageType.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
+    final hasPhoto = _selectedPhotoBytes != null || _keepExistingPhoto;
+    return Container(
+      padding: EdgeInsets.fromLTRB(22, 14, 22, 22 + bottomInset),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 42,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: const Color(0xFFD8D8D8),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Document this experience',
+              style: GoogleFonts.lato(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.experienceName,
+              style: GoogleFonts.lato(
+                fontSize: 13,
+                color: const Color(0xFF666666),
+              ),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              controller: _noteController,
+              minLines: 3,
+              maxLines: 6,
+              maxLength: 1000,
+              decoration: InputDecoration(
+                hintText: 'Add a note about what you learned or enjoyed…',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (hasPhoto) ...[
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 170,
+                  child: _selectedPhotoBytes != null
+                      ? Image.memory(_selectedPhotoBytes!, fit: BoxFit.cover)
+                      : _existingPhotoBytes != null
+                      ? Image.memory(_existingPhotoBytes!, fit: BoxFit.cover)
+                      : const Center(
+                          child: CircularProgressIndicator(
+                            color: ProfileScreen.green,
+                            strokeWidth: 2,
+                          ),
+                        ),
+                ),
+              ),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _removePhoto,
+                  icon: const Icon(Icons.delete_outline, size: 18),
+                  label: const Text('Remove photo'),
+                ),
+              ),
+            ] else
+              OutlinedButton.icon(
+                onPressed: _pickPhoto,
+                icon: const Icon(Icons.add_photo_alternate_outlined),
+                label: const Text('Add one photo'),
+              ),
+            const SizedBox(height: 14),
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: FilledButton(
+                onPressed: _saving ? null : _save,
+                style: FilledButton.styleFrom(
+                  backgroundColor: ProfileScreen.green,
+                ),
+                child: _saving
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text('Save documentation'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

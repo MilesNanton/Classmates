@@ -1,0 +1,58 @@
+Running `(cd /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/; ANDROID_HOME=/Users/nilanhansajith/Library/Android/sdk TMPDIR=/var/folders/8d/h272yb354yvfy6qsvvf3d2cr0000gn/T/ ANDROID_NDK_ROOT=/Users/nilanhansajith/Library/Android/sdk/ndk/23.1.7779620 PATH=/Applications/Xcode.app/Contents/SharedFrameworks/SwiftBuild.framework/Versions/A/PlugIns/SWBBuildService.bundle/Contents/PlugIns/SWBUniversalPlatformPlugin.bundle/Contents/Frameworks/SWBUniversalPlatform.framework/Resources:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/libexec:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/usr/local/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/usr/local/bin:/Applications/Xcode.app/Contents/Developer/usr/bin:/Applications/Xcode.app/Contents/Developer/usr/local/bin:/opt/homebrew/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/usr/local/go/bin:/Users/nilanhansajith/.codex/tmp/arg0/codex-arg0sZ1yQY:/Users/nilanhansajith/Library/Application Support/JetBrains/Toolbox/scripts:/Users/nilanhansajith/Flutter/flutter/bin:/Users/nilanhansajith/.vscode/extensions/openai.chatgpt-26.825.51511-darwin-arm64/bin/macos-aarch64 HOME=/Users/nilanhansajith ANDROID_NDK_HOME=/Users/nilanhansajith/Library/Android/sdk/ndk/23.1.7779620 /Users/nilanhansajith/Flutter/flutter/bin/cache/dart-sdk/bin/dart '--packages=/Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/package_config.json' '/Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/objective_c/6491424e80/hook.dill' '--config=/Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/objective_c/6491424e80/input.json' )`.
+INFO: 2026-09-02 00:05:28.458921: Using compiler /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang from BuildInput.cCompiler.cc.
+
+INFO: 2026-09-02 00:05:28.468311: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios-simulator -mios-version-min=13 -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/include/dart_api_dl.c -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-09-02 00:05:28.471008: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios-simulator -mios-version-min=13 -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/objective_c.c -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/objective_c.c.o
+
+INFO: 2026-09-02 00:05:28.471514: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios-simulator -mios-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/input_stream_adapter.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-09-02 00:05:28.471839: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios-simulator -mios-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/objective_c.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/objective_c.m.o
+
+INFO: 2026-09-02 00:05:28.472219: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios-simulator -mios-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/observer.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/observer.m.o
+
+INFO: 2026-09-02 00:05:28.472869: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios-simulator -mios-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/ns_number.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/ns_number.m.o
+
+INFO: 2026-09-02 00:05:28.473319: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios-simulator -mios-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/protocol.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/protocol.m.o
+
+INFO: 2026-09-02 00:05:28.473853: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios-simulator -mios-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/objective_c_bindings_generated.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-09-02 00:05:28.596520: 
+INFO: 2026-09-02 00:05:28.596681: 
+INFO: 2026-09-02 00:05:28.596751: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-09-02 00:05:28.602811: 
+INFO: 2026-09-02 00:05:28.602886: 
+INFO: 2026-09-02 00:05:28.602916: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/objective_c.c.o
+
+INFO: 2026-09-02 00:05:28.646081: 
+INFO: 2026-09-02 00:05:28.646158: 
+INFO: 2026-09-02 00:05:28.646186: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/observer.m.o
+
+INFO: 2026-09-02 00:05:28.648279: 
+INFO: 2026-09-02 00:05:28.648348: 
+INFO: 2026-09-02 00:05:28.648378: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/protocol.m.o
+
+INFO: 2026-09-02 00:05:28.878295: 
+INFO: 2026-09-02 00:05:28.878385: 
+INFO: 2026-09-02 00:05:28.878421: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/ns_number.m.o
+
+INFO: 2026-09-02 00:05:28.890472: 
+INFO: 2026-09-02 00:05:28.890549: 
+INFO: 2026-09-02 00:05:28.890576: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/objective_c.m.o
+
+INFO: 2026-09-02 00:05:28.921690: 
+INFO: 2026-09-02 00:05:28.921768: 
+INFO: 2026-09-02 00:05:28.921799: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-09-02 00:05:28.996312: 
+INFO: 2026-09-02 00:05:28.996389: 
+INFO: 2026-09-02 00:05:28.996417: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-09-02 00:05:28.997142: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -shared -Wl,-encryptable -undefined dynamic_lookup -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator26.5.sdk -target x86_64-apple-ios-simulator -mios-version-min=13 /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/include/dart_api_dl.c.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/objective_c.c.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/input_stream_adapter.m.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/objective_c.m.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/observer.m.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/ns_number.m.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/protocol.m.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/obj/src/objective_c_bindings_generated.m.o -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/objective_c.dylib
+
+INFO: 2026-09-02 00:05:29.064094: 
+INFO: 2026-09-02 00:05:29.064213: ld: warning: -undefined dynamic_lookup is deprecated on iOS-simulator
+
+INFO: 2026-09-02 00:05:29.064242: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/6491424e80/objective_c.dylib
+

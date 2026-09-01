@@ -452,8 +452,8 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                 onTap: () => showCommunitySettingsPopup(context),
                 customBorder: const CircleBorder(),
                 child: const SizedBox(
-                  width: 40,
-                  height: 40,
+                  width: 22,
+                  height: 22,
                   child: RotatedBox(
                     quarterTurns: 1,
                     child: Icon(Icons.tune_rounded, size: 18),
@@ -609,19 +609,21 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
           padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(9),
-            child: Container(
+            child: SizedBox(
+              width: double.infinity,
               height: 158,
-              color: const Color(0xFFF1F1F1),
-              padding: const EdgeInsets.fromLTRB(18, 8, 18, 0),
-              child: _learnCategory == 'Getting started'
-                  ? const Image(
-                      image: AssetImage(
-                        'assets/screensIcons/ExprienceIcon.png',
-                      ),
-                      fit: BoxFit.contain,
-                      alignment: Alignment.bottomCenter,
-                    )
-                  : null,
+              child: switch (_learnCategory) {
+                'Getting started' => const Image(
+                  image: AssetImage('assets/screensIcons/ExprienceIcon.png'),
+                  fit: BoxFit.contain,
+                  alignment: Alignment.bottomCenter,
+                ),
+                'Learning styles' => const Image(
+                  image: AssetImage('assets/new_updated_image.jpeg'),
+                  fit: BoxFit.cover,
+                ),
+                _ => null,
+              },
             ),
           ),
         ),
@@ -857,7 +859,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
         return ListView.separated(
           padding: const EdgeInsets.fromLTRB(20, 18, 20, 24),
           itemCount: connections.length,
-          separatorBuilder: (_, _) => const SizedBox(height: 24),
+          separatorBuilder: (_, _) => const SizedBox(height: 8),
           itemBuilder: (context, index) {
             final connection = connections[index];
             final data = connection.data();
@@ -869,9 +871,6 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
               currentUserId: userId,
               connectionId: connection.id,
               name: name,
-              curriculum: data['curriculum'] is String
-                  ? data['curriculum'] as String
-                  : 'Custom curriculum',
               onMessage: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
                   builder: (_) => ConversationScreen(
@@ -1211,7 +1210,6 @@ class _HomeConnectionTile extends StatelessWidget {
     required this.currentUserId,
     required this.connectionId,
     required this.name,
-    required this.curriculum,
     required this.onMessage,
     required this.onFlag,
     required this.onRemove,
@@ -1220,13 +1218,34 @@ class _HomeConnectionTile extends StatelessWidget {
   final String currentUserId;
   final String connectionId;
   final String name;
-  final String curriculum;
   final VoidCallback onMessage;
   final VoidCallback onFlag;
   final VoidCallback onRemove;
 
   @override
   Widget build(BuildContext context) {
+    final ids = [currentUserId, connectionId]..sort();
+    final threadId = '${ids.first}_${ids.last}';
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('conversations')
+          .doc(threadId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final conversation = snapshot.data?.data();
+        final storedMessage = conversation?['lastMessage'];
+        final lastMessage = storedMessage is String && storedMessage.isNotEmpty
+            ? storedMessage
+            : 'No messages yet';
+        final unreadFor = conversation?['unreadFor'];
+        final hasUnread =
+            unreadFor is List && unreadFor.contains(currentUserId);
+        return _buildTile(lastMessage: lastMessage, hasUnread: hasUnread);
+      },
+    );
+  }
+
+  Widget _buildTile({required String lastMessage, required bool hasUnread}) {
     final initials = name
         .trim()
         .split(RegExp(r'\s+'))
@@ -1238,7 +1257,7 @@ class _HomeConnectionTile extends StatelessWidget {
       onFlag: onFlag,
       onRemove: onRemove,
       child: SizedBox(
-        height: 72,
+        height: 64,
         child: Row(
           children: [
             CircleAvatar(
@@ -1269,7 +1288,9 @@ class _HomeConnectionTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    curriculum,
+                    lastMessage,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.lato(
                       color: const Color(0xFF737373),
                       fontSize: 11,
@@ -1278,11 +1299,7 @@ class _HomeConnectionTile extends StatelessWidget {
                 ],
               ),
             ),
-            _ConnectionMessageButton(
-              currentUserId: currentUserId,
-              connectionId: connectionId,
-              onTap: onMessage,
-            ),
+            _ConnectionMessageButton(hasUnread: hasUnread, onTap: onMessage),
           ],
         ),
       ),
@@ -1322,7 +1339,7 @@ class _SwipeableConnectionState extends State<_SwipeableConnection> {
         children: [
           SizedBox(
             width: _actionsWidth,
-            height: 72,
+            height: 64,
             child: Padding(
               padding: const EdgeInsets.only(left: 16, right: 4),
               child: Row(
@@ -1372,65 +1389,52 @@ class _SwipeableConnectionState extends State<_SwipeableConnection> {
 
 class _ConnectionMessageButton extends StatelessWidget {
   const _ConnectionMessageButton({
-    required this.currentUserId,
-    required this.connectionId,
+    required this.hasUnread,
     required this.onTap,
   });
 
-  final String currentUserId;
-  final String connectionId;
+  final bool hasUnread;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final ids = [currentUserId, connectionId]..sort();
-    final threadId = '${ids.first}_${ids.last}';
-    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
-      stream: FirebaseFirestore.instance
-          .collection('conversations')
-          .doc(threadId)
-          .snapshots(),
-      builder: (context, snapshot) {
-        final unreadFor = snapshot.data?.data()?['unreadFor'];
-        final hasUnread =
-            unreadFor is List && unreadFor.contains(currentUserId);
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (hasUnread) ...[
-              Container(
-                width: 7,
-                height: 7,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF0DA64A),
-                  shape: BoxShape.circle,
-                ),
-              ),
-              const SizedBox(width: 7),
-            ],
-            Material(
-              color: const Color(0xFFBDBDBD),
-              shape: const CircleBorder(),
-              child: InkWell(
-                onTap: onTap,
-                customBorder: const CircleBorder(),
-                child: SizedBox(
-                  width: 36,
-                  height: 36,
-                  child: Center(
-                    child: Image.asset(
-                      'assets/updatedmessageicon.png',
-                      width: 20,
-                      height: 20,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (hasUnread) ...[
+          Container(
+            width: 7,
+            height: 7,
+            decoration: const BoxDecoration(
+              color: Color(0xFF0DA64A),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 7),
+        ],
+        Material(
+          color: Colors.transparent,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onTap,
+            customBorder: const CircleBorder(),
+            child: SizedBox(
+              width: 40,
+              height: 40,
+              child: Center(
+                child: Image.asset(
+                  'assets/messagesendicon.png',
+                  width: 40,
+                  height: 40,
+                  color: const Color(0xFF171717),
+                  colorBlendMode: BlendMode.srcIn,
+                  fit: BoxFit.contain,
                 ),
               ),
             ),
-          ],
-        );
-      },
+          ),
+        ),
+      ],
     );
   }
 }
