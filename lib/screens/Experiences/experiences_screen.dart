@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../widgets/message_widget.dart';
 import '../../widgets/screen_info_popup.dart';
+import '../Timetable/timetable_screen.dart';
 import 'experience_details_screen.dart';
 import 'experience_image_widgets.dart';
 import 'experience_metadata.dart';
@@ -28,7 +29,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
   static const _categories = [
     'All',
     'Museums',
-    'Making',
+    'Workshops',
     'Nature',
     'History',
     'Arts',
@@ -211,6 +212,15 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
                 if (tab != null) setState(() => _category = tab);
               },
               onSave: () => setState(() => _savedIds.add(experience.id)),
+              onAdd: () => showExperienceTimetablePopup(
+                context,
+                experienceId: experience.id,
+                title:
+                    experience.data()['name']?.toString().trim().isNotEmpty ==
+                        true
+                    ? experience.data()['name'].toString().trim()
+                    : 'Experience',
+              ),
               onDone: () =>
                   _markExperienceDone(experience.id, experience.data()),
               onTap: () => Navigator.of(context).push(
@@ -310,6 +320,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     const categoryAliases = <String, Set<String>>{
       'museum': {'museum', 'museumgallery', 'museumsgallerie'},
       'making': {'making', 'workshopmaking', 'workshopsmaking', 'workshop'},
+      'workshop': {'making', 'workshopmaking', 'workshopsmaking', 'workshop'},
       'nature': {'nature', 'natureoutdoor', 'outdoor'},
       'history': {'history', 'historyheritage', 'heritage'},
       'art': {'art', 'artdesign'},
@@ -344,6 +355,7 @@ class _ExperienceCard extends StatefulWidget {
     required this.onTap,
     required this.onMetadataTap,
     required this.onSave,
+    required this.onAdd,
     required this.onDone,
   });
 
@@ -352,6 +364,7 @@ class _ExperienceCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onMetadataTap;
   final VoidCallback onSave;
+  final Future<void> Function() onAdd;
   final Future<void> Function() onDone;
 
   @override
@@ -395,6 +408,17 @@ class _ExperienceCardState extends State<_ExperienceCard> {
                 ),
                 const SizedBox(width: 8),
                 _SwipeAction(
+                  label: 'Add',
+                  icon: Icons.calendar_month_outlined,
+                  assetIcon: 'assets/calenderIcon.png',
+                  color: const Color(0xFF9145F5),
+                  onTap: () async {
+                    setState(() => _dragOffset = 0);
+                    await widget.onAdd();
+                  },
+                ),
+                const SizedBox(width: 8),
+                _SwipeAction(
                   label: 'Done',
                   icon: Icons.check_box_outlined,
                   color: const Color(0xFF16AD58),
@@ -425,10 +449,10 @@ class _ExperienceCardState extends State<_ExperienceCard> {
             transform: Matrix4.translationValues(_dragOffset, 0, 0),
             child: GestureDetector(
               onHorizontalDragUpdate: (details) => setState(() {
-                _dragOffset = (_dragOffset + details.delta.dx).clamp(-150, 0);
+                _dragOffset = (_dragOffset + details.delta.dx).clamp(-226, 0);
               }),
               onHorizontalDragEnd: (_) => setState(() {
-                _dragOffset = _dragOffset < -55 ? -150 : 0;
+                _dragOffset = _dragOffset < -70 ? -226 : 0;
               }),
               child: Material(
                 color: Colors.white,
@@ -543,12 +567,14 @@ class _SwipeAction extends StatelessWidget {
   const _SwipeAction({
     required this.label,
     required this.icon,
+    this.assetIcon,
     required this.color,
     required this.onTap,
   });
 
   final String label;
   final IconData icon;
+  final String? assetIcon;
   final Color color;
   final VoidCallback onTap;
 
@@ -564,7 +590,16 @@ class _SwipeAction extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: Colors.white, size: 25),
+            if (assetIcon != null)
+              Image.asset(
+                assetIcon!,
+                width: 21,
+                height: 21,
+                color: Colors.white,
+                colorBlendMode: BlendMode.srcIn,
+              )
+            else
+              Icon(icon, color: Colors.white, size: 25),
             const SizedBox(height: 5),
             Text(label, style: const TextStyle(color: Colors.white)),
           ],
@@ -658,6 +693,7 @@ class _ExperiencesNavigation extends StatelessWidget {
   static const _items = [
     ('assets/HomeIcon.png', 'Home'),
     ('assets/experienceIconSelected.png', 'Experiences'),
+    ('assets/calenderIcon.png', 'Timetable'),
     ('assets/resorcessIcon.png', 'Resources'),
     ('assets/profileIcon.png', 'Profile'),
   ];
@@ -682,10 +718,10 @@ class _ExperiencesNavigation extends StatelessWidget {
                   const SizedBox(height: 8),
                   Image.asset(
                     item.$1,
-                    width: 20,
+                    width: index == 2 ? 18 : 20,
                     height: 20,
-                    color: const Color(0xFF111111),
-                    colorBlendMode: BlendMode.srcIn,
+                    color: index == 2 ? null : const Color(0xFF111111),
+                    colorBlendMode: index == 2 ? null : BlendMode.srcIn,
                   ),
                   const SizedBox(height: 3),
                   Text(

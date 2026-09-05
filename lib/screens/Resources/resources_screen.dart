@@ -295,6 +295,7 @@ class _ResourcesNavigation extends StatelessWidget {
   static const _items = [
     ('assets/HomeIcon.png', 'Home'),
     ('assets/experienceIconUpdated.png', 'Experiences'),
+    ('assets/calenderIcon.png', 'Timetable'),
     ('assets/Resources_Active.png', 'Resources'),
     ('assets/profileIcon.png', 'Profile'),
   ];
@@ -320,10 +321,10 @@ class _ResourcesNavigation extends StatelessWidget {
                     const SizedBox(height: 8),
                     Image.asset(
                       item.$1,
-                      width: 20,
+                      width: index == 2 ? 18 : 20,
                       height: 20,
-                      color: const Color(0xFF111111),
-                      colorBlendMode: BlendMode.srcIn,
+                      color: index == 2 ? null : const Color(0xFF111111),
+                      colorBlendMode: index == 2 ? null : BlendMode.srcIn,
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -331,7 +332,7 @@ class _ResourcesNavigation extends StatelessWidget {
                       style: GoogleFonts.lato(
                         color: const Color(0xFF111111),
                         fontSize: 12,
-                        fontWeight: index == 2
+                        fontWeight: index == 3
                             ? FontWeight.w700
                             : FontWeight.w500,
                       ),

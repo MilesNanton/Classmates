@@ -7,7 +7,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../widgets/message_widget.dart';
-import '../../widgets/profile_settings_popup.dart';
 import '../../widgets/screen_info_popup.dart';
 import 'add_parents_screen.dart';
 import 'setting_screen.dart';
@@ -203,25 +202,25 @@ class _ProfileContent extends StatelessWidget {
         Row(
           children: [
             CircleAvatar(
-              radius: 25,
+              radius: 32,
               backgroundColor: avatarColor,
               child: Text(
                 _initials(name),
                 style: GoogleFonts.lato(
                   color: avatarTextColor,
-                  fontSize: 22,
+                  fontSize: 27,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 16),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   name,
                   style: GoogleFonts.lato(
-                    fontSize: 16,
+                    fontSize: 20,
                     fontWeight: FontWeight.w800,
                     color: const Color(0xFF171717),
                   ),
@@ -230,32 +229,11 @@ class _ProfileContent extends StatelessWidget {
                 Text(
                   curriculum,
                   style: GoogleFonts.lato(
-                    fontSize: 11,
+                    fontSize: 14,
                     color: const Color(0xFF5B5B5B),
                   ),
                 ),
               ],
-            ),
-            const SizedBox(width: 12),
-            InkWell(
-              onTap: userId == null
-                  ? null
-                  : () => showProfileSettingsPopup(
-                      context,
-                      userId: userId!,
-                      data: data,
-                    ),
-              customBorder: const CircleBorder(),
-              child: Container(
-                width: 32,
-                height: 32,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE1E1E1)),
-                ),
-                child: Image.asset('assets/editIcon.png'),
-              ),
             ),
           ],
         ),
@@ -279,7 +257,7 @@ class _ExperiencesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (userId == null) return _buildEmptyCard();
+    if (userId == null) return _buildEmptyCard(context);
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('users')
@@ -289,16 +267,13 @@ class _ExperiencesCard extends StatelessWidget {
           .snapshots(),
       builder: (context, snapshot) {
         final experiences = snapshot.data?.docs ?? const [];
-        if (experiences.isEmpty) return _buildEmptyCard();
+        if (experiences.isEmpty) return _buildEmptyCard(context);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Experiences (${experiences.length})',
-              style: GoogleFonts.lato(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
+            _ExperiencesHeader(
+              count: experiences.length,
+              onAdd: () => _showAddExperienceSheet(context),
             ),
             const SizedBox(height: 8),
             ...experiences.map(
@@ -316,12 +291,12 @@ class _ExperiencesCard extends StatelessWidget {
     );
   }
 
-  Widget _buildEmptyCard() => Column(
+  Widget _buildEmptyCard(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      Text(
-        'Experiences (0)',
-        style: GoogleFonts.lato(fontSize: 18, fontWeight: FontWeight.w800),
+      _ExperiencesHeader(
+        count: 0,
+        onAdd: userId == null ? null : () => _showAddExperienceSheet(context),
       ),
       const SizedBox(height: 14),
       Container(
@@ -341,6 +316,267 @@ class _ExperiencesCard extends StatelessWidget {
       ),
     ],
   );
+
+  Future<void> _showAddExperienceSheet(BuildContext context) =>
+      showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => _AddExperienceSheet(userId: userId!),
+      );
+}
+
+class _ExperiencesHeader extends StatelessWidget {
+  const _ExperiencesHeader({required this.count, required this.onAdd});
+
+  final int count;
+  final VoidCallback? onAdd;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Text(
+          'Experiences ($count)',
+          style: GoogleFonts.lato(fontSize: 17, fontWeight: FontWeight.w800),
+        ),
+        const Spacer(),
+        Material(
+          color: ProfileScreen.green,
+          shape: const CircleBorder(),
+          child: InkWell(
+            onTap: onAdd,
+            customBorder: const CircleBorder(),
+            child: const SizedBox(
+              width: 28,
+              height: 28,
+              child: Icon(Icons.add, size: 21, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AddExperienceSheet extends StatefulWidget {
+  const _AddExperienceSheet({required this.userId});
+
+  final String userId;
+
+  @override
+  State<_AddExperienceSheet> createState() => _AddExperienceSheetState();
+}
+
+class _AddExperienceSheetState extends State<_AddExperienceSheet> {
+  final _nameController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _subjectController = TextEditingController();
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _locationController.dispose();
+    _subjectController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final name = _nameController.text.trim();
+    if (name.isEmpty || _saving) return;
+    final overlay = Overlay.of(context, rootOverlay: true);
+    setState(() => _saving = true);
+    try {
+      final experience = FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.userId)
+          .collection('completedExperiences')
+          .doc();
+      await experience.set({
+        'experienceId': experience.id,
+        'name': name,
+        'hostedBy': _locationController.text.trim(),
+        'location': _locationController.text.trim(),
+        'subject': _subjectController.text.trim(),
+        'category': _subjectController.text.trim(),
+        'isCustom': true,
+        'completedAt': FieldValue.serverTimestamp(),
+      });
+      if (mounted) {
+        Navigator.pop(context);
+        showMessagePopupInOverlay(
+          overlay,
+          message: 'Experience added successfully.',
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        showMessagePopup(
+          context,
+          message: 'Unable to save your experience. Try again.',
+          type: MessageType.error,
+        );
+        setState(() => _saving = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboardInset = MediaQuery.viewInsetsOf(context).bottom;
+    final sheetHeight = MediaQuery.sizeOf(context).height * 0.465;
+    final availableHeight = MediaQuery.sizeOf(context).height - keyboardInset;
+    final effectiveSheetHeight = sheetHeight < availableHeight
+        ? sheetHeight
+        : availableHeight;
+    return Padding(
+      padding: EdgeInsets.only(bottom: keyboardInset),
+      child: Container(
+        height: effectiveSheetHeight,
+        padding: const EdgeInsets.fromLTRB(27, 34, 27, 59),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        child: LayoutBuilder(
+          builder: (context, constraints) => SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          'Add your own experience',
+                          style: GoogleFonts.lato(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                        const Spacer(),
+                        const CircleAvatar(
+                          radius: 13,
+                          backgroundColor: ProfileScreen.green,
+                          child: Icon(Icons.add, size: 20, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 50),
+                    _ExperienceInput(
+                      controller: _nameController,
+                      hintText: 'Name of experience',
+                      autofocus: true,
+                      onChanged: (_) => setState(() {}),
+                    ),
+                    const SizedBox(height: 13),
+                    _ExperienceInput(
+                      controller: _locationController,
+                      hintText: 'Location',
+                    ),
+                    const SizedBox(height: 13),
+                    _ExperienceInput(
+                      controller: _subjectController,
+                      hintText: 'Subject',
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _save(),
+                    ),
+                    const Spacer(),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 51,
+                      child: FilledButton(
+                        onPressed:
+                            _nameController.text.trim().isEmpty || _saving
+                            ? null
+                            : _save,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: ProfileScreen.green,
+                          disabledBackgroundColor: const Color(0xFFB7DCC5),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(7),
+                          ),
+                        ),
+                        child: _saving
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                'Save experience',
+                                style: GoogleFonts.lato(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ExperienceInput extends StatelessWidget {
+  const _ExperienceInput({
+    required this.controller,
+    required this.hintText,
+    this.autofocus = false,
+    this.textInputAction = TextInputAction.next,
+    this.onChanged,
+    this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final bool autofocus;
+  final TextInputAction textInputAction;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 51,
+      child: TextField(
+        controller: controller,
+        autofocus: autofocus,
+        textInputAction: textInputAction,
+        onChanged: onChanged,
+        onSubmitted: onSubmitted,
+        style: GoogleFonts.lato(fontSize: 13),
+        decoration: InputDecoration(
+          hintText: hintText,
+          hintStyle: GoogleFonts.lato(
+            fontSize: 13,
+            color: const Color(0xFF777777),
+          ),
+          filled: true,
+          fillColor: const Color(0xFFF7F7F7),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(7),
+            borderSide: BorderSide.none,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _CompletedExperienceRow extends StatefulWidget {
@@ -418,7 +654,7 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
               child: Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(
-                  vertical: 13,
+                  vertical: 16,
                   horizontal: 2,
                 ),
                 decoration: const BoxDecoration(
@@ -435,7 +671,7 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
                             name,
                             style: GoogleFonts.lato(
                               color: ProfileScreen.green,
-                              fontSize: 14,
+                              fontSize: 17,
                               fontWeight: FontWeight.w800,
                             ),
                           ),
@@ -444,27 +680,47 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
                             Text(
                               host,
                               style: GoogleFonts.lato(
-                                fontSize: 11,
+                                fontSize: 13,
                                 color: Colors.grey,
                               ),
                             ),
                           ],
                           if (category.isNotEmpty) ...[
                             const SizedBox(height: 5),
-                            DecoratedBox(
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF1F1F1),
-                              ),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 5,
-                                  vertical: 2,
+                            Row(
+                              children: [
+                                DecoratedBox(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    border: Border.all(
+                                      color: const Color(0xFFD9D9D9),
+                                    ),
+                                    borderRadius: BorderRadius.circular(2),
+                                  ),
+                                  child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 5,
+                                      vertical: 2,
+                                    ),
+                                    child: Text(
+                                      category,
+                                      style: GoogleFonts.lato(fontSize: 12),
+                                    ),
+                                  ),
                                 ),
-                                child: Text(
-                                  category,
-                                  style: GoogleFonts.lato(fontSize: 10),
-                                ),
-                              ),
+                                if (hasPhoto) ...[
+                                  const SizedBox(width: 7),
+                                  const _DocumentationIndicator.asset(
+                                    'assets/iconflower.png',
+                                  ),
+                                ],
+                                if (hasNote) ...[
+                                  const SizedBox(width: 7),
+                                  const _DocumentationIndicator.asset(
+                                    'assets/note_icon.png',
+                                  ),
+                                ],
+                              ],
                             ),
                           ],
                         ],
@@ -472,11 +728,7 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
                     ),
                     const SizedBox(width: 10),
                     _ExperienceAttachmentButton(
-                      hasNote: hasNote,
-                      hasPhoto: hasPhoto,
-                      onTap: hasNote || hasPhoto
-                          ? () => _showDocumentation(pickPhotoOnOpen: false)
-                          : _showDocumentationOptions,
+                      onTap: () => _showDocumentation(pickPhotoOnOpen: false),
                     ),
                   ],
                 ),
@@ -488,57 +740,16 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
     );
   }
 
-  Future<void> _showDocumentationOptions() async {
-    final action = await showModalBottomSheet<_DocumentationAction>(
-      context: context,
-      backgroundColor: Colors.white,
-      showDragHandle: true,
-      builder: (sheetContext) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                leading: Image.asset(
-                  'assets/noteicon.png',
-                  width: 16,
-                  height: 16,
-                  fit: BoxFit.contain,
-                ),
-                title: const Text('Add a note'),
-                onTap: () =>
-                    Navigator.pop(sheetContext, _DocumentationAction.note),
-              ),
-              ListTile(
-                leading: Image.asset(
-                  'assets/pictureIocn.png',
-                  width: 16,
-                  height: 16,
-                  fit: BoxFit.contain,
-                ),
-                title: const Text('Add a picture'),
-                subtitle: const Text('One picture per experience'),
-                onTap: () =>
-                    Navigator.pop(sheetContext, _DocumentationAction.photo),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-    if (action == null || !mounted) return;
-    await _showDocumentation(
-      pickPhotoOnOpen: action == _DocumentationAction.photo,
-    );
-  }
-
   Future<void> _showDocumentation({required bool pickPhotoOnOpen}) =>
       showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         useSafeArea: true,
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
+        clipBehavior: Clip.antiAlias,
         builder: (_) => _ExperienceDocumentationSheet(
           userId: widget.userId,
           experienceId: widget.experienceId,
@@ -576,66 +787,34 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
   }
 }
 
-enum _DocumentationAction { note, photo }
-
 class _ExperienceAttachmentButton extends StatelessWidget {
-  const _ExperienceAttachmentButton({
-    required this.hasNote,
-    required this.hasPhoto,
-    required this.onTap,
-  });
+  const _ExperienceAttachmentButton({required this.onTap});
 
-  final bool hasNote;
-  final bool hasPhoto;
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
-    final hasDocumentation = hasNote || hasPhoto;
-    if (!hasDocumentation) {
-      return Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          onTap: onTap,
-          customBorder: const CircleBorder(),
-          child: SizedBox(
-            width: 32,
-            height: 32,
-            child: Center(
-              child: Image.asset(
-                'assets/paperclipicon.png',
-                width: 18,
-                height: 18,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (hasNote)
-                const _DocumentationIndicator.asset('assets/noteicon.png'),
-              if (hasNote && hasPhoto) const SizedBox(width: 5),
-              if (hasPhoto)
-                const _DocumentationIndicator.asset('assets/pictureIocn.png'),
-            ],
+  Widget build(BuildContext context) => Material(
+    color: Colors.transparent,
+    shape: CircleBorder(
+      side: BorderSide(color: const Color(0xFFE1E1E1), width: 1.2),
+    ),
+    child: InkWell(
+      onTap: onTap,
+      customBorder: const CircleBorder(),
+      child: SizedBox(
+        width: 34,
+        height: 34,
+        child: Center(
+          child: Image.asset(
+            'assets/paperclipicon.png',
+            width: 19,
+            height: 19,
+            fit: BoxFit.contain,
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
 class _DocumentationIndicator extends StatelessWidget {
@@ -648,18 +827,23 @@ class _DocumentationIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 32,
-      height: 32,
+    return Container(
+      width: 25,
+      height: 25,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border.all(color: const Color(0xFFD9D9D9)),
+        borderRadius: BorderRadius.circular(2),
+      ),
       child: Center(
         child: assetPath != null
             ? Image.asset(
                 assetPath!,
-                width: 19,
-                height: 19,
+                width: 15,
+                height: 15,
                 fit: BoxFit.contain,
               )
-            : Icon(icon, color: Colors.black, size: 19),
+            : Icon(icon, color: Colors.black, size: 15),
       ),
     );
   }
@@ -748,6 +932,7 @@ class _ExperienceDocumentationSheetState
 
   Future<void> _save() async {
     if (_saving) return;
+    final overlay = Overlay.of(context, rootOverlay: true);
     setState(() => _saving = true);
     Reference? newPhotoReference;
     try {
@@ -789,7 +974,13 @@ class _ExperienceDocumentationSheetState
           // The updated document no longer references the old photo.
         }
       }
-      if (mounted) Navigator.pop(context);
+      if (mounted) {
+        Navigator.pop(context);
+        showMessagePopupInOverlay(
+          overlay,
+          message: 'Documentation saved successfully.',
+        );
+      }
     } catch (_) {
       if (newPhotoReference != null) {
         try {
@@ -814,63 +1005,85 @@ class _ExperienceDocumentationSheetState
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final hasPhoto = _selectedPhotoBytes != null || _keepExistingPhoto;
-    return Container(
-      padding: EdgeInsets.fromLTRB(22, 14, 22, 22 + bottomInset),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SingleChildScrollView(
+    final sheetHeight =
+        MediaQuery.sizeOf(context).height * (hasPhoto ? 0.60 : 0.475);
+    final availableHeight = MediaQuery.sizeOf(context).height - bottomInset;
+    final effectiveSheetHeight = bottomInset > 0
+        ? availableHeight
+        : sheetHeight;
+    return Padding(
+      padding: EdgeInsets.only(bottom: bottomInset),
+      child: Container(
+        height: effectiveSheetHeight,
+        padding: const EdgeInsets.fromLTRB(24, 36, 24, 51),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+        ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 42,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFD8D8D8),
-                  borderRadius: BorderRadius.circular(2),
+            Row(
+              children: [
+                Text(
+                  'Document this experience',
+                  style: GoogleFonts.lato(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
-              ),
+                const Spacer(),
+                Image.asset(
+                  'assets/paperclipicon.png',
+                  width: 24,
+                  height: 24,
+                  fit: BoxFit.contain,
+                ),
+              ],
             ),
-            const SizedBox(height: 18),
-            Text(
-              'Document this experience',
-              style: GoogleFonts.lato(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 5),
             Text(
               widget.experienceName,
               style: GoogleFonts.lato(
                 fontSize: 13,
-                color: const Color(0xFF666666),
+                color: const Color(0xFF707070),
               ),
             ),
-            const SizedBox(height: 20),
-            TextField(
-              controller: _noteController,
-              minLines: 3,
-              maxLines: 6,
-              maxLength: 1000,
-              decoration: InputDecoration(
-                hintText: 'Add a note about what you learned or enjoyed…',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(10),
+            const SizedBox(height: 18),
+            SizedBox(
+              height: hasPhoto ? 108 : 126,
+              child: TextField(
+                controller: _noteController,
+                expands: true,
+                minLines: null,
+                maxLines: null,
+                maxLength: 1000,
+                style: GoogleFonts.lato(fontSize: 14),
+                decoration: InputDecoration(
+                  hintText: 'Add a note...',
+                  hintStyle: GoogleFonts.lato(
+                    fontSize: 14,
+                    color: const Color(0xFF171717),
+                  ),
+                  contentPadding: const EdgeInsets.all(14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(9),
+                    borderSide: const BorderSide(color: Color(0xFFDADADA)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(9),
+                    borderSide: const BorderSide(color: Color(0xFFDADADA)),
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             if (hasPhoto) ...[
               ClipRRect(
-                borderRadius: BorderRadius.circular(10),
+                borderRadius: BorderRadius.circular(8),
                 child: SizedBox(
                   width: double.infinity,
-                  height: 170,
+                  height: 128,
                   child: _selectedPhotoBytes != null
                       ? Image.memory(_selectedPhotoBytes!, fit: BoxFit.cover)
                       : _existingPhotoBytes != null
@@ -885,24 +1098,48 @@ class _ExperienceDocumentationSheetState
               ),
               Align(
                 alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: _removePhoto,
-                  icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Remove photo'),
+                child: SizedBox(
+                  height: 26,
+                  child: TextButton.icon(
+                    onPressed: _removePhoto,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      visualDensity: VisualDensity.compact,
+                    ),
+                    icon: const Icon(Icons.delete_outline, size: 15),
+                    label: const Text(
+                      'Remove photo',
+                      style: TextStyle(fontSize: 11),
+                    ),
+                  ),
                 ),
               ),
             ] else
-              OutlinedButton.icon(
-                onPressed: _pickPhoto,
-                icon: Image.asset(
-                  'assets/pictureIocn.png',
-                  width: 16,
-                  height: 16,
-                  fit: BoxFit.contain,
+              SizedBox(
+                height: 46,
+                child: OutlinedButton.icon(
+                  onPressed: _pickPhoto,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF171717),
+                    side: const BorderSide(color: Color(0xFFDADADA)),
+                    padding: const EdgeInsets.symmetric(horizontal: 13),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                  ),
+                  icon: Image.asset(
+                    'assets/pictureIocn.png',
+                    width: 19,
+                    height: 19,
+                    fit: BoxFit.contain,
+                  ),
+                  label: Text(
+                    'Add one photo',
+                    style: GoogleFonts.lato(fontSize: 14),
+                  ),
                 ),
-                label: const Text('Add one photo'),
               ),
-            const SizedBox(height: 14),
+            const Spacer(),
             SizedBox(
               width: double.infinity,
               height: 48,
@@ -910,6 +1147,9 @@ class _ExperienceDocumentationSheetState
                 onPressed: _saving ? null : _save,
                 style: FilledButton.styleFrom(
                   backgroundColor: ProfileScreen.green,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
                 child: _saving
                     ? const SizedBox(
@@ -920,7 +1160,13 @@ class _ExperienceDocumentationSheetState
                           color: Colors.white,
                         ),
                       )
-                    : const Text('Save documentation'),
+                    : Text(
+                        'Save documentation',
+                        style: GoogleFonts.lato(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
               ),
             ),
           ],
@@ -1164,6 +1410,7 @@ class _ProfileNavigation extends StatelessWidget {
   static const _items = [
     ('assets/HomeIcon.png', 'Home'),
     ('assets/experienceIconUpdated.png', 'Experiences'),
+    ('assets/calenderIcon.png', 'Timetable'),
     ('assets/resorcessIcon.png', 'Resources'),
     ('assets/Profile_Active.png', 'Profile'),
   ];
@@ -1189,10 +1436,10 @@ class _ProfileNavigation extends StatelessWidget {
                     const SizedBox(height: 8),
                     Image.asset(
                       item.$1,
-                      width: 20,
+                      width: index == 2 ? 18 : 20,
                       height: 20,
-                      color: const Color(0xFF111111),
-                      colorBlendMode: BlendMode.srcIn,
+                      color: index == 2 ? null : const Color(0xFF111111),
+                      colorBlendMode: index == 2 ? null : BlendMode.srcIn,
                     ),
                     const SizedBox(height: 3),
                     Text(
@@ -1200,7 +1447,7 @@ class _ProfileNavigation extends StatelessWidget {
                       style: GoogleFonts.lato(
                         color: const Color(0xFF111111),
                         fontSize: 12,
-                        fontWeight: index == 3
+                        fontWeight: index == 4
                             ? FontWeight.w700
                             : FontWeight.w500,
                       ),

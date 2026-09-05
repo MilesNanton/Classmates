@@ -266,12 +266,21 @@ service cloud.firestore {
             'experienceId',
             'name',
             'hostedBy',
+            'location',
             'category',
             'subject',
+            'isCustom',
             'completedAt'
           ])
           && request.resource.data.experienceId == experienceId
           && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 100
+          && (!('location' in request.resource.data)
+            || (request.resource.data.location is string
+              && request.resource.data.location.size() <= 200))
+          && (!('isCustom' in request.resource.data)
+            || request.resource.data.isCustom is bool)
           && request.resource.data.completedAt == request.time;
 
         allow update: if isOwner()
@@ -285,6 +294,95 @@ service cloud.firestore {
             || (request.resource.data.photoPath is string
               && request.resource.data.photoPath.size() <= 500))
           && request.resource.data.documentationUpdatedAt == request.time;
+      }
+
+      match /timetableEntries/{entryId} {
+        function hasValidTimetableEntry() {
+          return request.resource.data.entryId == entryId
+            && request.resource.data.category is string
+            && request.resource.data.category in [
+              'Reading',
+              'Practical',
+              'Other',
+              'Outdoor',
+              'Club',
+              'Online',
+              'Subject',
+              'Activity',
+              'Project'
+            ]
+            && request.resource.data.title is string
+            && request.resource.data.title.size() > 0
+            && request.resource.data.title.size() <= 100
+            && request.resource.data.type is string
+            && request.resource.data.type in ['regular', 'upcoming']
+            && request.resource.data.days is list
+            && request.resource.data.days.size() <= 7
+            && (request.resource.data.type == 'upcoming'
+              || request.resource.data.days.size() > 0)
+            && request.resource.data.days.hasOnly([
+              'Monday',
+              'Tuesday',
+              'Wednesday',
+              'Thursday',
+              'Friday',
+              'Saturday',
+              'Sunday'
+            ])
+            && request.resource.data.date is timestamp
+            && request.resource.data.startMinutes is int
+            && request.resource.data.startMinutes >= 0
+            && request.resource.data.startMinutes <= 1439
+            && request.resource.data.endMinutes is int
+            && request.resource.data.endMinutes >= 0
+            && request.resource.data.endMinutes <= 1439
+            && request.resource.data.recurring is bool
+            && (!('experienceId' in request.resource.data)
+              || (request.resource.data.experienceId is string
+                && request.resource.data.experienceId.size() > 0
+                && request.resource.data.experienceId.size() <= 200));
+        }
+
+        allow read, delete: if isOwner();
+
+        allow create: if isOwner()
+          && request.resource.data.keys().hasOnly([
+            'entryId',
+            'category',
+            'title',
+            'type',
+            'days',
+            'date',
+            'startMinutes',
+            'endMinutes',
+            'recurring',
+            'experienceId',
+            'createdAt',
+            'updatedAt'
+          ])
+          && hasValidTimetableEntry()
+          && request.resource.data.createdAt == request.time
+          && request.resource.data.updatedAt == request.time;
+
+        allow update: if isOwner()
+          && request.resource.data.keys().hasOnly([
+            'entryId',
+            'category',
+            'title',
+            'type',
+            'days',
+            'date',
+            'startMinutes',
+            'endMinutes',
+            'recurring',
+            'experienceId',
+            'createdAt',
+            'updatedAt'
+          ])
+          && request.resource.data.entryId == resource.data.entryId
+          && request.resource.data.createdAt == resource.data.createdAt
+          && hasValidTimetableEntry()
+          && request.resource.data.updatedAt == request.time;
       }
     }
 

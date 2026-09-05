@@ -14,6 +14,7 @@ import '../../widgets/screen_info_popup.dart';
 import '../Profile/profile_screen.dart';
 import '../Resources/resources_screen.dart';
 import '../Experiences/experiences_screen.dart';
+import '../Timetable/timetable_screen.dart';
 import 'conversation_screen.dart';
 
 enum _FeedView { all, replies, connections, learn }
@@ -390,11 +391,16 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
       );
     }
     if (_bottomIndex == 2) {
-      return ResourcesScreen(
+      return TimetableScreen(
         onTabSelected: (index) => setState(() => _bottomIndex = index),
       );
     }
     if (_bottomIndex == 3) {
+      return ResourcesScreen(
+        onTabSelected: (index) => setState(() => _bottomIndex = index),
+      );
+    }
+    if (_bottomIndex == 4) {
       return ProfileScreen(
         onTabSelected: (index) => setState(() => _bottomIndex = index),
       );
@@ -452,8 +458,8 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                 onTap: () => showCommunitySettingsPopup(context),
                 customBorder: const CircleBorder(),
                 child: const SizedBox(
-                  width: 22,
-                  height: 22,
+                  width: 40,
+                  height: 40,
                   child: RotatedBox(
                     quarterTurns: 1,
                     child: Icon(Icons.tune_rounded, size: 18),
@@ -473,9 +479,9 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                   height: 40,
                   child: Center(
                     child: Image(
-                      image: AssetImage('assets/updatedmessageicon.png'),
-                      width: 22,
-                      height: 22,
+                      image: AssetImage('assets/latestmessagevector.png'),
+                      width: 18,
+                      height: 18,
                       fit: BoxFit.contain,
                     ),
                   ),
@@ -1052,6 +1058,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
     const items = [
       (Icons.home_rounded, 'Home'),
       (Icons.waving_hand_outlined, 'Experiences'),
+      (Icons.calendar_month_outlined, 'Timetable'),
       (Icons.business_center_outlined, 'Resources'),
       (Icons.person_outline_rounded, 'Profile'),
     ];
@@ -1106,6 +1113,17 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                         Image(
                           image: AssetImage(
                             selected
+                                ? 'assets/calenderIconselected.png'
+                                : 'assets/calenderIcon.png',
+                          ),
+                          width: 18,
+                          height: 20,
+                          fit: BoxFit.contain,
+                        )
+                      else if (index == 3)
+                        Image(
+                          image: AssetImage(
+                            selected
                                 ? 'assets/Resources_Active.png'
                                 : 'assets/resorcessIcon.png',
                           ),
@@ -1115,7 +1133,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                           color: const Color(0xFF111111),
                           colorBlendMode: BlendMode.srcIn,
                         )
-                      else if (index == 3)
+                      else if (index == 4)
                         Image(
                           image: AssetImage(
                             selected
@@ -1240,12 +1258,23 @@ class _HomeConnectionTile extends StatelessWidget {
         final unreadFor = conversation?['unreadFor'];
         final hasUnread =
             unreadFor is List && unreadFor.contains(currentUserId);
-        return _buildTile(lastMessage: lastMessage, hasUnread: hasUnread);
+        final lastMessageAt = conversation?['lastMessageAt'];
+        return _buildTile(
+          lastMessage: lastMessage,
+          lastMessageAt: lastMessageAt is Timestamp
+              ? lastMessageAt.toDate()
+              : null,
+          hasUnread: hasUnread,
+        );
       },
     );
   }
 
-  Widget _buildTile({required String lastMessage, required bool hasUnread}) {
+  Widget _buildTile({
+    required String lastMessage,
+    required DateTime? lastMessageAt,
+    required bool hasUnread,
+  }) {
     final initials = name
         .trim()
         .split(RegExp(r'\s+'))
@@ -1256,54 +1285,111 @@ class _HomeConnectionTile extends StatelessWidget {
     return _SwipeableConnection(
       onFlag: onFlag,
       onRemove: onRemove,
-      child: SizedBox(
-        height: 64,
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 20,
-              backgroundColor: const Color(0xFFEAF4FF),
-              child: Text(
-                initials.isEmpty ? '?' : initials,
-                style: GoogleFonts.lato(
-                  color: const Color(0xFF3478C9),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    name,
+      child: Material(
+        color: Colors.white,
+        child: InkWell(
+          onTap: onMessage,
+          child: SizedBox(
+            height: 72,
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: const Color(0xFFEAF4FF),
+                  child: Text(
+                    initials.isEmpty ? '?' : initials,
                     style: GoogleFonts.lato(
-                      color: const Color(0xFF171717),
+                      color: const Color(0xFF3478C9),
                       fontSize: 15,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    lastMessage,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.lato(
-                      color: const Color(0xFF737373),
-                      fontSize: 11,
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        name,
+                        style: GoogleFonts.lato(
+                          color: const Color(0xFF171717),
+                          fontSize: 15,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        lastMessage,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.lato(
+                          color: const Color(0xFF737373),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+                if (lastMessageAt != null || hasUnread)
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      if (lastMessageAt != null)
+                        Text(
+                          _messageTime(lastMessageAt),
+                          style: GoogleFonts.lato(
+                            color: hasUnread
+                                ? const Color(0xFF0DA64A)
+                                : const Color(0xFF777777),
+                            fontSize: 11,
+                            fontWeight: hasUnread
+                                ? FontWeight.w700
+                                : FontWeight.w400,
+                          ),
+                        ),
+                      if (hasUnread) ...[
+                        const SizedBox(height: 5),
+                        Container(
+                          width: 22,
+                          height: 22,
+                          alignment: Alignment.center,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF0DA64A),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '1',
+                            style: GoogleFonts.lato(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+              ],
             ),
-            _ConnectionMessageButton(hasUnread: hasUnread, onTap: onMessage),
-          ],
+          ),
         ),
       ),
     );
+  }
+
+  static String _messageTime(DateTime value) {
+    final now = DateTime.now();
+    final date = DateUtils.dateOnly(value);
+    final today = DateUtils.dateOnly(now);
+    if (date == today) {
+      return '${value.hour.toString().padLeft(2, '0')}:'
+          '${value.minute.toString().padLeft(2, '0')}';
+    }
+    if (date == today.subtract(const Duration(days: 1))) return 'Yesterday';
+    return '${value.day}/${value.month}/${value.year}';
   }
 }
 
@@ -1339,7 +1425,7 @@ class _SwipeableConnectionState extends State<_SwipeableConnection> {
         children: [
           SizedBox(
             width: _actionsWidth,
-            height: 64,
+            height: 72,
             child: Padding(
               padding: const EdgeInsets.only(left: 16, right: 4),
               child: Row(
@@ -1383,58 +1469,6 @@ class _SwipeableConnectionState extends State<_SwipeableConnection> {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ConnectionMessageButton extends StatelessWidget {
-  const _ConnectionMessageButton({
-    required this.hasUnread,
-    required this.onTap,
-  });
-
-  final bool hasUnread;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        if (hasUnread) ...[
-          Container(
-            width: 7,
-            height: 7,
-            decoration: const BoxDecoration(
-              color: Color(0xFF0DA64A),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 7),
-        ],
-        Material(
-          color: Colors.transparent,
-          shape: const CircleBorder(),
-          child: InkWell(
-            onTap: onTap,
-            customBorder: const CircleBorder(),
-            child: SizedBox(
-              width: 40,
-              height: 40,
-              child: Center(
-                child: Image.asset(
-                  'assets/messagesendicon.png',
-                  width: 40,
-                  height: 40,
-                  color: const Color(0xFF171717),
-                  colorBlendMode: BlendMode.srcIn,
-                  fit: BoxFit.contain,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }
@@ -1811,7 +1845,7 @@ class _PostCard extends StatelessWidget {
             body,
             style: GoogleFonts.lato(
               color: const Color(0xFF444444),
-              fontSize: 16,
+              fontSize: 15,
               height: 1.42,
             ),
           ),

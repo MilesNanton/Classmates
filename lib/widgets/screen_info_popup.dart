@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-enum ScreenInfoType { community, experiences, resources, profile }
+enum ScreenInfoType { community, experiences, timetable, resources, profile }
 
 extension on ScreenInfoType {
   String get storageKey => 'screen_info_seen_$name';
@@ -11,6 +11,7 @@ extension on ScreenInfoType {
   String get title => switch (this) {
     ScreenInfoType.community => 'Community',
     ScreenInfoType.experiences => 'Experiences',
+    ScreenInfoType.timetable => 'Timetable',
     ScreenInfoType.resources => 'Resources',
     ScreenInfoType.profile => 'Profile',
   };
@@ -18,6 +19,7 @@ extension on ScreenInfoType {
   String get heading => switch (this) {
     ScreenInfoType.community => 'Your homeschooling\ncommunity is here',
     ScreenInfoType.experiences => 'Learn beyond the home',
+    ScreenInfoType.timetable => 'Plan what’s coming up',
     ScreenInfoType.resources =>
       'Helpful resources for your\nhomeschooling journey',
     ScreenInfoType.profile => 'Your Connections &\nExperiences',
@@ -28,6 +30,8 @@ extension on ScreenInfoType {
       'Ask questions, share experiences and get advice\nfrom other parents. Keep conversations\nrespectful and welcoming, and avoid sharing\npersonal information about yourself or your\nchild. Follow our meet-up safety guidance when\nmeeting a connection.',
     ScreenInfoType.experiences =>
       'Explore museums, workshops, nature,\nattractions, heritage, sport and more. Find\nexperiences that connect to your child’s learning,\nturning everyday outings into opportunities to\nexplore, discover and learn.',
+    ScreenInfoType.timetable =>
+      'Keep track of experiences, meetups and activities\nyou have coming up. Add plans from Class Mates\nor anything you’ve organised yourself.',
     ScreenInfoType.resources =>
       'Explore resources by subject to find ideas,\nguidance and useful materials to support your\nchild’s learning.',
     ScreenInfoType.profile =>
@@ -37,6 +41,7 @@ extension on ScreenInfoType {
   String get asset => switch (this) {
     ScreenInfoType.community => 'assets/screensIcons/communityIcon.png',
     ScreenInfoType.experiences => 'assets/screensIcons/ExprienceIcon.png',
+    ScreenInfoType.timetable => 'assets/calenderIconselected.png',
     ScreenInfoType.resources => 'assets/screensIcons/resourcesIcon.png',
     ScreenInfoType.profile => 'assets/screensIcons/profileIcon.png',
   };
@@ -120,7 +125,9 @@ class _ScreenInfoSheet extends StatelessWidget {
               Expanded(
                 flex: 4,
                 child: Center(
-                  child: type == ScreenInfoType.experiences
+                  child: type == ScreenInfoType.timetable
+                      ? const SizedBox.shrink()
+                      : type == ScreenInfoType.experiences
                       ? OverflowBox(
                           maxWidth: MediaQuery.sizeOf(context).width,
                           child: SizedBox(

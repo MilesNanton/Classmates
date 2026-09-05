@@ -21,3 +21,42 @@
     at async /opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/lib/command.js:271:17
 [error] 
 [error] Error: Failed to authenticate, have you run firebase login?
+[debug] [2026-09-03T17:00:04.757Z] ----------------------------------------------------------------------
+[debug] [2026-09-03T17:00:04.764Z] Command:       /opt/homebrew/Cellar/node/26.5.0_1/bin/node /opt/homebrew/bin/firebase deploy --only firestore:rules --dry-run --non-interactive
+[debug] [2026-09-03T17:00:04.764Z] CLI Version:   15.24.0
+[debug] [2026-09-03T17:00:04.764Z] Platform:      darwin
+[debug] [2026-09-03T17:00:04.764Z] Node Version:  v26.5.0
+[debug] [2026-09-03T17:00:04.764Z] Detected Agent: codex_cli
+[debug] [2026-09-03T17:00:04.764Z] Time:          Thu Sep 03 2026 22:30:04 GMT+0530 (India Standard Time)
+[debug] [2026-09-03T17:00:04.764Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-03T17:00:04.774Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-09-03T17:00:05.727Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-03T17:00:05.736Z] Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async GoogleAuth._GoogleAuth_determineClient (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GoogleAuth.getAccessToken (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/google-auth-library/build/src/auth/googleauth.js:722:24)
+    at async autoAuth (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/lib/requireAuth.js:38:19)
+    at async requireAuth (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/lib/requireAuth.js:100:20)
+    at async requirePermissions (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/lib/requirePermissions.js:17:5)
+    at async /opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/lib/command.js:271:17
+[error] 
+[error] Error: Failed to authenticate, have you run firebase login?
+[debug] [2026-09-03T17:00:05.740Z] *** [apiv2] error from fetch(https://firebase-public.firebaseio.com/cli.json, {"headers":{},"method":"GET"}): Error: getaddrinfo ENOTFOUND firebase-public.firebaseio.com
+[warn] ⚠  Unable to fetch the CLI MOTD and remote config. This is not a fatal error, but may indicate an issue with your network connection. 
+[debug] [2026-09-03T17:00:05.743Z] Failed to fetch MOTD FirebaseError: Failed to make request to https://firebase-public.firebaseio.com/cli.json
+[debug] [2026-09-03T17:00:06.017Z] Error: EPERM: operation not permitted, open '/Users/nilanhansajith/.config/configstore/firebase-tools.json.1042528578'
+    at Object.openSync (node:fs:697:18)
+    at writeFile.writeFileSync [as sync] (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/write-file-atomic/index.js:205:13)
+    at set all (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/configstore/index.js:61:20)
+    at Configstore.delete (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/configstore/index.js:101:12)
+    at process.<anonymous> (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/lib/bin/cli.js:95:45)
+    at process.emit (node:events:521:24)
+    at process.exit (node:internal/process/per_thread:236:15)
+    at Timeout._onTimeout (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/lib/errorOut.js:20:17)
+    at listOnTimeout (node:internal/timers:635:17)
+    at process.processTimers (node:internal/timers:571:7)
+[error] 
+[error] Error: An unexpected error has occurred.

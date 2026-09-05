@@ -1,0 +1,46 @@
+Running `(cd /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/; TMPDIR=/var/folders/8d/h272yb354yvfy6qsvvf3d2cr0000gn/T/ PATH=/opt/homebrew/bin:/usr/local/bin:/System/Cryptexes/App/usr/bin:/usr/bin:/bin:/usr/sbin:/sbin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/local/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/bin:/var/run/com.apple.security.cryptexd/codex.system/bootstrap/usr/appleinternal/bin:/pkg/env/global/bin:/Library/Apple/usr/bin:/usr/local/go/bin:/opt/homebrew/bin:/Users/nilanhansajith/.codex/tmp/arg0/codex-arg0sEbZQQ:/Users/nilanhansajith/Library/Application Support/JetBrains/Toolbox/scripts:/Users/nilanhansajith/Flutter/flutter/bin:/Users/nilanhansajith/.vscode/extensions/openai.chatgpt-26.825.51511-darwin-arm64/bin/macos-aarch64:/Users/nilanhansajith/Library/Application Support/JetBrains/Toolbox/scripts:/Users/nilanhansajith/Flutter/flutter/bin HOME=/Users/nilanhansajith /Users/nilanhansajith/Flutter/flutter/bin/cache/dart-sdk/bin/dart '--packages=/Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/package_config.json' '/Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/objective_c/7ad245dadc/hook.dill' '--config=/Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/objective_c/7ad245dadc/input.json' )`.
+INFO: 2026-09-03 21:10:24.601890: Using compiler /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang from BuildInput.cCompiler.cc.
+
+INFO: 2026-09-03 21:10:24.607534: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/include/dart_api_dl.c -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/include/dart_api_dl.c.o
+
+INFO: 2026-09-03 21:10:24.609114: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/objective_c.c -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.c.o
+
+INFO: 2026-09-03 21:10:24.609385: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/input_stream_adapter.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-09-03 21:10:24.609565: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/objective_c.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.m.o
+
+INFO: 2026-09-03 21:10:24.609773: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/observer.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/observer.m.o
+
+INFO: 2026-09-03 21:10:24.609996: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/ns_number.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/ns_number.m.o
+
+INFO: 2026-09-03 21:10:24.610171: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/protocol.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/protocol.m.o
+
+INFO: 2026-09-03 21:10:24.610337: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 -x objective-c -fobjc-arc -c /Users/nilanhansajith/.pub-cache/hosted/pub.dev/objective_c-9.5.0/src/objective_c_bindings_generated.m -fpic -gline-tables-only -I src -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c_bindings_generated.m.o
+
+INFO: 2026-09-03 21:10:24.991066: 
+INFO: 2026-09-03 21:10:24.991097: 
+INFO: 2026-09-03 21:10:24.991119: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.c.o
+
+dl.c.o
+
+INFO: 2026-09-03 21:10:24.992304: 
+INFO: 2026-09-03 21:10:24.992343: 
+INFO: 2026-09-03 21:10:24.992366: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/observer.m.o
+
+INFO: 2026-09-03 21:10:24.992827: 
+INFO: 2026-09-03 21:10:24.992879: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/protocol.m.o
+
+INFO: 2026-09-03 21:10:26.033313: 
+INFO: 2026-09-03 21:10:26.033417: 
+INFO: 2026-09-03 21:10:26.033450: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/ns_number.m.o
+
+INFO: 2026-09-03 21:10:26.084518: 
+INFO: 2026-09-03 21:10:26.084569: 
+INFO: 2026-09-03 21:10:26.084594: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/input_stream_adapter.m.o
+
+INFO: 2026-09-03 21:10:26.215274: Running: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/clang -shared -Wl,-encryptable -undefined dynamic_lookup -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX26.5.sdk -target arm64-apple-darwin -mmacos-version-min=13 /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/include/dart_api_dl.c.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.c.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/input_stream_adapter.m.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c.m.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/observer.m.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/ns_number.m.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/protocol.m.o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/obj/src/objective_c_bindings_generated.m.o -o /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/objective_c.dylib
+
+INFO: 2026-09-03 21:10:26.461656: 
+INFO: 2026-09-03 21:10:26.461782: 
+INFO: 2026-09-03 21:10:26.461817: Generated /Users/nilanhansajith/Fiverr Projects/Classmates/.dart_tool/hooks_runner/shared/objective_c/build/7ad245dadc/objective_c.dylib
+
