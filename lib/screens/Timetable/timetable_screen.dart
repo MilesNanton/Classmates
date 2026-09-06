@@ -249,9 +249,12 @@ class _DateChip extends StatelessWidget {
     'Dec',
   ];
 
+  static const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
   @override
   Widget build(BuildContext context) {
     final dateText =
+        '${_weekdays[date.weekday - 1]} '
         '${date.day}${_suffix(date.day)} ${_months[date.month - 1]}';
     final today = DateUtils.isSameDay(date, DateTime.now());
     return InkWell(
@@ -466,7 +469,7 @@ class _SwipeableTimetableEntry extends StatefulWidget {
 }
 
 class _SwipeableTimetableEntryState extends State<_SwipeableTimetableEntry> {
-  static const _actionsWidth = 142.0;
+  static const _actionsWidth = 170.0;
   double _offset = 0;
 
   DocumentReference<Map<String, dynamic>>? get _document {
@@ -512,6 +515,8 @@ class _SwipeableTimetableEntryState extends State<_SwipeableTimetableEntry> {
         category: widget.entry.category,
         heading: 'Edit timetable',
         initialEntry: widget.entry,
+        titleLocked: widget.entry.experienceId != null,
+        upcomingOnly: widget.entry.experienceId != null,
       ),
     );
     final document = _document;
@@ -548,31 +553,37 @@ class _SwipeableTimetableEntryState extends State<_SwipeableTimetableEntry> {
       child: Stack(
         alignment: Alignment.centerRight,
         children: [
-          SizedBox(
-            width: _actionsWidth,
-            height: 70,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _TimetableSwipeAction(
-                    asset: 'assets/editIconup.png',
-                    label: 'Edit',
-                    color: const Color(0xFFAAAAAA),
-                    onTap: _edit,
-                  ),
+          if (_offset < -0.5)
+            Positioned(
+              top: 0,
+              right: 0,
+              bottom: 0,
+              width: _actionsWidth,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(10, 2, 0, 2),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _TimetableSwipeAction(
+                        asset: 'assets/editIconup.png',
+                        label: 'Edit',
+                        color: const Color(0xFFAAAAAA),
+                        onTap: _edit,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _TimetableSwipeAction(
+                        asset: 'assets/removeIcon.png',
+                        label: 'Remove',
+                        color: const Color(0xFFD90018),
+                        onTap: _remove,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: _TimetableSwipeAction(
-                    asset: 'assets/removeIcon.png',
-                    label: 'Remove',
-                    color: const Color(0xFFD90018),
-                    onTap: _remove,
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
           GestureDetector(
             onHorizontalDragUpdate: (details) => setState(
               () => _offset = (_offset + details.delta.dx).clamp(
@@ -615,8 +626,11 @@ class _TimetableSwipeAction extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
     color: color,
+    borderRadius: BorderRadius.circular(6),
+    clipBehavior: Clip.antiAlias,
     child: InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(6),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -1097,12 +1111,35 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
                 ),
                 child: Column(
                   children: [
-                    Text(
-                      widget.heading ?? widget.category,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.lato(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                    SizedBox(
+                      height: 34,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Text(
+                            widget.heading ?? widget.category,
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.lato(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: IconButton.outlined(
+                              onPressed: () => Navigator.pop(context),
+                              icon: const Icon(Icons.close, size: 17),
+                              padding: EdgeInsets.zero,
+                              style: IconButton.styleFrom(
+                                minimumSize: const Size(32, 32),
+                                maximumSize: const Size(32, 32),
+                                side: const BorderSide(
+                                  color: Color(0xFFE1E1E1),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     SizedBox(height: keyboardOpen ? 14 : 38),

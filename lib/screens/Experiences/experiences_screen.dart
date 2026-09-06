@@ -40,6 +40,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
 
   final Set<String> _savedIds = {};
   String _category = 'All';
+  String _ageRange = '7-11';
   _ExperienceView _view = _ExperienceView.categories;
 
   @override
@@ -101,16 +102,22 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
                   showScreenInfoPopup(context, ScreenInfoType.experiences),
             ),
             const SizedBox(width: 10),
-            Container(
-              width: 40,
-              height: 40,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFE5E5E5)),
+            Material(
+              color: Colors.white,
+              shape: const CircleBorder(
+                side: BorderSide(color: Color(0xFFE5E5E5)),
               ),
-              child: const RotatedBox(
-                quarterTurns: 1,
-                child: Icon(Icons.tune_rounded, size: 18),
+              child: InkWell(
+                onTap: _showFilters,
+                customBorder: const CircleBorder(),
+                child: const SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: RotatedBox(
+                    quarterTurns: 1,
+                    child: Icon(Icons.tune_rounded, size: 18),
+                  ),
+                ),
               ),
             ),
           ],
@@ -182,6 +189,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
                     !_savedIds.contains(document.id)) {
                   return false;
                 }
+                if (!_matchesAgeRange(data, _ageRange)) return false;
                 if (_category == 'All') return true;
                 return _matchesCategory(data, _category);
               }).toList()
@@ -243,6 +251,17 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
         );
       },
     );
+  }
+
+  Future<void> _showFilters() async {
+    final selected = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black45,
+      builder: (_) => _ExperienceFilterSheet(initialAgeRange: _ageRange),
+    );
+    if (selected != null && mounted) setState(() => _ageRange = selected);
   }
 
   Future<void> _markExperienceDone(
@@ -336,6 +355,37 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     ].any((value) => acceptedValues.contains(normalize(value)));
   }
 
+  static bool _matchesAgeRange(Map<String, dynamic> data, String selected) {
+    final bounds = selected.split('-').map(int.parse).toList();
+    final selectedMin = bounds.first;
+    final selectedMax = bounds.last;
+
+    final minValue = data['minAge'] ?? data['ageMin'];
+    final maxValue = data['maxAge'] ?? data['ageMax'];
+    if (minValue is num || maxValue is num) {
+      final minAge = minValue is num ? minValue.toInt() : 0;
+      final maxAge = maxValue is num ? maxValue.toInt() : 99;
+      return minAge <= selectedMax && maxAge >= selectedMin;
+    }
+
+    final rangeValue = data['ageRange'] ?? data['ages'];
+    final values = rangeValue is Iterable
+        ? rangeValue.map((value) => value.toString())
+        : rangeValue == null
+        ? const <String>[]
+        : [rangeValue.toString()];
+    if (values.isEmpty) return true;
+    return values.any((value) {
+      final numbers = RegExp(
+        r'\d+',
+      ).allMatches(value).map((match) => int.parse(match.group(0)!)).toList();
+      if (numbers.isEmpty) return true;
+      final minAge = numbers.first;
+      final maxAge = numbers.length > 1 ? numbers[1] : numbers.first;
+      return minAge <= selectedMax && maxAge >= selectedMin;
+    });
+  }
+
   static String? _categoryTabFor(Map<String, dynamic> data) {
     final subjectOnly = <String, dynamic>{'subject': data['subject']};
     for (final category in _categories.skip(1)) {
@@ -346,6 +396,169 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
     }
     return null;
   }
+}
+
+class _ExperienceFilterSheet extends StatefulWidget {
+  const _ExperienceFilterSheet({required this.initialAgeRange});
+
+  final String initialAgeRange;
+
+  @override
+  State<_ExperienceFilterSheet> createState() => _ExperienceFilterSheetState();
+}
+
+class _ExperienceFilterSheetState extends State<_ExperienceFilterSheet> {
+  static const _green = Color(0xFF08A948);
+  static const _ageRanges = ['7-11', '11-14', '14-16'];
+  late String _selectedAgeRange = widget.initialAgeRange;
+
+  @override
+  Widget build(BuildContext context) => FractionallySizedBox(
+    heightFactor: .78,
+    child: DecoratedBox(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 14, 24, 22),
+          child: Column(
+            children: [
+              Align(
+                alignment: Alignment.centerRight,
+                child: IconButton.outlined(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.close, size: 17),
+                  style: IconButton.styleFrom(
+                    minimumSize: const Size(34, 34),
+                    side: const BorderSide(color: Color(0xFFE5E5E5)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Your location',
+                style: GoogleFonts.lato(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Choose your location to discover experiences\n'
+                'happening near you. You can update your location\n'
+                'or search a different area at any time.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(
+                  color: const Color(0xFF777777),
+                  fontSize: 15,
+                  height: 1.45,
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text('Current location', style: GoogleFonts.lato(fontSize: 16)),
+              const SizedBox(height: 8),
+              Text(
+                'Using your current location',
+                style: GoogleFonts.lato(
+                  color: _green,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 22),
+              Text(
+                'Discovery radius within',
+                style: GoogleFonts.lato(fontSize: 16),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Anywhere in the UK',
+                style: GoogleFonts.lato(
+                  color: _green,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 28),
+              const Divider(height: 1, color: Color(0xFFE5E5E5)),
+              const SizedBox(height: 28),
+              Text(
+                'Ages range',
+                style: GoogleFonts.lato(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                "Find experiences that are right for your child's age.",
+                style: GoogleFonts.lato(
+                  color: const Color(0xFF777777),
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: _ageRanges
+                    .map(
+                      (range) => Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 7),
+                        child: ChoiceChip(
+                          label: Text(range),
+                          selected: _selectedAgeRange == range,
+                          onSelected: (_) =>
+                              setState(() => _selectedAgeRange = range),
+                          selectedColor: Colors.white,
+                          backgroundColor: const Color(0xFFF4F9F6),
+                          side: BorderSide(
+                            color: _selectedAgeRange == range
+                                ? _green
+                                : Colors.transparent,
+                            width: 1.5,
+                          ),
+                          shape: const StadiumBorder(),
+                          labelStyle: GoogleFonts.lato(
+                            color: _green,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                          showCheckmark: false,
+                        ),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const Spacer(),
+              SizedBox(
+                width: double.infinity,
+                height: 46,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context, _selectedAgeRange),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                  ),
+                  child: Text(
+                    'Update',
+                    style: GoogleFonts.lato(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _ExperienceCard extends StatefulWidget {

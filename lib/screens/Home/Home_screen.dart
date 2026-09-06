@@ -611,28 +611,22 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
             },
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(9),
-            child: SizedBox(
-              width: double.infinity,
-              height: 158,
-              child: switch (_learnCategory) {
-                'Getting started' => const Image(
+        if (_learnCategory == 'Getting started')
+          Padding(
+            padding: const EdgeInsets.fromLTRB(18, 0, 18, 12),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(9),
+              child: const SizedBox(
+                width: double.infinity,
+                height: 158,
+                child: Image(
                   image: AssetImage('assets/screensIcons/ExprienceIcon.png'),
                   fit: BoxFit.contain,
                   alignment: Alignment.bottomCenter,
                 ),
-                'Learning styles' => const Image(
-                  image: AssetImage('assets/new_updated_image.jpeg'),
-                  fit: BoxFit.cover,
-                ),
-                _ => null,
-              },
+              ),
             ),
           ),
-        ),
         Padding(
           padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
           child: Column(
