@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../widgets/message_widget.dart';
 
@@ -145,12 +146,14 @@ class _SettingsList extends StatelessWidget {
         _SettingsTile(
           iconAsset: 'assets/settingIcons/terms_conditions.png',
           label: 'Terms and Conditions',
-          onTap: () => _showUnavailable(context, 'Terms and Conditions'),
+          onTap: () =>
+              _openWebPage(context, 'https://www.theclassmatesapp.com/terms'),
         ),
         _SettingsTile(
           iconAsset: 'assets/settingIcons/privacy_policy.png',
           label: 'Privacy policy',
-          onTap: () => _showUnavailable(context, 'Privacy policy'),
+          onTap: () =>
+              _openWebPage(context, 'https://www.theclassmatesapp.com/privacy'),
         ),
         const _Footer(),
       ],
@@ -159,6 +162,25 @@ class _SettingsList extends StatelessWidget {
 
   static void _showUnavailable(BuildContext context, String feature) {
     showMessagePopup(context, message: '$feature coming soon');
+  }
+
+  static Future<void> _openWebPage(BuildContext context, String url) async {
+    var opened = false;
+    try {
+      opened = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened && context.mounted) {
+      showMessagePopup(
+        context,
+        message: 'Unable to open this page. Please try again.',
+        type: MessageType.error,
+      );
+    }
   }
 
   static Future<void> _inviteOthers(BuildContext context) async {
