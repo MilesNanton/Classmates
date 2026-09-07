@@ -487,7 +487,7 @@ class _AddExperienceSheetState extends State<_AddExperienceSheet> {
                     const Spacer(),
                     SizedBox(
                       width: double.infinity,
-                      height: 51,
+                      height: 48,
                       child: FilledButton(
                         onPressed:
                             _nameController.text.trim().isEmpty || _saving
@@ -495,9 +495,11 @@ class _AddExperienceSheetState extends State<_AddExperienceSheet> {
                             : _save,
                         style: FilledButton.styleFrom(
                           backgroundColor: ProfileScreen.green,
-                          disabledBackgroundColor: const Color(0xFFB7DCC5),
+                          disabledBackgroundColor: const Color(0xFFB2B2B2),
+                          foregroundColor: Colors.white,
+                          disabledForegroundColor: Colors.white,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(7),
+                            borderRadius: BorderRadius.circular(6),
                           ),
                         ),
                         child: _saving
@@ -512,7 +514,7 @@ class _AddExperienceSheetState extends State<_AddExperienceSheet> {
                             : Text(
                                 'Save experience',
                                 style: GoogleFonts.lato(
-                                  fontSize: 13,
+                                  fontSize: 15,
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
@@ -689,7 +691,12 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
                             const SizedBox(height: 5),
                             Row(
                               children: [
-                                DecoratedBox(
+                                Container(
+                                  height: 25,
+                                  alignment: Alignment.center,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 5,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     border: Border.all(
@@ -697,15 +704,9 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
                                     ),
                                     borderRadius: BorderRadius.circular(2),
                                   ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 5,
-                                      vertical: 2,
-                                    ),
-                                    child: Text(
-                                      category,
-                                      style: GoogleFonts.lato(fontSize: 12),
-                                    ),
+                                  child: Text(
+                                    category,
+                                    style: GoogleFonts.lato(fontSize: 12),
                                   ),
                                 ),
                                 if (hasPhoto) ...[
@@ -795,12 +796,8 @@ class _ExperienceAttachmentButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Material(
     color: Colors.transparent,
-    shape: CircleBorder(
-      side: BorderSide(color: const Color(0xFFE1E1E1), width: 1.2),
-    ),
     child: InkWell(
       onTap: onTap,
-      customBorder: const CircleBorder(),
       child: SizedBox(
         width: 34,
         height: 34,
@@ -1005,6 +1002,7 @@ class _ExperienceDocumentationSheetState
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewInsetsOf(context).bottom;
     final hasPhoto = _selectedPhotoBytes != null || _keepExistingPhoto;
+    final canSave = _noteController.text.trim().isNotEmpty && !_saving;
     final sheetHeight =
         MediaQuery.sizeOf(context).height * (hasPhoto ? 0.60 : 0.475);
     final availableHeight = MediaQuery.sizeOf(context).height - bottomInset;
@@ -1054,6 +1052,7 @@ class _ExperienceDocumentationSheetState
               height: hasPhoto ? 108 : 126,
               child: TextField(
                 controller: _noteController,
+                onChanged: (_) => setState(() {}),
                 expands: true,
                 minLines: null,
                 maxLines: null,
@@ -1144,9 +1143,12 @@ class _ExperienceDocumentationSheetState
               width: double.infinity,
               height: 48,
               child: FilledButton(
-                onPressed: _saving ? null : _save,
+                onPressed: canSave ? _save : null,
                 style: FilledButton.styleFrom(
                   backgroundColor: ProfileScreen.green,
+                  disabledBackgroundColor: const Color(0xFFB2B2B2),
+                  foregroundColor: Colors.white,
+                  disabledForegroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),

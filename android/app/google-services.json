@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1024150348141",
+    "project_id": "classmates-23e84",
+    "storage_bucket": "classmates-23e84.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1024150348141:android:dfe77060e2d0f866cafa64",
+        "android_client_info": {
+          "package_name": "app.classmates.com"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1024150348141-cmvuaj312to4o5fj5tcnpe95vo9q21v5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWx0yxvHLYxLPfuwMkW1qqO82HScz25ko"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1024150348141-cmvuaj312to4o5fj5tcnpe95vo9q21v5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1024150348141-medncoak1gu3adqk70s17d20hjl1tcm4.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "app.classmates.com"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

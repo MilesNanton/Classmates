@@ -60,3 +60,48 @@
     at process.processTimers (node:internal/timers:571:7)
 [error] 
 [error] Error: An unexpected error has occurred.
+[debug] [2026-09-07T16:19:30.500Z] ----------------------------------------------------------------------
+[debug] [2026-09-07T16:19:30.505Z] Command:       /opt/homebrew/Cellar/node/26.5.0_1/bin/node /opt/homebrew/bin/firebase apps:list --project classmates-23e84
+[debug] [2026-09-07T16:19:30.506Z] CLI Version:   15.24.0
+[debug] [2026-09-07T16:19:30.506Z] Platform:      darwin
+[debug] [2026-09-07T16:19:30.506Z] Node Version:  v26.5.0
+[debug] [2026-09-07T16:19:30.506Z] Detected Agent: codex_cli
+[debug] [2026-09-07T16:19:30.506Z] Time:          Mon Sep 07 2026 21:49:30 GMT+0530 (India Standard Time)
+[debug] [2026-09-07T16:19:30.506Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-07T16:19:30.518Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-09-07T16:19:30.650Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-07T16:19:30.703Z] Error: Could not load the default credentials. Browse to https://cloud.google.com/docs/authentication/getting-started for more information.
+    at GoogleAuth.getApplicationDefaultAsync (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/google-auth-library/build/src/auth/googleauth.js:287:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async GoogleAuth._GoogleAuth_determineClient (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/google-auth-library/build/src/auth/googleauth.js:834:32)
+    at async GoogleAuth.getClient (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/google-auth-library/build/src/auth/googleauth.js:698:20)
+    at async GoogleAuth.getAccessToken (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/node_modules/google-auth-library/build/src/auth/googleauth.js:722:24)
+    at async autoAuth (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/lib/requireAuth.js:38:19)
+    at async Object.requireAuth [as fn] (/opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/lib/requireAuth.js:100:20)
+    at async /opt/homebrew/Cellar/firebase-cli/15.24.0/libexec/lib/node_modules/firebase-tools/lib/command.js:271:17
+[error] 
+[error] Error: Failed to authenticate, have you run firebase login?
+[debug] [2026-09-07T16:19:49.015Z] ----------------------------------------------------------------------
+[debug] [2026-09-07T16:19:49.018Z] Command:       /opt/homebrew/Cellar/node/26.5.0_1/bin/node /opt/homebrew/bin/firebase login
+[debug] [2026-09-07T16:19:49.018Z] CLI Version:   15.24.0
+[debug] [2026-09-07T16:19:49.018Z] Platform:      darwin
+[debug] [2026-09-07T16:19:49.018Z] Node Version:  v26.5.0
+[debug] [2026-09-07T16:19:49.018Z] Detected Agent: codex_cli
+[debug] [2026-09-07T16:19:49.018Z] Time:          Mon Sep 07 2026 21:49:49 GMT+0530 (India Standard Time)
+[debug] [2026-09-07T16:19:49.018Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-07T16:19:49.025Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[info] i  The Firebase CLI’s MCP server feature can optionally make use of Gemini in Firebase. Learn more about Gemini in Firebase and how it uses your data: https://firebase.google.com/docs/gemini-in-firebase#how-gemini-in-firebase-uses-your-data 
+[debug] [2026-09-07T16:19:50.909Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-09-07T16:19:50.910Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[info] 
+[info] i  Firebase optionally collects CLI and Emulator Suite usage and error reporting information to help improve our products. Data is collected in accordance with Google's privacy policy (https://policies.google.com/privacy) and is not used to identify you. 
+[info] 
+[info] Visit this URL on this device to log in:
+[info] https://accounts.google.com/o/oauth2/auth?client_id=563584335869-fgrhgmd47bqnekij5i8b5pr03ho849e6.apps.googleusercontent.com&scope=email%20openid%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloudplatformprojects.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Ffirebase%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&response_type=code&state=142388918&redirect_uri=http%3A%2F%2Flocalhost%3A9005
+[info] 
+[info] Waiting for authentication...
+[debug] [2026-09-07T16:20:17.538Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
+[debug] [2026-09-07T16:20:17.539Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
+[debug] [2026-09-07T16:20:18.026Z] <<< [apiv2][status] POST https://accounts.google.com/o/oauth2/token 200

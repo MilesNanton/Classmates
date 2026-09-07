@@ -475,12 +475,32 @@ class _SubscriptionSheet extends StatefulWidget {
 }
 
 class _SubscriptionSheetState extends State<_SubscriptionSheet> {
-  static const _features = <String>[
-    'Discover experiences & resources',
-    'Connect with parents',
-    'Join the conversation',
-    'Personalised recommendations',
-    'Build your family’s experience history',
+  static const _features = <({String title, String description})>[
+    (
+      title: 'Discover learning experiences',
+      description:
+          'Find inspiring places, activities and experiences for your children.',
+    ),
+    (
+      title: 'Plan with your timetable',
+      description:
+          'Keep lessons, activities and experiences organised in one place.',
+    ),
+    (
+      title: 'Document your learning',
+      description:
+          'Keep a record of the places you visit and the learning moments you share.',
+    ),
+    (
+      title: 'Make connections',
+      description:
+          'Connect with other homeschooling parents and build your local community.',
+    ),
+    (
+      title: 'Ask, share and connect',
+      description:
+          'Ask questions, share ideas and experiences, and learn from other homeschooling parents.',
+    ),
   ];
 
   bool _yearly = false;
@@ -488,34 +508,55 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
   @override
   Widget build(BuildContext context) {
     return FractionallySizedBox(
-      heightFactor: 0.76,
+      heightFactor: 0.95,
       child: Material(
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 20, 20, 0),
-                child: Material(
-                  color: Colors.white,
-                  shape: const CircleBorder(
-                    side: BorderSide(color: Color(0xFFE2E2E2)),
-                  ),
-                  child: InkWell(
-                    onTap: () => Navigator.pop(context),
-                    customBorder: const CircleBorder(),
-                    child: const SizedBox(
-                      width: 38,
-                      height: 38,
-                      child: Icon(Icons.close, size: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 218,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  ColoredBox(
+                    color: const Color(0xFFC9F4C6),
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 210,
+                        child: Image.asset(
+                          'assets/screensIcons/ExprienceIcon.png',
+                          fit: BoxFit.contain,
+                          alignment: Alignment.bottomCenter,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                  Positioned(
+                    top: 12,
+                    right: 16,
+                    child: Material(
+                      color: Colors.white,
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: () => Navigator.pop(context),
+                        customBorder: const CircleBorder(),
+                        child: const SizedBox(
+                          width: 38,
+                          height: 38,
+                          child: Icon(Icons.close, size: 20),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
+            const SizedBox(height: 14),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Text(
@@ -569,15 +610,32 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                       height: 56,
                       child: Row(
                         children: [
-                          const Icon(Icons.check, size: 18),
-                          const SizedBox(width: 20),
+                          const Icon(Icons.check, size: 16),
+                          const SizedBox(width: 14),
                           Expanded(
-                            child: Text(
-                              feature,
-                              style: GoogleFonts.lato(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                              ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  feature.title,
+                                  style: GoogleFonts.lato(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  feature.description,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.lato(
+                                    color: const Color(0xFF333333),
+                                    fontSize: 10.5,
+                                    height: 1.2,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -632,7 +690,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                 fontSize: 13,
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 16),
           ],
         ),
       ),

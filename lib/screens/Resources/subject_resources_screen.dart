@@ -68,7 +68,7 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
     ),
   ];
 
-  static const _ageFilters = ['3-5', '5-7', '7-11', '11-14', '14-16'];
+  static const _ageFilters = ['5-7', '7-11', '11-14', '14-16'];
   static const _stageFilters = ['All', 'Early Years', 'KS1', 'KS2', 'KS3'];
 
   _FilterMode _mode = _FilterMode.age;

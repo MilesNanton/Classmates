@@ -78,6 +78,16 @@ class TimetableScreen extends StatefulWidget {
 class _TimetableScreenState extends State<TimetableScreen> {
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        showScreenInfoOnFirstVisit(context, ScreenInfoType.timetable);
+      }
+    });
+  }
+
   Future<void> _openAddScreen() async {
     final overlay = Overlay.of(context, rootOverlay: true);
     final entry = await showModalBottomSheet<_TimetableEntry>(

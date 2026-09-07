@@ -19,7 +19,7 @@ extension on ScreenInfoType {
   String get heading => switch (this) {
     ScreenInfoType.community => 'Your homeschooling\ncommunity is here',
     ScreenInfoType.experiences => 'Learn beyond the home',
-    ScreenInfoType.timetable => 'Plan what’s coming up',
+    ScreenInfoType.timetable => 'Keep track of your week',
     ScreenInfoType.resources =>
       'Helpful resources for your\nhomeschooling journey',
     ScreenInfoType.profile => 'Your Connections &\nExperiences',
@@ -31,7 +31,7 @@ extension on ScreenInfoType {
     ScreenInfoType.experiences =>
       'Explore museums, workshops, nature,\nattractions, heritage, sport and more. Find\nexperiences that connect to your child’s learning,\nturning everyday outings into opportunities to\nexplore, discover and learn.',
     ScreenInfoType.timetable =>
-      'Keep track of experiences, meetups and activities\nyou have coming up. Add plans from Class Mates\nor anything you’ve organised yourself.',
+      'Use your timetable to plan the things that\nhappen regularly — from lessons and study time\nto swimming, clubs and other weekly activities.\n\nYou can also add experiences to your Upcoming\ntimetable. Simply swipe left on an experience\nand add it to your upcoming activities.\n\nSee everything you have planned in one place\nand keep your week organised.',
     ScreenInfoType.resources =>
       'Explore resources by subject to find ideas,\nguidance and useful materials to support your\nchild’s learning.',
     ScreenInfoType.profile =>
@@ -41,7 +41,7 @@ extension on ScreenInfoType {
   String get asset => switch (this) {
     ScreenInfoType.community => 'assets/screensIcons/communityIcon.png',
     ScreenInfoType.experiences => 'assets/screensIcons/ExprienceIcon.png',
-    ScreenInfoType.timetable => 'assets/calenderIconselected.png',
+    ScreenInfoType.timetable => 'assets/screensIcons/ExprienceIcon.png',
     ScreenInfoType.resources => 'assets/screensIcons/resourcesIcon.png',
     ScreenInfoType.profile => 'assets/screensIcons/profileIcon.png',
   };
@@ -106,7 +106,7 @@ class _ScreenInfoSheet extends StatelessWidget {
     return SafeArea(
       top: false,
       child: SizedBox(
-        height: height * 0.67,
+        height: height * (type == ScreenInfoType.timetable ? 0.72 : 0.67),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(22, 18, 22, 20),
           child: Column(
@@ -125,9 +125,9 @@ class _ScreenInfoSheet extends StatelessWidget {
               Expanded(
                 flex: 4,
                 child: Center(
-                  child: type == ScreenInfoType.timetable
-                      ? const SizedBox.shrink()
-                      : type == ScreenInfoType.experiences
+                  child:
+                      type == ScreenInfoType.experiences ||
+                          type == ScreenInfoType.timetable
                       ? OverflowBox(
                           maxWidth: MediaQuery.sizeOf(context).width,
                           child: SizedBox(
@@ -162,7 +162,7 @@ class _ScreenInfoSheet extends StatelessWidget {
                 type.description,
                 textAlign: TextAlign.center,
                 style: GoogleFonts.lato(
-                  fontSize: 15,
+                  fontSize: type == ScreenInfoType.timetable ? 14 : 15,
                   fontWeight: FontWeight.w400,
                   height: 1.3,
                 ),
