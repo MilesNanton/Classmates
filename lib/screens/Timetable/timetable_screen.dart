@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/message_widget.dart';
 import '../../widgets/screen_info_popup.dart';
 import '../Experiences/experience_details_screen.dart';
+import 'subject_progress_screen.dart';
 
 Future<void> showExperienceTimetablePopup(
   BuildContext context, {
@@ -77,6 +78,7 @@ class TimetableScreen extends StatefulWidget {
 
 class _TimetableScreenState extends State<TimetableScreen> {
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
+  bool _showAddChoices = false;
 
   @override
   void initState() {
@@ -88,16 +90,17 @@ class _TimetableScreenState extends State<TimetableScreen> {
     });
   }
 
-  Future<void> _openAddScreen() async {
+  Future<void> _openAddScreen({required bool isSubject}) async {
     final overlay = Overlay.of(context, rootOverlay: true);
     final entry = await showModalBottomSheet<_TimetableEntry>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black45,
-      builder: (_) => const _TimetableEntrySheet(
-        category: 'Other',
-        heading: 'Add to timetable',
+      builder: (_) => _TimetableEntrySheet(
+        category: isSubject ? 'Subject' : 'Other',
+        heading: isSubject ? 'Add a subject' : 'Add to timetable',
+        subjectMode: isSubject,
       ),
     );
     if (entry == null || !mounted) return;
@@ -123,7 +126,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
         'updatedAt': FieldValue.serverTimestamp(),
       });
       if (mounted) {
-        setState(() => _selectedDate = entry.date);
+        setState(() {
+          _selectedDate = entry.date;
+          _showAddChoices = false;
+        });
         showMessagePopupInOverlay(
           overlay,
           message: 'Timetable entry added successfully.',
@@ -164,7 +170,12 @@ class _TimetableScreenState extends State<TimetableScreen> {
               Expanded(
                 child: _TimetableEntries(
                   selectedDate: _selectedDate,
-                  onAdd: _openAddScreen,
+                  showAddChoices: _showAddChoices,
+                  onAdd: () => setState(() => _showAddChoices = true),
+                  onAddSubject: () => _openAddScreen(isSubject: true),
+                  onAddOther: () => _openAddScreen(isSubject: false),
+                  onCloseAddChoices: () =>
+                      setState(() => _showAddChoices = false),
                 ),
               ),
             ],
@@ -304,9 +315,19 @@ class _DateChip extends StatelessWidget {
 }
 
 class _EmptyTimetable extends StatelessWidget {
-  const _EmptyTimetable({required this.onAdd});
+  const _EmptyTimetable({
+    required this.onAdd,
+    required this.showAddChoices,
+    required this.onAddSubject,
+    required this.onAddOther,
+    required this.onCloseAddChoices,
+  });
 
   final VoidCallback onAdd;
+  final bool showAddChoices;
+  final VoidCallback onAddSubject;
+  final VoidCallback onAddOther;
+  final VoidCallback onCloseAddChoices;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -328,18 +349,12 @@ class _EmptyTimetable extends StatelessWidget {
           ),
         ),
         const Spacer(),
-        OutlinedButton(
-          onPressed: onAdd,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: const Color(0xFF171717),
-            side: const BorderSide(color: TimetableScreen._green),
-            padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
-            shape: const StadiumBorder(),
-          ),
-          child: Text(
-            'Add to timetable',
-            style: GoogleFonts.lato(fontSize: 14, fontWeight: FontWeight.w700),
-          ),
+        _AddTimetableButtons(
+          expanded: showAddChoices,
+          onAdd: onAdd,
+          onAddSubject: onAddSubject,
+          onAddOther: onAddOther,
+          onClose: onCloseAddChoices,
         ),
       ],
     ),
@@ -347,15 +362,34 @@ class _EmptyTimetable extends StatelessWidget {
 }
 
 class _TimetableEntries extends StatelessWidget {
-  const _TimetableEntries({required this.selectedDate, required this.onAdd});
+  const _TimetableEntries({
+    required this.selectedDate,
+    required this.onAdd,
+    required this.showAddChoices,
+    required this.onAddSubject,
+    required this.onAddOther,
+    required this.onCloseAddChoices,
+  });
 
   final DateTime selectedDate;
   final VoidCallback onAdd;
+  final bool showAddChoices;
+  final VoidCallback onAddSubject;
+  final VoidCallback onAddOther;
+  final VoidCallback onCloseAddChoices;
 
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return _EmptyTimetable(onAdd: onAdd);
+    if (user == null) {
+      return _EmptyTimetable(
+        onAdd: onAdd,
+        showAddChoices: showAddChoices,
+        onAddSubject: onAddSubject,
+        onAddOther: onAddOther,
+        onCloseAddChoices: onCloseAddChoices,
+      );
+    }
     return StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
       stream: FirebaseFirestore.instance
           .collection('users')
@@ -402,6 +436,10 @@ class _TimetableEntries extends StatelessWidget {
           entries: entries,
           selectedDate: selectedDate,
           onAdd: onAdd,
+          showAddChoices: showAddChoices,
+          onAddSubject: onAddSubject,
+          onAddOther: onAddOther,
+          onCloseAddChoices: onCloseAddChoices,
         );
       },
     );
@@ -423,15 +461,31 @@ class _TimetableContent extends StatelessWidget {
     required this.entries,
     required this.selectedDate,
     required this.onAdd,
+    required this.showAddChoices,
+    required this.onAddSubject,
+    required this.onAddOther,
+    required this.onCloseAddChoices,
   });
 
   final List<_TimetableEntry> entries;
   final DateTime selectedDate;
   final VoidCallback onAdd;
+  final bool showAddChoices;
+  final VoidCallback onAddSubject;
+  final VoidCallback onAddOther;
+  final VoidCallback onCloseAddChoices;
 
   @override
   Widget build(BuildContext context) {
-    if (entries.isEmpty) return _EmptyTimetable(onAdd: onAdd);
+    if (entries.isEmpty) {
+      return _EmptyTimetable(
+        onAdd: onAdd,
+        showAddChoices: showAddChoices,
+        onAddSubject: onAddSubject,
+        onAddOther: onAddOther,
+        onCloseAddChoices: onCloseAddChoices,
+      );
+    }
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       child: Column(
@@ -446,23 +500,75 @@ class _TimetableContent extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          OutlinedButton(
-            onPressed: onAdd,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF171717),
-              side: const BorderSide(color: TimetableScreen._green),
-              shape: const StadiumBorder(),
-            ),
-            child: Text(
-              'Add to timetable',
-              style: GoogleFonts.lato(
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+          _AddTimetableButtons(
+            expanded: showAddChoices,
+            onAdd: onAdd,
+            onAddSubject: onAddSubject,
+            onAddOther: onAddOther,
+            onClose: onCloseAddChoices,
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AddTimetableButtons extends StatelessWidget {
+  const _AddTimetableButtons({
+    required this.expanded,
+    required this.onAdd,
+    required this.onAddSubject,
+    required this.onAddOther,
+    required this.onClose,
+  });
+
+  final bool expanded;
+  final VoidCallback onAdd;
+  final VoidCallback onAddSubject;
+  final VoidCallback onAddOther;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    final buttonStyle = OutlinedButton.styleFrom(
+      foregroundColor: const Color(0xFF171717),
+      side: const BorderSide(color: TimetableScreen._green),
+      shape: const StadiumBorder(),
+      textStyle: GoogleFonts.lato(fontSize: 13, fontWeight: FontWeight.w700),
+    );
+    if (!expanded) {
+      return OutlinedButton(
+        onPressed: onAdd,
+        style: buttonStyle,
+        child: const Text('Add to timetable'),
+      );
+    }
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        OutlinedButton(
+          onPressed: onAddSubject,
+          style: buttonStyle,
+          child: const Text('Add a Subject'),
+        ),
+        const SizedBox(width: 12),
+        OutlinedButton(
+          onPressed: onAddOther,
+          style: buttonStyle,
+          child: const Text('Add Other'),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          onPressed: onClose,
+          icon: const Icon(Icons.close, size: 18),
+          style: IconButton.styleFrom(
+            foregroundColor: const Color(0xFF171717),
+            side: const BorderSide(color: Color(0xFFE1E1E1)),
+            shape: const CircleBorder(),
+            fixedSize: const Size(36, 36),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -718,10 +824,22 @@ class _TimetableEntryCard extends StatelessWidget {
           currentMinutes >= startMinutes &&
           currentMinutes < endMinutes;
       final isExperience = entry.experienceId != null;
+      final isSubject = entry.category == 'Subject';
       return Material(
         color: Colors.white,
         child: InkWell(
-          onTap: isExperience ? () => _openExperience(context) : null,
+          onTap: isExperience
+              ? () => _openExperience(context)
+              : isSubject
+              ? () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => SubjectProgressScreen(
+                      subject: entry.title,
+                      entryId: entry.id,
+                    ),
+                  ),
+                )
+              : null,
           borderRadius: BorderRadius.circular(8),
           child: Container(
             width: double.infinity,
@@ -885,6 +1003,7 @@ class _TimetableEntrySheet extends StatefulWidget {
     this.initialTitle,
     this.titleLocked = false,
     this.upcomingOnly = false,
+    this.subjectMode = false,
   });
 
   final String category;
@@ -893,12 +1012,22 @@ class _TimetableEntrySheet extends StatefulWidget {
   final String? initialTitle;
   final bool titleLocked;
   final bool upcomingOnly;
+  final bool subjectMode;
 
   @override
   State<_TimetableEntrySheet> createState() => _TimetableEntrySheetState();
 }
 
 class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
+  static const _subjects = [
+    'English',
+    'Mathematics',
+    'Science',
+    'History',
+    'Geography',
+    'Music',
+    'Art & Design',
+  ];
   static const _days = [
     'Monday',
     'Tuesday',
@@ -1029,6 +1158,64 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
       '${time.hour.toString().padLeft(2, '0')}:'
       '${time.minute.toString().padLeft(2, '0')}';
 
+  Future<void> _pickSubject() async {
+    var selected = _titleController.text.isEmpty
+        ? _subjects.first
+        : _titleController.text;
+    final value = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      builder: (pickerContext) => SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 300,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 54,
+                child: Row(
+                  children: [
+                    CupertinoButton(
+                      onPressed: () => Navigator.pop(pickerContext),
+                      child: const Text(
+                        'Cancel',
+                        style: TextStyle(color: CupertinoColors.systemGrey),
+                      ),
+                    ),
+                    const Spacer(),
+                    CupertinoButton(
+                      onPressed: () => Navigator.pop(pickerContext, selected),
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(color: CupertinoColors.systemBlue),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: CupertinoPicker(
+                  itemExtent: 36,
+                  scrollController: FixedExtentScrollController(
+                    initialItem: _subjects
+                        .indexOf(selected)
+                        .clamp(0, _subjects.length - 1),
+                  ),
+                  onSelectedItemChanged: (index) => selected = _subjects[index],
+                  children: _subjects
+                      .map((subject) => Center(child: Text(subject)))
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (value != null && mounted) _titleController.text = value;
+  }
+
   DateTime _regularDate() {
     final today = DateUtils.dateOnly(DateTime.now());
     final firstDay = _selectedDays.isEmpty ? 'Monday' : _selectedDays.first;
@@ -1155,15 +1342,20 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
                     SizedBox(height: keyboardOpen ? 14 : 38),
                     TextField(
                       controller: _titleController,
-                      readOnly: widget.titleLocked,
+                      readOnly: widget.titleLocked || widget.subjectMode,
+                      onTap: widget.subjectMode ? _pickSubject : null,
                       autocorrect: false,
                       enableSuggestions: false,
                       textInputAction: TextInputAction.done,
                       style: GoogleFonts.lato(fontSize: 14),
                       decoration: InputDecoration(
-                        hintText: 'Title',
+                        hintText: widget.subjectMode
+                            ? 'Select a subject'
+                            : 'Title',
                         hintStyle: GoogleFonts.lato(
-                          color: const Color(0xFF858585),
+                          color: widget.subjectMode
+                              ? TimetableScreen._green
+                              : const Color(0xFF858585),
                           fontSize: 14,
                         ),
                         filled: true,
@@ -1349,7 +1541,9 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
                           ),
                         ),
                         child: Text(
-                          'Add to timetable',
+                          widget.subjectMode
+                              ? 'Add subject'
+                              : 'Add to timetable',
                           style: GoogleFonts.lato(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
