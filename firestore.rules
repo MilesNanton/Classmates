@@ -337,6 +337,10 @@ service cloud.firestore {
             && request.resource.data.endMinutes >= 0
             && request.resource.data.endMinutes <= 1439
             && request.resource.data.recurring is bool
+            && (!('childNumber' in request.resource.data)
+              || (request.resource.data.childNumber is int
+                && request.resource.data.childNumber >= 1
+                && request.resource.data.childNumber <= 4))
             && (!('experienceId' in request.resource.data)
               || (request.resource.data.experienceId is string
                 && request.resource.data.experienceId.size() > 0
@@ -356,6 +360,7 @@ service cloud.firestore {
             'startMinutes',
             'endMinutes',
             'recurring',
+            'childNumber',
             'experienceId',
             'createdAt',
             'updatedAt'
@@ -375,6 +380,7 @@ service cloud.firestore {
             'startMinutes',
             'endMinutes',
             'recurring',
+            'childNumber',
             'experienceId',
             'createdAt',
             'updatedAt'
@@ -383,6 +389,59 @@ service cloud.firestore {
           && request.resource.data.createdAt == resource.data.createdAt
           && hasValidTimetableEntry()
           && request.resource.data.updatedAt == request.time;
+      }
+
+      // A user's selected curriculum level and per-topic learning state.
+      // The document id matches its timetable subject entry so progress cannot
+      // be attached to another user's or a non-subject timetable item.
+      match /subjectProgress/{entryId} {
+        function hasValidSubjectProgress() {
+          let timetableEntry = get(
+            /databases/$(database)/documents/users/$(userId)/timetableEntries/$(entryId)
+          );
+          return timetableEntry.data.category == 'Subject'
+            && request.resource.data.subject == timetableEntry.data.title
+            && request.resource.data.subject is string
+            && request.resource.data.subject.size() > 0
+            && request.resource.data.subject.size() <= 100
+            && request.resource.data.startingPointId is string
+            && request.resource.data.startingPointId in [
+              'age5', 'age6', 'age7', 'age8', 'age9', 'age10', 'age11',
+              'year7', 'year8', 'year9', 'year10', 'year11'
+            ]
+            && request.resource.data.topicStatuses is map
+            && request.resource.data.topicStatuses.size() <= 100
+            && request.resource.data.childNumber is int
+            && request.resource.data.childNumber >= 1
+            && request.resource.data.childNumber <= 4
+            && request.resource.data.updatedAt == request.time;
+        }
+
+        allow read: if isOwner();
+        allow create: if isOwner()
+          && request.resource.data.keys().hasOnly([
+            'subject',
+            'startingPointId',
+            'topicStatuses',
+            'childNumber',
+            'createdAt',
+            'updatedAt'
+          ])
+          && hasValidSubjectProgress()
+          && request.resource.data.createdAt == request.time;
+        allow update: if isOwner()
+          && request.resource.data.keys().hasOnly([
+            'subject',
+            'startingPointId',
+            'topicStatuses',
+            'childNumber',
+            'createdAt',
+            'updatedAt'
+          ])
+          && request.resource.data.subject == resource.data.subject
+          && request.resource.data.createdAt == resource.data.createdAt
+          && hasValidSubjectProgress();
+        allow delete: if isOwner();
       }
     }
 

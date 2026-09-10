@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -159,24 +160,28 @@ class _OnboardingStage1State extends State<OnboardingStage1> {
                   width: double.infinity,
                   height: 51,
                   child: FilledButton(
-                    onPressed: () {
-                      if (widget.onContinue case final callback?) {
-                        callback();
-                        return;
-                      }
+                    onPressed:
+                        _ages.take(_childCount).every((age) => age != null)
+                        ? () {
+                            if (widget.onContinue case final callback?) {
+                              callback();
+                              return;
+                            }
 
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => OnboardingStage12(
-                            childCount: _childCount,
-                            childAges: _ages.take(_childCount).toList(),
-                          ),
-                        ),
-                      );
-                    },
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => OnboardingStage12(
+                                  childCount: _childCount,
+                                  childAges: _ages.take(_childCount).toList(),
+                                ),
+                              ),
+                            );
+                          }
+                        : null,
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF00A94F),
                       foregroundColor: Colors.white,
+                      disabledBackgroundColor: const Color(0xFFB7B7B7),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -256,6 +261,86 @@ class _ChildAgeField extends StatelessWidget {
   final int? age;
   final ValueChanged<int> onAgeSelected;
 
+  static const _ageOptions = <(int, String)>[
+    (5, 'Primary - Age 5'),
+    (6, 'Primary - Age 6'),
+    (7, 'Primary - Age 7'),
+    (8, 'Primary - Age 8'),
+    (9, 'Primary - Age 9'),
+    (10, 'Primary - Age 10'),
+    (11, 'Year 7 - Age 11-12'),
+    (12, 'Year 8 - Age 12-13'),
+    (13, 'Year 9 - Age 13-14'),
+    (14, 'Year 10 - Age 14-15'),
+    (15, 'Year 11 - Age 15-16'),
+  ];
+
+  String? get _selectedLabel {
+    if (age == null) return null;
+    for (final option in _ageOptions) {
+      if (option.$1 == age) return option.$2;
+    }
+    return '$age years';
+  }
+
+  Future<void> _selectAge(BuildContext context) async {
+    var selectedIndex = age == null
+        ? 0
+        : _ageOptions
+              .indexWhere((option) => option.$1 == age)
+              .clamp(0, _ageOptions.length - 1);
+    final selectedAge = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 285,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 54,
+                child: Row(
+                  children: [
+                    CupertinoButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      child: const Text('Cancel'),
+                    ),
+                    const Spacer(),
+                    CupertinoButton(
+                      onPressed: () => Navigator.pop(
+                        sheetContext,
+                        _ageOptions[selectedIndex].$1,
+                      ),
+                      child: const Text('Done'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: CupertinoPicker(
+                  itemExtent: 38,
+                  scrollController: FixedExtentScrollController(
+                    initialItem: selectedIndex,
+                  ),
+                  onSelectedItemChanged: (index) => selectedIndex = index,
+                  children: _ageOptions
+                      .map((option) => Center(child: Text(option.$2)))
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (selectedAge != null) onAgeSelected(selectedAge);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -276,23 +361,24 @@ class _ChildAgeField extends StatelessWidget {
               ),
             ),
           ),
-          PopupMenuButton<int>(
-            initialValue: age,
-            onSelected: onAgeSelected,
-            position: PopupMenuPosition.under,
-            tooltip: 'Select child age',
-            itemBuilder: (_) => List.generate(17, (index) {
-              final value = index + 2;
-              return PopupMenuItem(value: value, child: Text('$value years'));
-            }),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 12),
-              child: Text(
-                age == null ? 'Select age' : '$age years',
-                style: GoogleFonts.lato(
-                  color: const Color(0xFF008A3F),
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
+          Semantics(
+            button: true,
+            label: 'Select age for Child $childNumber',
+            child: InkWell(
+              onTap: () => _selectAge(context),
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 7,
+                  vertical: 12,
+                ),
+                child: Text(
+                  _selectedLabel ?? 'Select age',
+                  style: GoogleFonts.lato(
+                    color: const Color(0xFF008A3F),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
               ),
             ),

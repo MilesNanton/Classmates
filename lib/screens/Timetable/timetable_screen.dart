@@ -79,6 +79,8 @@ class TimetableScreen extends StatefulWidget {
 class _TimetableScreenState extends State<TimetableScreen> {
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
   bool _showAddChoices = false;
+  bool _showSubjectHint = true;
+  int _selectedChild = 1;
 
   @override
   void initState() {
@@ -90,7 +92,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
     });
   }
 
-  Future<void> _openAddScreen({required bool isSubject}) async {
+  Future<void> _openAddScreen({
+    required bool isSubject,
+    required int childNumber,
+  }) async {
     final overlay = Overlay.of(context, rootOverlay: true);
     final entry = await showModalBottomSheet<_TimetableEntry>(
       context: context,
@@ -101,6 +106,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         category: isSubject ? 'Subject' : 'Other',
         heading: isSubject ? 'Add a subject' : 'Add to timetable',
         subjectMode: isSubject,
+        childNumber: childNumber,
       ),
     );
     if (entry == null || !mounted) return;
@@ -122,6 +128,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         'startMinutes': entry.start.hour * 60 + entry.start.minute,
         'endMinutes': entry.end.hour * 60 + entry.end.minute,
         'recurring': entry.recurring,
+        'childNumber': childNumber,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
@@ -147,6 +154,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.white,
@@ -156,29 +164,60 @@ class _TimetableScreenState extends State<TimetableScreen> {
       child: Scaffold(
         backgroundColor: Colors.white,
         body: SafeArea(
-          child: Column(
-            children: [
-              _Header(
-                onInfoPressed: () =>
-                    showScreenInfoPopup(context, ScreenInfoType.timetable),
-              ),
-              const Divider(height: 1, color: Color(0xFFEAEAEA)),
-              _DateStrip(
-                selectedDate: _selectedDate,
-                onSelected: (date) => setState(() => _selectedDate = date),
-              ),
-              Expanded(
-                child: _TimetableEntries(
-                  selectedDate: _selectedDate,
-                  showAddChoices: _showAddChoices,
-                  onAdd: () => setState(() => _showAddChoices = true),
-                  onAddSubject: () => _openAddScreen(isSubject: true),
-                  onAddOther: () => _openAddScreen(isSubject: false),
-                  onCloseAddChoices: () =>
-                      setState(() => _showAddChoices = false),
-                ),
-              ),
-            ],
+          child: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+            stream: user == null
+                ? null
+                : FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(user.uid)
+                      .snapshots(),
+            builder: (context, profileSnapshot) {
+              final storedCount = profileSnapshot.data?.data()?['childCount'];
+              final childCount = storedCount is num
+                  ? storedCount.toInt().clamp(1, 4)
+                  : 1;
+              final activeChild = _selectedChild.clamp(1, childCount);
+              return Column(
+                children: [
+                  _Header(
+                    childCount: childCount,
+                    selectedChild: activeChild,
+                    onChildSelected: (child) => setState(() {
+                      _selectedChild = child;
+                      _showAddChoices = false;
+                    }),
+                    onInfoPressed: () =>
+                        showScreenInfoPopup(context, ScreenInfoType.timetable),
+                  ),
+                  const Divider(height: 1, color: Color(0xFFEAEAEA)),
+                  _DateStrip(
+                    selectedDate: _selectedDate,
+                    onSelected: (date) => setState(() => _selectedDate = date),
+                  ),
+                  Expanded(
+                    child: _TimetableEntries(
+                      childNumber: activeChild,
+                      selectedDate: _selectedDate,
+                      showSubjectHint: _showSubjectHint,
+                      onCloseSubjectHint: () =>
+                          setState(() => _showSubjectHint = false),
+                      showAddChoices: _showAddChoices,
+                      onAdd: () => setState(() => _showAddChoices = true),
+                      onAddSubject: () => _openAddScreen(
+                        isSubject: true,
+                        childNumber: activeChild,
+                      ),
+                      onAddOther: () => _openAddScreen(
+                        isSubject: false,
+                        childNumber: activeChild,
+                      ),
+                      onCloseAddChoices: () =>
+                          setState(() => _showAddChoices = false),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
         bottomNavigationBar: _TimetableNavigation(onTap: widget.onTabSelected),
@@ -188,8 +227,16 @@ class _TimetableScreenState extends State<TimetableScreen> {
 }
 
 class _Header extends StatelessWidget {
-  const _Header({required this.onInfoPressed});
+  const _Header({
+    required this.childCount,
+    required this.selectedChild,
+    required this.onChildSelected,
+    required this.onInfoPressed,
+  });
 
+  final int childCount;
+  final int selectedChild;
+  final ValueChanged<int> onChildSelected;
   final VoidCallback onInfoPressed;
 
   @override
@@ -208,6 +255,49 @@ class _Header extends StatelessWidget {
             ),
           ),
           const Spacer(),
+          if (childCount > 1) ...[
+            PopupMenuButton<int>(
+              initialValue: selectedChild,
+              onSelected: onChildSelected,
+              position: PopupMenuPosition.under,
+              tooltip: 'Switch timetable',
+              itemBuilder: (_) => List.generate(
+                childCount,
+                (index) => PopupMenuItem<int>(
+                  value: index + 1,
+                  child: Text('Child ${index + 1}'),
+                ),
+              ),
+              child: Container(
+                height: 42,
+                padding: const EdgeInsets.only(left: 17, right: 10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: TimetableScreen._green, width: 2),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      'Child $selectedChild',
+                      style: GoogleFonts.lato(
+                        color: const Color(0xFF171717),
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(width: 5),
+                    const Icon(
+                      Icons.keyboard_arrow_down,
+                      color: TimetableScreen._green,
+                      size: 23,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+          ],
           ScreenInfoButton(onPressed: onInfoPressed),
         ],
       ),
@@ -363,7 +453,10 @@ class _EmptyTimetable extends StatelessWidget {
 
 class _TimetableEntries extends StatelessWidget {
   const _TimetableEntries({
+    required this.childNumber,
     required this.selectedDate,
+    required this.showSubjectHint,
+    required this.onCloseSubjectHint,
     required this.onAdd,
     required this.showAddChoices,
     required this.onAddSubject,
@@ -371,7 +464,10 @@ class _TimetableEntries extends StatelessWidget {
     required this.onCloseAddChoices,
   });
 
+  final int childNumber;
   final DateTime selectedDate;
+  final bool showSubjectHint;
+  final VoidCallback onCloseSubjectHint;
   final VoidCallback onAdd;
   final bool showAddChoices;
   final VoidCallback onAddSubject;
@@ -418,13 +514,14 @@ class _TimetableEntries extends StatelessWidget {
                 .map(_TimetableEntry.fromDocument)
                 .where(
                   (entry) =>
-                      DateUtils.isSameDay(entry.date, selectedDate) ||
-                      (entry.type == _EntryType.regular &&
-                          entry.recurring &&
-                          entry.days.contains(
-                            _weekdayName(selectedDate.weekday),
-                          ) &&
-                          !selectedDate.isBefore(entry.date)),
+                      entry.childNumber == childNumber &&
+                      (DateUtils.isSameDay(entry.date, selectedDate) ||
+                          (entry.type == _EntryType.regular &&
+                              entry.recurring &&
+                              entry.days.contains(
+                                _weekdayName(selectedDate.weekday),
+                              ) &&
+                              !selectedDate.isBefore(entry.date))),
                 )
                 .toList()
               ..sort((a, b) {
@@ -435,6 +532,8 @@ class _TimetableEntries extends StatelessWidget {
         return _TimetableContent(
           entries: entries,
           selectedDate: selectedDate,
+          showSubjectHint: showSubjectHint,
+          onCloseSubjectHint: onCloseSubjectHint,
           onAdd: onAdd,
           showAddChoices: showAddChoices,
           onAddSubject: onAddSubject,
@@ -460,6 +559,8 @@ class _TimetableContent extends StatelessWidget {
   const _TimetableContent({
     required this.entries,
     required this.selectedDate,
+    required this.showSubjectHint,
+    required this.onCloseSubjectHint,
     required this.onAdd,
     required this.showAddChoices,
     required this.onAddSubject,
@@ -469,6 +570,8 @@ class _TimetableContent extends StatelessWidget {
 
   final List<_TimetableEntry> entries;
   final DateTime selectedDate;
+  final bool showSubjectHint;
+  final VoidCallback onCloseSubjectHint;
   final VoidCallback onAdd;
   final bool showAddChoices;
   final VoidCallback onAddSubject;
@@ -500,6 +603,11 @@ class _TimetableContent extends StatelessWidget {
             ),
           ),
           const Spacer(),
+          if (showSubjectHint &&
+              entries.any((entry) => entry.category == 'Subject')) ...[
+            _SubjectHint(onClose: onCloseSubjectHint),
+            const SizedBox(height: 18),
+          ],
           _AddTimetableButtons(
             expanded: showAddChoices,
             onAdd: onAdd,
@@ -511,6 +619,47 @@ class _TimetableContent extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SubjectHint extends StatelessWidget {
+  const _SubjectHint({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+    decoration: BoxDecoration(
+      border: Border.all(color: const Color(0xFFD8D8D8)),
+      borderRadius: BorderRadius.circular(9),
+    ),
+    child: Row(
+      children: [
+        Expanded(
+          child: Text(
+            'Tap a subject to see what your child\ncan work towards.',
+            style: GoogleFonts.lato(
+              color: const Color(0xFF777777),
+              fontSize: 14,
+              height: 1.35,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: onClose,
+          child: Text(
+            'Close',
+            style: GoogleFonts.lato(
+              color: TimetableScreen._green,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 }
 
 class _AddTimetableButtons extends StatelessWidget {
@@ -633,6 +782,7 @@ class _SwipeableTimetableEntryState extends State<_SwipeableTimetableEntry> {
         initialEntry: widget.entry,
         titleLocked: widget.entry.experienceId != null,
         upcomingOnly: widget.entry.experienceId != null,
+        childNumber: widget.entry.childNumber,
       ),
     );
     final document = _document;
@@ -836,6 +986,7 @@ class _TimetableEntryCard extends StatelessWidget {
                     builder: (_) => SubjectProgressScreen(
                       subject: entry.title,
                       entryId: entry.id,
+                      childNumber: entry.childNumber,
                     ),
                   ),
                 )
@@ -900,6 +1051,8 @@ class _TimetableEntryCard extends StatelessWidget {
                             ),
                           ],
                         )
+                      : isSubject
+                      ? _SubjectTimetableTitle(entry: entry)
                       : Text(
                           entry.title,
                           style: GoogleFonts.lato(
@@ -929,6 +1082,64 @@ class _TimetableEntryCard extends StatelessWidget {
   }
 }
 
+class _SubjectTimetableTitle extends StatelessWidget {
+  const _SubjectTimetableTitle({required this.entry});
+
+  final _TimetableEntry entry;
+
+  @override
+  Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final entryId = entry.id;
+    if (user == null || entryId == null) return _title();
+
+    return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
+      stream: FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('subjectProgress')
+          .doc(entryId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        final statuses = snapshot.data?.data()?['topicStatuses'];
+        String? learningTopic;
+        if (statuses is Map) {
+          for (final status in statuses.entries) {
+            if (status.value == 'learning') {
+              final topicId = '${status.key}';
+              learningTopic = topicId.contains('/')
+                  ? topicId.substring(topicId.indexOf('/') + 1)
+                  : topicId;
+              break;
+            }
+          }
+        }
+        return _title(learningTopic);
+      },
+    );
+  }
+
+  Widget _title([String? learningTopic]) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      Text(
+        entry.title,
+        style: GoogleFonts.lato(fontSize: 17, fontWeight: FontWeight.w800),
+      ),
+      if (learningTopic != null) ...[
+        const SizedBox(height: 4),
+        Text(
+          learningTopic,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.lato(color: const Color(0xFF777777), fontSize: 14),
+        ),
+      ],
+    ],
+  );
+}
+
 class _TimetableEntry {
   const _TimetableEntry({
     this.id,
@@ -941,6 +1152,7 @@ class _TimetableEntry {
     required this.days,
     required this.date,
     required this.recurring,
+    this.childNumber = 1,
   });
 
   final String? id;
@@ -953,6 +1165,7 @@ class _TimetableEntry {
   final List<String> days;
   final DateTime date;
   final bool recurring;
+  final int childNumber;
 
   factory _TimetableEntry.fromDocument(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
@@ -989,6 +1202,9 @@ class _TimetableEntry {
           ? DateUtils.dateOnly(storedDate.toDate())
           : DateUtils.dateOnly(DateTime.now()),
       recurring: data['recurring'] == true,
+      childNumber: data['childNumber'] is num
+          ? (data['childNumber'] as num).toInt()
+          : 1,
     );
   }
 }
@@ -1004,6 +1220,7 @@ class _TimetableEntrySheet extends StatefulWidget {
     this.titleLocked = false,
     this.upcomingOnly = false,
     this.subjectMode = false,
+    this.childNumber = 1,
   });
 
   final String category;
@@ -1013,6 +1230,7 @@ class _TimetableEntrySheet extends StatefulWidget {
   final bool titleLocked;
   final bool upcomingOnly;
   final bool subjectMode;
+  final int childNumber;
 
   @override
   State<_TimetableEntrySheet> createState() => _TimetableEntrySheetState();
@@ -1275,6 +1493,7 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
         days: _type == _EntryType.regular ? _selectedDays.toList() : const [],
         date: entryDate,
         recurring: _type == _EntryType.regular && _repeat,
+        childNumber: widget.childNumber,
       ),
     );
   }
