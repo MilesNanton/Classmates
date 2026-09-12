@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -286,50 +287,102 @@ class _ChildAgeField extends StatelessWidget {
   final int age;
   final ValueChanged<int> onChanged;
 
+  Future<void> _pickAge(BuildContext context) async {
+    var selectedAge = age;
+    final result = await showModalBottomSheet<int>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 300,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 56,
+                child: Row(
+                  children: [
+                    CupertinoButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      child: const Text('Cancel'),
+                    ),
+                    const Spacer(),
+                    CupertinoButton(
+                      onPressed: () => Navigator.pop(sheetContext, selectedAge),
+                      child: const Text('Done'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: CupertinoPicker(
+                  itemExtent: 38,
+                  scrollController: FixedExtentScrollController(
+                    initialItem: age - 2,
+                  ),
+                  onSelectedItemChanged: (index) => selectedAge = index + 2,
+                  children: List.generate(
+                    17,
+                    (index) => Center(child: Text('${index + 2} years')),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (result != null) onChanged(result);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Container(
-        width: 284,
-        height: 48,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          border: Border.all(color: const Color(0xFFD7D7D7)),
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        child: InkWell(
+          onTap: () => _pickAge(context),
           borderRadius: BorderRadius.circular(10),
-        ),
-        child: Row(
-          children: [
-            Text(
-              'Child ${index + 1}',
-              style: GoogleFonts.lato(
-                fontSize: 16,
-                color: const Color(0xFF505050),
-              ),
+          child: Container(
+            width: 284,
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFD7D7D7)),
+              borderRadius: BorderRadius.circular(10),
             ),
-            const Spacer(),
-            DropdownButtonHideUnderline(
-              child: DropdownButton<int>(
-                value: age,
-                icon: const SizedBox.shrink(),
-                borderRadius: BorderRadius.circular(10),
-                style: GoogleFonts.lato(
-                  fontSize: 14,
-                  color: _CommunitySettingsPopupState.green,
-                  fontWeight: FontWeight.w700,
-                ),
-                items: List.generate(
-                  17,
-                  (index) => DropdownMenuItem(
-                    value: index + 2,
-                    child: Text('${index + 2} years'),
+            child: Row(
+              children: [
+                Text(
+                  'Child ${index + 1}',
+                  style: GoogleFonts.lato(
+                    fontSize: 16,
+                    color: const Color(0xFF505050),
                   ),
                 ),
-                onChanged: (value) {
-                  if (value != null) onChanged(value);
-                },
-              ),
+                const Spacer(),
+                Text(
+                  '$age years',
+                  style: GoogleFonts.lato(
+                    fontSize: 14,
+                    color: _CommunitySettingsPopupState.green,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: _CommunitySettingsPopupState.green,
+                  size: 20,
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

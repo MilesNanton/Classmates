@@ -4,7 +4,7 @@ description: "A new Flutter project."
 publish_to: 'none'
 
 
-version: 1.0.0+38
+version: 1.0.0+40
 
 environment:
   sdk: ^3.12.0
@@ -50,6 +50,8 @@ flutter:
     - assets/editIcon.png
     - assets/updatedmessageicon.png
     - assets/latestmessagevector.png
+    - assets/addconnectionicon.png
+    - assets/assembly.png
     - assets/messageiconupdateone.png
     - assets/messagesendicon.png
     - assets/noteicon.png

@@ -7,8 +7,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../widgets/message_widget.dart';
+import '../../widgets/profile_settings_popup.dart';
 import '../../widgets/screen_info_popup.dart';
-import 'add_parents_screen.dart';
 import 'setting_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -105,26 +105,6 @@ class _ProfileHeader extends StatelessWidget {
             ),
             const Spacer(),
             ScreenInfoButton(onPressed: onInfoPressed),
-            const SizedBox(width: 10),
-            Material(
-              color: Colors.white,
-              shape: const CircleBorder(
-                side: BorderSide(color: Color(0xFFE5E5E5)),
-              ),
-              child: InkWell(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const AddParentsScreen(),
-                  ),
-                ),
-                customBorder: const CircleBorder(),
-                child: const SizedBox(
-                  width: 40,
-                  height: 40,
-                  child: Icon(Icons.person_add_outlined, size: 20),
-                ),
-              ),
-            ),
             const SizedBox(width: 10),
             Material(
               color: Colors.white,
@@ -235,6 +215,32 @@ class _ProfileContent extends StatelessWidget {
                 ),
               ],
             ),
+            if (userId != null) ...[
+              const SizedBox(width: 12),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => showProfileSettingsPopup(
+                    context,
+                    userId: userId!,
+                    data: data,
+                  ),
+                  customBorder: const CircleBorder(),
+                  child: SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: Center(
+                      child: Image.asset(
+                        'assets/editIcon.png',
+                        width: 19,
+                        height: 19,
+                        fit: BoxFit.contain,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 42),
@@ -318,13 +324,7 @@ class _ExperiencesCard extends StatelessWidget {
   );
 
   Future<void> _showAddExperienceSheet(BuildContext context) =>
-      showModalBottomSheet<void>(
-        context: context,
-        isScrollControlled: true,
-        useSafeArea: true,
-        backgroundColor: Colors.transparent,
-        builder: (_) => _AddExperienceSheet(userId: userId!),
-      );
+      showSubscriptionPaywall(context);
 }
 
 class _ExperiencesHeader extends StatelessWidget {
@@ -673,7 +673,7 @@ class _CompletedExperienceRowState extends State<_CompletedExperienceRow> {
                             name,
                             style: GoogleFonts.lato(
                               color: ProfileScreen.green,
-                              fontSize: 17,
+                              fontSize: 15,
                               fontWeight: FontWeight.w800,
                             ),
                           ),

@@ -12,6 +12,7 @@ import '../../widgets/message_widget.dart';
 import '../../widgets/post_interaction_popup.dart';
 import '../../widgets/screen_info_popup.dart';
 import '../Profile/profile_screen.dart';
+import '../Profile/setting_screen.dart';
 import '../Resources/resources_screen.dart';
 import '../Experiences/experiences_screen.dart';
 import '../Timetable/timetable_screen.dart';
@@ -33,6 +34,9 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   _FeedView _feedView = _FeedView.all;
   int _bottomIndex = 0;
+  final List<Widget?> _tabScreens = List<Widget?>.filled(5, null);
+  DateTime _timetableDate = DateUtils.dateOnly(DateTime.now());
+  int _timetableChild = 1;
   String _learnCategory = 'Getting started';
 
   static const _learnCategories = [
@@ -385,26 +389,54 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_bottomIndex == 1) {
-      return ExperiencesScreen(
-        onTabSelected: (index) => setState(() => _bottomIndex = index),
-      );
+    if (_bottomIndex != 0) {
+      _tabScreens[_bottomIndex] ??= _buildTabScreen(_bottomIndex);
     }
-    if (_bottomIndex == 2) {
-      return TimetableScreen(
-        onTabSelected: (index) => setState(() => _bottomIndex = index),
-      );
+    return IndexedStack(
+      index: _bottomIndex,
+      children: List<Widget>.generate(
+        _tabScreens.length,
+        (index) => index == 0
+            ? _buildHomeTab()
+            : _tabScreens[index] ?? const SizedBox.shrink(),
+      ),
+    );
+  }
+
+  Widget _buildTabScreen(int index) {
+    switch (index) {
+      case 1:
+        return ExperiencesScreen(onTabSelected: _selectTab);
+      case 2:
+        return TimetableScreen(
+          onTabSelected: _selectTab,
+          initialSelectedDate: _timetableDate,
+          initialSelectedChild: _timetableChild,
+          onDateChanged: (date) => _timetableDate = date,
+          onChildChanged: (child) => _timetableChild = child,
+        );
+      case 3:
+        return ResourcesScreen(onTabSelected: _selectTab);
+      case 4:
+        return ProfileScreen(onTabSelected: _selectTab);
+      default:
+        return _buildHomeTab();
     }
-    if (_bottomIndex == 3) {
-      return ResourcesScreen(
-        onTabSelected: (index) => setState(() => _bottomIndex = index),
-      );
+  }
+
+  void _selectTab(int index) {
+    if (index < 0 || index >= _tabScreens.length || index == _bottomIndex) {
+      return;
     }
-    if (_bottomIndex == 4) {
-      return ProfileScreen(
-        onTabSelected: (index) => setState(() => _bottomIndex = index),
-      );
-    }
+    setState(() {
+      _bottomIndex = index;
+      if (index != 0) {
+        _tabScreens[index] ??= _buildTabScreen(index);
+      }
+    });
+  }
+
+  Widget _buildHomeTab() {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.white,
@@ -472,18 +504,25 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
               color: _green,
               shape: const CircleBorder(),
               child: InkWell(
-                onTap: () => showHomePostPopup(context),
+                onTap: () => showSubscriptionPaywall(context),
                 customBorder: const CircleBorder(),
-                child: const SizedBox(
+                child: SizedBox(
                   width: 40,
                   height: 40,
                   child: Center(
-                    child: Image(
-                      image: AssetImage('assets/latestmessagevector.png'),
-                      width: 18,
-                      height: 18,
-                      fit: BoxFit.contain,
-                    ),
+                    child: _feedView == _FeedView.connections
+                        ? const Image(
+                            image: AssetImage('assets/addconnectionicon.png'),
+                            width: 18,
+                            height: 18,
+                            fit: BoxFit.contain,
+                          )
+                        : const Image(
+                            image: AssetImage('assets/latestmessagevector.png'),
+                            width: 18,
+                            height: 18,
+                            fit: BoxFit.contain,
+                          ),
                   ),
                 ),
               ),
@@ -1072,7 +1111,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
               final selected = index == _bottomIndex;
               return Expanded(
                 child: InkWell(
-                  onTap: () => setState(() => _bottomIndex = index),
+                  onTap: () => _selectTab(index),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -1476,6 +1515,8 @@ class _NoConnectionPosts extends StatelessWidget {
       title: 'Your connections',
       description:
           'See the parents and carers you’ve connected with and message them directly.',
+      actionText: 'To add a new connection, tap the add icon above.',
+      actionTextColor: Color(0xFF171717),
     );
   }
 }
@@ -1500,12 +1541,14 @@ class _FeedMessage extends StatelessWidget {
     required this.title,
     required this.description,
     this.actionText,
+    this.actionTextColor = const Color(0xFF0DA64A),
     this.onActionTap,
   });
 
   final String title;
   final String description;
   final String? actionText;
+  final Color actionTextColor;
   final VoidCallback? onActionTap;
 
   @override
@@ -1549,7 +1592,7 @@ class _FeedMessage extends StatelessWidget {
                     text,
                     textAlign: TextAlign.center,
                     style: GoogleFonts.lato(
-                      color: const Color(0xFF0DA64A),
+                      color: actionTextColor,
                       fontSize: 16,
                       fontWeight: FontWeight.w700,
                       height: 1.35,

@@ -392,16 +392,12 @@ service cloud.firestore {
       }
 
       // A user's selected curriculum level and per-topic learning state.
-      // The document id matches its timetable subject entry so progress cannot
-      // be attached to another user's or a non-subject timetable item.
+      // Progress is private to the owning user's document tree. Do not depend
+      // on timetable entry fields here: older entries may use legacy subject
+      // metadata, but their owner must still be able to save progress.
       match /subjectProgress/{entryId} {
         function hasValidSubjectProgress() {
-          let timetableEntry = get(
-            /databases/$(database)/documents/users/$(userId)/timetableEntries/$(entryId)
-          );
-          return timetableEntry.data.category == 'Subject'
-            && request.resource.data.subject == timetableEntry.data.title
-            && request.resource.data.subject is string
+          return request.resource.data.subject is string
             && request.resource.data.subject.size() > 0
             && request.resource.data.subject.size() <= 100
             && request.resource.data.startingPointId is string
@@ -411,6 +407,11 @@ service cloud.firestore {
             ]
             && request.resource.data.topicStatuses is map
             && request.resource.data.topicStatuses.size() <= 100
+            && (!('englishTrack' in request.resource.data)
+              || (request.resource.data.subject == 'English'
+                && request.resource.data.englishTrack in [
+                  'Language', 'Literature'
+                ]))
             && request.resource.data.childNumber is int
             && request.resource.data.childNumber >= 1
             && request.resource.data.childNumber <= 4
@@ -423,6 +424,7 @@ service cloud.firestore {
             'subject',
             'startingPointId',
             'topicStatuses',
+            'englishTrack',
             'childNumber',
             'createdAt',
             'updatedAt'
@@ -434,6 +436,7 @@ service cloud.firestore {
             'subject',
             'startingPointId',
             'topicStatuses',
+            'englishTrack',
             'childNumber',
             'createdAt',
             'updatedAt'

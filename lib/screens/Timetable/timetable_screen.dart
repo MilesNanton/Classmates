@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../widgets/message_widget.dart';
 import '../../widgets/screen_info_popup.dart';
 import '../Experiences/experience_details_screen.dart';
+import '../Profile/setting_screen.dart';
 import 'subject_progress_screen.dart';
 
 Future<void> showExperienceTimetablePopup(
@@ -66,9 +67,20 @@ Future<void> showExperienceTimetablePopup(
 }
 
 class TimetableScreen extends StatefulWidget {
-  const TimetableScreen({super.key, required this.onTabSelected});
+  const TimetableScreen({
+    super.key,
+    required this.onTabSelected,
+    this.initialSelectedDate,
+    this.initialSelectedChild = 1,
+    this.onDateChanged,
+    this.onChildChanged,
+  });
 
   final ValueChanged<int> onTabSelected;
+  final DateTime? initialSelectedDate;
+  final int initialSelectedChild;
+  final ValueChanged<DateTime>? onDateChanged;
+  final ValueChanged<int>? onChildChanged;
 
   static const _green = Color(0xFF00AD4D);
 
@@ -77,79 +89,23 @@ class TimetableScreen extends StatefulWidget {
 }
 
 class _TimetableScreenState extends State<TimetableScreen> {
-  DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
+  late DateTime _selectedDate;
   bool _showAddChoices = false;
   bool _showSubjectHint = true;
-  int _selectedChild = 1;
+  late int _selectedChild;
 
   @override
   void initState() {
     super.initState();
+    _selectedDate = DateUtils.dateOnly(
+      widget.initialSelectedDate ?? DateTime.now(),
+    );
+    _selectedChild = widget.initialSelectedChild;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         showScreenInfoOnFirstVisit(context, ScreenInfoType.timetable);
       }
     });
-  }
-
-  Future<void> _openAddScreen({
-    required bool isSubject,
-    required int childNumber,
-  }) async {
-    final overlay = Overlay.of(context, rootOverlay: true);
-    final entry = await showModalBottomSheet<_TimetableEntry>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black45,
-      builder: (_) => _TimetableEntrySheet(
-        category: isSubject ? 'Subject' : 'Other',
-        heading: isSubject ? 'Add a subject' : 'Add to timetable',
-        subjectMode: isSubject,
-        childNumber: childNumber,
-      ),
-    );
-    if (entry == null || !mounted) return;
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    final document = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('timetableEntries')
-        .doc();
-    try {
-      await document.set({
-        'entryId': document.id,
-        'category': entry.category,
-        'title': entry.title,
-        'type': entry.type.name,
-        'days': entry.days,
-        'date': Timestamp.fromDate(entry.date),
-        'startMinutes': entry.start.hour * 60 + entry.start.minute,
-        'endMinutes': entry.end.hour * 60 + entry.end.minute,
-        'recurring': entry.recurring,
-        'childNumber': childNumber,
-        'createdAt': FieldValue.serverTimestamp(),
-        'updatedAt': FieldValue.serverTimestamp(),
-      });
-      if (mounted) {
-        setState(() {
-          _selectedDate = entry.date;
-          _showAddChoices = false;
-        });
-        showMessagePopupInOverlay(
-          overlay,
-          message: 'Timetable entry added successfully.',
-        );
-      }
-    } on FirebaseException {
-      if (!mounted) return;
-      showMessagePopupInOverlay(
-        overlay,
-        message: 'Could not save timetable entry.',
-        type: MessageType.error,
-      );
-    }
   }
 
   @override
@@ -185,6 +141,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                     onChildSelected: (child) => setState(() {
                       _selectedChild = child;
                       _showAddChoices = false;
+                      widget.onChildChanged?.call(child);
                     }),
                     onInfoPressed: () =>
                         showScreenInfoPopup(context, ScreenInfoType.timetable),
@@ -192,7 +149,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   const Divider(height: 1, color: Color(0xFFEAEAEA)),
                   _DateStrip(
                     selectedDate: _selectedDate,
-                    onSelected: (date) => setState(() => _selectedDate = date),
+                    onSelected: (date) {
+                      setState(() => _selectedDate = date);
+                      widget.onDateChanged?.call(date);
+                    },
                   ),
                   Expanded(
                     child: _TimetableEntries(
@@ -203,14 +163,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
                           setState(() => _showSubjectHint = false),
                       showAddChoices: _showAddChoices,
                       onAdd: () => setState(() => _showAddChoices = true),
-                      onAddSubject: () => _openAddScreen(
-                        isSubject: true,
-                        childNumber: activeChild,
-                      ),
-                      onAddOther: () => _openAddScreen(
-                        isSubject: false,
-                        childNumber: activeChild,
-                      ),
+                      onAddSubject: () => showSubscriptionPaywall(context),
+                      onAddOther: () => showSubscriptionPaywall(context),
                       onCloseAddChoices: () =>
                           setState(() => _showAddChoices = false),
                     ),
@@ -589,34 +543,48 @@ class _TimetableContent extends StatelessWidget {
         onCloseAddChoices: onCloseAddChoices,
       );
     }
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-      child: Column(
-        children: [
-          ...entries.map(
-            (entry) => _SwipeableTimetableEntry(
-              entry: entry,
-              child: _TimetableEntryCard(
-                entry: entry,
-                selectedDate: selectedDate,
+    final showHint =
+        showSubjectHint && entries.any((entry) => entry.category == 'Subject');
+    return Stack(
+      children: [
+        Positioned.fill(
+          child: ListView(
+            padding: EdgeInsets.fromLTRB(20, 12, 20, showHint ? 154 : 68),
+            children: entries
+                .map(
+                  (entry) => _SwipeableTimetableEntry(
+                    entry: entry,
+                    child: _TimetableEntryCard(
+                      entry: entry,
+                      selectedDate: selectedDate,
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+        Positioned(
+          left: 20,
+          right: 20,
+          bottom: 20,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (showHint) ...[
+                _SubjectHint(onClose: onCloseSubjectHint),
+                const SizedBox(height: 18),
+              ],
+              _AddTimetableButtons(
+                expanded: showAddChoices,
+                onAdd: onAdd,
+                onAddSubject: onAddSubject,
+                onAddOther: onAddOther,
+                onClose: onCloseAddChoices,
               ),
-            ),
+            ],
           ),
-          const Spacer(),
-          if (showSubjectHint &&
-              entries.any((entry) => entry.category == 'Subject')) ...[
-            _SubjectHint(onClose: onCloseSubjectHint),
-            const SizedBox(height: 18),
-          ],
-          _AddTimetableButtons(
-            expanded: showAddChoices,
-            onAdd: onAdd,
-            onAddSubject: onAddSubject,
-            onAddOther: onAddOther,
-            onClose: onCloseAddChoices,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -961,18 +929,30 @@ class _TimetableEntryCard extends StatelessWidget {
   Widget build(BuildContext context) => StreamBuilder<DateTime>(
     initialData: DateTime.now(),
     stream: Stream<DateTime>.periodic(
-      const Duration(minutes: 1),
+      const Duration(seconds: 15),
       (_) => DateTime.now(),
     ),
     builder: (context, snapshot) {
       final now = snapshot.data ?? DateTime.now();
-      final currentMinutes = now.hour * 60 + now.minute;
-      final startMinutes = entry.start.hour * 60 + entry.start.minute;
-      final endMinutes = entry.end.hour * 60 + entry.end.minute;
+      final start = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        entry.start.hour,
+        entry.start.minute,
+      );
+      var end = DateTime(
+        selectedDate.year,
+        selectedDate.month,
+        selectedDate.day,
+        entry.end.hour,
+        entry.end.minute,
+      );
+      if (!end.isAfter(start)) end = end.add(const Duration(days: 1));
       final active =
           DateUtils.isSameDay(selectedDate, now) &&
-          currentMinutes >= startMinutes &&
-          currentMinutes < endMinutes;
+          !now.isBefore(start) &&
+          now.isBefore(end);
       final isExperience = entry.experienceId != null;
       final isSubject = entry.category == 'Subject';
       return Material(
@@ -1219,6 +1199,8 @@ class _TimetableEntrySheet extends StatefulWidget {
     this.initialTitle,
     this.titleLocked = false,
     this.upcomingOnly = false,
+    // Kept for the subscriber flow that re-enables subject entry.
+    // ignore: unused_element_parameter
     this.subjectMode = false,
     this.childNumber = 1,
   });
@@ -1299,7 +1281,7 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
 
   Future<void> _pickTime({required bool start}) async {
     final initialTime = start ? _start : _end;
-    var selectedTime = initialTime;
+    var selectedTime = _nearestQuarterHour(initialTime);
     final selected = await showModalBottomSheet<TimeOfDay>(
       context: context,
       backgroundColor: Colors.white,
@@ -1348,9 +1330,10 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
                     2026,
                     1,
                     1,
-                    initialTime.hour,
-                    initialTime.minute,
+                    selectedTime.hour,
+                    selectedTime.minute,
                   ),
+                  minuteInterval: 15,
                   onDateTimeChanged: (dateTime) {
                     selectedTime = TimeOfDay.fromDateTime(dateTime);
                   },
@@ -1366,10 +1349,24 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
       _hasConflict = false;
       if (start) {
         _start = selected;
+        _end = _oneHourAfter(selected);
       } else {
         _end = selected;
       }
     });
+  }
+
+  TimeOfDay _oneHourAfter(TimeOfDay time) => TimeOfDay(
+    hour: (time.hour + 1) % TimeOfDay.hoursPerDay,
+    minute: time.minute,
+  );
+
+  TimeOfDay _nearestQuarterHour(TimeOfDay time) {
+    final roundedMinutes = ((time.hour * 60 + time.minute + 7) ~/ 15) * 15;
+    return TimeOfDay(
+      hour: (roundedMinutes ~/ 60) % TimeOfDay.hoursPerDay,
+      minute: roundedMinutes % 60,
+    );
   }
 
   String _timeText(TimeOfDay time) =>

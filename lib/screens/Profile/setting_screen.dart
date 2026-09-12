@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -5,6 +7,18 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../widgets/message_widget.dart';
+import '../onbarding/home_screen.dart';
+
+Future<void> showSubscriptionPaywall(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    useSafeArea: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black45,
+    builder: (_) => const _SubscriptionSheet(),
+  );
+}
 
 class SettingScreen extends StatelessWidget {
   const SettingScreen({super.key});
@@ -135,7 +149,7 @@ class _SettingsList extends StatelessWidget {
         _SettingsTile(
           iconAsset: 'assets/settingIcons/delete.png',
           label: 'Delete account',
-          onTap: () => _showUnavailable(context, 'Delete account'),
+          onTap: () => _confirmDeleteAccount(context),
         ),
         const _SectionTitle('Help'),
         _SettingsTile(
@@ -162,6 +176,122 @@ class _SettingsList extends StatelessWidget {
 
   static void _showUnavailable(BuildContext context, String feature) {
     showMessagePopup(context, message: '$feature coming soon');
+  }
+
+  static Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final shouldDelete = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete account?'),
+        content: const Text(
+          'This permanently deletes your account and profile data. '
+          'This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text(
+              'Delete account',
+              style: TextStyle(color: Colors.red),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true || !context.mounted) return;
+
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      _openGetStarted(context);
+      return;
+    }
+
+    // Firebase only permits account deletion shortly after authentication.
+    // Check this before deleting Firestore data so a failed auth deletion does
+    // not leave the user with an account but no profile.
+    final lastSignIn = user.metadata.lastSignInTime;
+    if (lastSignIn == null ||
+        DateTime.now().difference(lastSignIn) > const Duration(minutes: 4)) {
+      showMessagePopup(
+        context,
+        message:
+            'Please log out and sign in again before deleting your account.',
+        type: MessageType.error,
+      );
+      return;
+    }
+
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const PopScope(
+        canPop: false,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+    );
+
+    try {
+      final profile = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid);
+      await _deleteProfileData(profile);
+      await user.delete();
+
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      _openGetStarted(context);
+    } on FirebaseAuthException catch (error) {
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      showMessagePopup(
+        context,
+        message: error.code == 'requires-recent-login'
+            ? 'Please log out and sign in again before deleting your account.'
+            : 'Unable to delete your account. Please try again.',
+        type: MessageType.error,
+      );
+    } on FirebaseException {
+      if (!context.mounted) return;
+      Navigator.of(context).pop();
+      showMessagePopup(
+        context,
+        message: 'Unable to delete your account. Please try again.',
+        type: MessageType.error,
+      );
+    }
+  }
+
+  static Future<void> _deleteProfileData(
+    DocumentReference<Map<String, dynamic>> profile,
+  ) async {
+    for (final collectionName in const [
+      'completedExperiences',
+      'parents',
+      'subjectProgress',
+      'timetableEntries',
+    ]) {
+      final documents = await profile.collection(collectionName).get();
+      for (var start = 0; start < documents.docs.length; start += 450) {
+        final batch = FirebaseFirestore.instance.batch();
+        for (final document in documents.docs.skip(start).take(450)) {
+          batch.delete(document.reference);
+        }
+        await batch.commit();
+      }
+    }
+    await profile.delete();
+  }
+
+  static void _openGetStarted(BuildContext context) {
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+      (_) => false,
+    );
   }
 
   static Future<void> _openWebPage(BuildContext context, String url) async {
@@ -245,14 +375,7 @@ class _SettingsList extends StatelessWidget {
   }
 
   static Future<void> _showManageSubscription(BuildContext context) {
-    return showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black45,
-      builder: (_) => const _SubscriptionSheet(),
-    );
+    return showSubscriptionPaywall(context);
   }
 
   static const _bestPractices = <(String, String)>[
@@ -479,27 +602,27 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
     (
       title: 'Discover learning experiences',
       description:
-          'Find inspiring places, activities and experiences for your children.',
+          'Find interesting places, activities and outings designed with homeschooling families in mind.',
     ),
     (
-      title: 'Plan with your timetable',
+      title: 'Build your child’s learning pathway',
       description:
-          'Keep lessons, activities and experiences organised in one place.',
+          'Follow structured subject pathways or choose a flexible route that fits your child.',
     ),
     (
-      title: 'Document your learning',
+      title: 'Plan your week with Timetable',
       description:
-          'Keep a record of the places you visit and the learning moments you share.',
+          'Organise subjects, activities, clubs and regular routines in one place.',
     ),
     (
-      title: 'Make connections',
+      title: 'Connect with homeschooling families',
       description:
-          'Connect with other homeschooling parents and build your local community.',
+          'Meet parents and carers, share ideas and message your connections directly.',
     ),
     (
-      title: 'Ask, share and connect',
+      title: 'Document your homeschooling journey',
       description:
-          'Ask questions, share ideas and experiences, and learn from other homeschooling parents.',
+          'Save experiences, add notes and photos, and keep a record of what your child has done.',
     ),
   ];
 
@@ -517,7 +640,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
           children: [
             SizedBox(
               width: double.infinity,
-              height: 218,
+              height: 174,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -527,7 +650,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                       alignment: Alignment.bottomCenter,
                       child: SizedBox(
                         width: double.infinity,
-                        height: 210,
+                        height: 170,
                         child: Image.asset(
                           'assets/screensIcons/ExprienceIcon.png',
                           fit: BoxFit.contain,
@@ -556,20 +679,20 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                 ],
               ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 8),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Text(
                 'Subscribe to Classmates',
                 textAlign: TextAlign.center,
                 style: GoogleFonts.lato(
                   color: const Color(0xFF181818),
-                  fontSize: 25,
+                  fontSize: 20,
                   fontWeight: FontWeight.w800,
                 ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(height: 10),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
@@ -595,82 +718,89 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                 ],
               ),
             ),
-            const SizedBox(height: 18),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 8),
-              padding: const EdgeInsets.fromLTRB(16, 4, 16, 10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFF7F7F7),
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Column(
-                children: [
-                  for (final feature in _features)
-                    SizedBox(
-                      height: 56,
-                      child: Row(
-                        children: [
-                          const Icon(Icons.check, size: 16),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  feature.title,
-                                  style: GoogleFonts.lato(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w700,
+            const SizedBox(height: 10),
+            Expanded(
+              child: Container(
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF7F7F7),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Column(
+                  children: [
+                    for (final feature in _features)
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Icon(Icons.check, size: 16),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    feature.title,
+                                    style: GoogleFonts.lato(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  feature.description,
-                                  maxLines: 2,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: GoogleFonts.lato(
-                                    color: const Color(0xFF333333),
-                                    fontSize: 10.5,
-                                    height: 1.2,
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    feature.description,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.lato(
+                                      color: const Color(0xFF333333),
+                                      fontSize: 10.5,
+                                      height: 1.2,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 46,
-                    child: FilledButton(
-                      onPressed: () => showMessagePopup(
-                        context,
-                        message: 'Subscription checkout coming soon',
-                      ),
-                      style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFF08A948),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
+                          ],
                         ),
                       ),
-                      child: Text(
-                        _yearly
-                            ? 'Subscribe for £49.99 / year'
-                            : 'Subscribe for £4.99 / month',
-                        style: GoogleFonts.lato(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: SizedBox(
+                width: double.infinity,
+                height: 42,
+                child: FilledButton(
+                  onPressed: () => showMessagePopup(
+                    context,
+                    message: 'Subscription checkout coming soon',
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF08A948),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  child: Text(
+                    _yearly
+                        ? 'Subscribe for £49.99 / year'
+                        : 'Subscribe for £4.99 / month',
+                    style: GoogleFonts.lato(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
             Text.rich(
               TextSpan(
                 children: [
@@ -687,10 +817,10 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
               ),
               style: GoogleFonts.lato(
                 color: const Color(0xFF6D6D6D),
-                fontSize: 13,
+                fontSize: 10,
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 28),
           ],
         ),
       ),
@@ -720,8 +850,8 @@ class _PlanCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(12),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        height: 66,
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        height: 64,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
           color: selected ? const Color(0xFFF4FCF7) : Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -739,16 +869,21 @@ class _PlanCard extends StatelessWidget {
                 children: [
                   Text(
                     price,
+                    maxLines: 1,
                     style: GoogleFonts.lato(
                       fontSize: 16,
+                      height: 1.1,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
+                  const SizedBox(height: 3),
                   Text(
                     period,
+                    maxLines: 1,
                     style: GoogleFonts.lato(
                       color: const Color(0xFF777777),
-                      fontSize: 13,
+                      fontSize: 12,
+                      height: 1.1,
                     ),
                   ),
                 ],

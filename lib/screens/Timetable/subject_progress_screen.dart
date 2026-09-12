@@ -1,8 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../widgets/message_widget.dart';
 
 class SubjectProgressScreen extends StatefulWidget {
   const SubjectProgressScreen({
@@ -24,6 +28,8 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
   String? _expanded;
   Map<String, String> _statuses = {};
   bool _loading = true;
+  bool _progressDocumentExists = false;
+  String _englishTrack = 'Language';
 
   DocumentReference<Map<String, dynamic>>? get _document {
     final user = FirebaseAuth.instance.currentUser;
@@ -36,13 +42,32 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
   }
 
   bool get _isSupported =>
-      widget.subject == 'Mathematics' || widget.subject == 'English';
+      widget.subject == 'Mathematics' ||
+      widget.subject == 'English' ||
+      widget.subject == 'Science';
 
-  Map<String, Level> get _subjectLevels =>
-      widget.subject == 'English' ? englishLevels : mathsLevels;
+  Map<String, Level> get _subjectLevels => switch (widget.subject) {
+    'English' => englishLevels,
+    'Science' => scienceLevels,
+    _ => mathsLevels,
+  };
 
   Level? get _level =>
       _isSupported && _levelId != null ? _subjectLevels[_levelId] : null;
+
+  bool get _showEnglishTrack =>
+      widget.subject == 'English' && (_levelId?.startsWith('year') ?? false);
+
+  List<(String, String)> get _availableStartingPoints => startingPoints
+      .where((point) => _subjectLevels.containsKey(point.$1))
+      .toList();
+
+  String get _levelLabel => startingPoints
+      .firstWhere(
+        (point) => point.$1 == _levelId,
+        orElse: () => (_levelId ?? '', _level?.label ?? ''),
+      )
+      .$2;
 
   @override
   void initState() {
@@ -60,7 +85,13 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
       ]);
       final snapshot = results.firstOrNull;
       final data = snapshot?.data();
+      _progressDocumentExists = snapshot?.exists == true;
       _levelId = data?['startingPointId'] as String?;
+      if (_levelId == 'age11') _levelId = 'year7';
+      final englishTrack = data?['englishTrack'];
+      if (englishTrack == 'Language' || englishTrack == 'Literature') {
+        _englishTrack = englishTrack as String;
+      }
       final statuses = data?['topicStatuses'];
       if (statuses is Map) {
         _statuses = statuses.map((key, value) => MapEntry('$key', '$value'));
@@ -88,22 +119,101 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
     final document = _document;
     if (document == null || _levelId == null) return;
     try {
-      final exists = (await document.get()).exists;
       await document.set({
         'subject': widget.subject,
         'childNumber': widget.childNumber,
         'startingPointId': _levelId,
         'topicStatuses': _statuses,
-        if (!exists) 'createdAt': FieldValue.serverTimestamp(),
+        if (_showEnglishTrack) 'englishTrack': _englishTrack,
+        if (!_progressDocumentExists) 'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
-    } on FirebaseException {
+      _progressDocumentExists = true;
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not save this progress.')),
+        showMessagePopup(
+          context,
+          message: 'Progress saved successfully.',
+          duration: const Duration(seconds: 2),
+        );
+      }
+    } on FirebaseException catch (error) {
+      if (kDebugMode) {
+        debugPrint(
+          '[SubjectProgress] Save failed (${error.code}): ${error.message}',
+        );
+      }
+      if (mounted) {
+        showMessagePopup(
+          context,
+          message: 'Could not save this progress. Please try again.',
+          type: MessageType.error,
         );
       }
     }
+  }
+
+  Future<void> _pickLevel() async {
+    final availablePoints = _availableStartingPoints;
+    if (availablePoints.isEmpty) return;
+    var selectedIndex = availablePoints
+        .indexWhere((point) => point.$1 == _levelId)
+        .clamp(0, availablePoints.length - 1);
+    final result = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: SizedBox(
+          height: 370,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 56,
+                child: Row(
+                  children: [
+                    CupertinoButton(
+                      onPressed: () => Navigator.pop(sheetContext),
+                      child: const Text('Cancel'),
+                    ),
+                    const Spacer(),
+                    CupertinoButton(
+                      onPressed: () => Navigator.pop(
+                        sheetContext,
+                        availablePoints[selectedIndex].$1,
+                      ),
+                      child: const Text('Done'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 1),
+              Expanded(
+                child: CupertinoPicker(
+                  itemExtent: 38,
+                  scrollController: FixedExtentScrollController(
+                    initialItem: selectedIndex,
+                  ),
+                  onSelectedItemChanged: (index) => selectedIndex = index,
+                  children: availablePoints
+                      .map((point) => Center(child: Text(point.$2)))
+                      .toList(),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (result == null || result == _levelId || !mounted) return;
+    setState(() {
+      _levelId = result;
+      _statuses = {};
+      _expanded = _subjectLevels[result]?.modules.firstOrNull?.name;
+    });
+    await _save();
   }
 
   Future<void> _changeStatus(String topicId) async {
@@ -154,6 +264,16 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
             widget.subject,
             style: GoogleFonts.lato(fontSize: 16, fontWeight: FontWeight.w700),
           ),
+          actions: [
+            if (_showEnglishTrack)
+              _EnglishTrackDropdown(
+                value: _englishTrack,
+                onChanged: (value) {
+                  setState(() => _englishTrack = value);
+                  _save();
+                },
+              ),
+          ],
           bottom: const PreferredSize(
             preferredSize: Size.fromHeight(1),
             child: Divider(height: 1, color: Color(0xFFEAEAEA)),
@@ -185,16 +305,11 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
                             fontSize: 14,
                           ),
                         ),
+                        const SizedBox(height: 12),
+                        _buildLevelSelector('Select an age or year'),
                       ]
                     : [
-                        Text(
-                          level.label,
-                          style: GoogleFonts.lato(
-                            color: green,
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
+                        _buildLevelSelector(_levelLabel),
                         const SizedBox(height: 4),
                         Text(
                           '${level.modules.length} modules to explore throughout the year',
@@ -228,14 +343,46 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _PathButton(label: 'GCSE Pathway', selected: true),
-                      const SizedBox(width: 12),
                       _PathButton(label: 'Flexible Pathway', selected: false),
+                      const SizedBox(width: 12),
+                      _PathButton(label: 'GCSE Pathway', selected: true),
                     ],
                   ),
                 ),
               )
             : null,
+      ),
+    );
+  }
+
+  Widget _buildLevelSelector(String label) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Material(
+        color: const Color(0xFFF4FBF7),
+        borderRadius: BorderRadius.circular(8),
+        child: InkWell(
+          onTap: _pickLevel,
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: GoogleFonts.lato(
+                    color: green,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.keyboard_arrow_down, color: green, size: 20),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -249,6 +396,58 @@ String _levelIdForAge(int age) {
   if (age == 13) return 'year9';
   if (age == 14) return 'year10';
   return 'year11';
+}
+
+class _EnglishTrackDropdown extends StatelessWidget {
+  const _EnglishTrackDropdown({required this.value, required this.onChanged});
+
+  final String value;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(right: 12),
+    child: PopupMenuButton<String>(
+      initialValue: value,
+      onSelected: onChanged,
+      position: PopupMenuPosition.under,
+      itemBuilder: (_) => const [
+        PopupMenuItem(value: 'Language', child: Text('Language')),
+        PopupMenuItem(value: 'Literature', child: Text('Literature')),
+      ],
+      child: Container(
+        height: 38,
+        padding: const EdgeInsets.fromLTRB(14, 0, 9, 0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(
+            color: _SubjectProgressScreenState.green,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value,
+              style: GoogleFonts.lato(
+                color: const Color(0xFF171717),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.keyboard_arrow_down,
+              color: _SubjectProgressScreenState.green,
+              size: 20,
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 class _ModuleCard extends StatelessWidget {
@@ -460,7 +659,6 @@ const startingPoints = <(String, String)>[
   ('age8', 'Primary — Age 8'),
   ('age9', 'Primary — Age 9'),
   ('age10', 'Primary — Age 10'),
-  ('age11', 'Primary — Age 11'),
   ('year7', 'Year 7 — Age 11–12'),
   ('year8', 'Year 8 — Age 12–13'),
   ('year9', 'Year 9 — Age 13–14'),
@@ -470,7 +668,7 @@ const startingPoints = <(String, String)>[
 
 const mathsLevels = <String, Level>{
   'age5': Level('Age 5', [
-    Module('Number', [
+    Module('Numbers', [
       'Counting to 100',
       'Recognising numbers',
       'Writing numbers',
@@ -529,43 +727,43 @@ const mathsLevels = <String, Level>{
       'Using 2, 5 and 10 times tables',
     ]),
     Module('Fractions, Shape & Measure', [
-      'Finding halves and quarters',
+      'Finding halves of quantities',
+      'Finding quarters of quantities',
       'Recognising thirds',
       'Describing properties of shapes',
       'Measuring in centimetres and metres',
-      'Reading simple scales and charts',
     ]),
     Module('Time, Money & Data', [
       'Telling time to the hour',
       'Telling time to half past',
-      'Telling time with o’clock',
-      'Reading simple change',
-      'Finding simple tables and charts',
+      'Finding totals with coins',
+      'Finding simple change',
+      'Reading simple tables and charts',
     ]),
   ]),
   'age7': Level('Age 7', [
     Module('Number & Place Value', [
       'Numbers to 1,000',
       'Hundreds, tens and ones',
-      'Ordering numbers',
-      'Rounding to nearest 10',
+      'Ordering larger numbers',
+      'Rounding to the nearest 10',
       'Using number lines',
     ]),
-    Module('Calculations', [
+    Module('Calculation', [
       'Adding three-digit numbers',
       'Subtracting three-digit numbers',
       'Using inverse operations',
       'Estimating answers',
       'Solving two-step problems',
     ]),
-    Module('Multiplication & Division', [
+    Module('Multiplication, Division & Fractions', [
       '3, 4 and 8 times tables',
       'Applying multiplication facts',
       'Written multiplication',
       'Written division',
+      'Finding fractions of amounts',
     ]),
-    Module('Fractions & Measure', [
-      'Equivalent fractions',
+    Module('Geometry & Measurement', [
       'Recognising right angles',
       'Describing angles',
       'Perimeter',
@@ -632,7 +830,7 @@ const mathsLevels = <String, Level>{
       'Remainders in division',
       'Solving problems using factors and multiples',
     ]),
-    Module('Fractions', [
+    Module('Fractions, Decimals & Percentages', [
       'Simplifying fractions',
       'Comparing fractions with different denominators',
       'Adding and subtracting fractions',
@@ -682,7 +880,11 @@ const mathsLevels = <String, Level>{
       'Using simple algebraic expressions',
       'Coordinates in four quadrants',
       'Calculating volume',
-      'Solving problems with scale drawings',
+    ]),
+    Module('Measures, Data & Reasoning', [
+      'Converting between metric units',
+      'Calculating area of triangles',
+      'Calculating area of parallelograms',
       'Interpreting pie charts',
       'Solving complex real-world problems',
     ]),
@@ -714,267 +916,412 @@ const mathsLevels = <String, Level>{
   ]),
   'year7': Level('Year 7 - Age 11–12', [
     Module('Number', [
-      'Directed numbers',
-      'Place value',
-      'Fractions',
-      'Decimals and percentages',
+      'Integers & Place Value',
+      'Fractions, Decimals & Percentages',
+      'Factors & Multiples',
+      'Powers & Roots',
+      'Ratio & Proportion',
     ]),
     Module('Algebra', [
-      'Algebraic notation',
-      'Substitution',
-      'Expressions',
-      'Linear sequences',
+      'Algebraic Expressions',
+      'Simplifying & Substitution',
+      'Linear Equations',
+      'Sequences',
+      'Coordinates',
     ]),
-    Module('Ratio & Proportion', [
-      'Ratio notation',
-      'Sharing in a ratio',
-      'Proportion problems',
+    Module('Geometry', [
+      'Angles & Lines',
+      'Triangles & Quadrilaterals',
+      'Polygons',
+      'Perimeter & Area',
+      'Transformations',
     ]),
-    Module('Geometry', ['Angles', 'Perimeter and area', 'Transformations']),
+    Module('Measures', [
+      'Units & Conversions',
+      'Area & Volume',
+      'Time & Timetables',
+      'Scale Drawings',
+      'Compound Measures',
+    ]),
     Module('Statistics & Probability', [
+      'Collecting Data',
+      'Tables & Charts',
       'Averages',
-      'Charts and graphs',
-      'Basic probability',
+      'Probability',
+      'Interpreting Data',
     ]),
   ]),
   'year8': Level('Year 8 - Age 12–13', [
     Module('Number', [
-      'Fractions and percentages',
-      'Standard form',
-      'Powers and roots',
+      'Fractions & Percentages',
+      'Ratio & Proportion',
+      'Powers & Roots',
+      'Standard Form',
+      'Estimation & Approximation',
     ]),
     Module('Algebra', [
-      'Expanding brackets',
-      'Factorising',
-      'Solving equations',
+      'Expanding & Simplifying',
+      'Linear Equations',
+      'Inequalities',
+      'Sequences',
+      'Linear Graphs',
     ]),
-    Module('Ratio & Proportion', [
-      'Direct proportion',
-      'Rates of change',
-      'Scale drawings',
+    Module('Geometry', [
+      'Angle Rules',
+      'Polygons',
+      'Constructions & Loci',
+      'Transformations',
+      'Congruence',
     ]),
-    Module('Geometry', ['Constructions', 'Congruence', 'Volume of prisms']),
+    Module('Measures', [
+      'Area of 2D Shapes',
+      'Volume',
+      'Surface Area',
+      'Circles',
+      'Scale & Similarity',
+    ]),
     Module('Statistics & Probability', [
-      'Scatter graphs',
-      'Grouped data',
-      'Experimental probability',
+      'Data Representation',
+      'Averages & Range',
+      'Scatter Graphs',
+      'Probability Experiments',
+      'Comparing Data',
     ]),
   ]),
   'year9': Level('Year 9 - Age 13–14', [
     Module('Number', [
-      'Fractions',
-      'Decimals',
-      'Percentages',
-      'Powers & Roots',
-      'Factors and multiples',
+      'Standard Form',
+      'Recurring Decimals',
+      'Percentage Change',
+      'Ratio & Proportion',
+      'Indices',
     ]),
     Module('Algebra', [
-      'Expressions and formulae',
-      'Expanding and factorising',
-      'Linear graphs',
+      'Algebraic Manipulation',
+      'Simultaneous Equations',
+      'Quadratic Expressions',
+      'Sequences',
+      'Inequalities',
     ]),
-    Module('Equations & Inequalities', [
-      'Solving linear equations',
-      'Forming equations',
-      'Representing inequalities',
+    Module('Geometry', [
+      "Pythagoras' Theorem",
+      'Trigonometry',
+      'Similarity',
+      'Circle Geometry',
+      'Vectors',
     ]),
-    Module('Ratio & Proportion', [
-      'Ratio problems',
-      'Direct and inverse proportion',
-      'Compound measures',
+    Module('Graphs & Functions', [
+      'Linear Graphs',
+      'Quadratic Graphs',
+      'Real-Life Graphs',
+      'Functions',
+      'Rates of Change',
     ]),
-    Module('Sequences & Graphs', [
-      'Arithmetic sequences',
-      'Real-life graphs',
-      'Quadratic sequences',
-    ]),
-    Module('Geometry & Measure', [
-      'Pythagoras theorem',
-      'Transformations',
-      'Circles',
-    ]),
-    Module('Statistics', [
+    Module('Statistics & Probability', [
       'Sampling',
-      'Cumulative frequency',
-      'Interpreting data',
-    ]),
-    Module('Probability', [
-      'Combined events',
-      'Tree diagrams',
-      'Relative frequency',
-    ]),
-    Module('Mathematical Reasoning', [
-      'Proof',
-      'Problem solving',
-      'Checking solutions',
+      'Statistical Diagrams',
+      'Averages & Spread',
+      'Probability Trees',
+      'Expected Outcomes',
     ]),
   ]),
   'year10': Level('Year 10 - Age 14–15', [
     Module('Number', [
       'Surds',
-      'Bounds',
-      'Standard form',
-      'Recurring decimals',
+      'Indices',
+      'Compound Interest',
+      'Direct & Inverse Proportion',
+      'Bounds & Error',
     ]),
     Module('Algebra', [
-      'Quadratic equations',
-      'Simultaneous equations',
-      'Functions',
+      'Quadratic Equations',
+      'Factorising',
+      'Completing the Square',
+      'Algebraic Fractions',
+      'Iteration',
     ]),
-    Module('Geometry', ['Trigonometry', 'Vectors', 'Circle theorems']),
-    Module('Ratio & Proportion', ['Growth and decay', 'Compound measures']),
+    Module('Geometry & Trigonometry', [
+      'Sine & Cosine Rules',
+      'Circle Theorems',
+      'Advanced Trigonometry',
+      'Vectors',
+      'Similarity & Enlargement',
+    ]),
+    Module('Graphs & Functions', [
+      'Quadratic Graphs',
+      'Cubic & Reciprocal Graphs',
+      'Functions & Inverses',
+      'Graph Transformations',
+      'Gradients & Rates of Change',
+    ]),
     Module('Statistics & Probability', [
       'Histograms',
-      'Cumulative frequency',
-      'Conditional probability',
+      'Cumulative Frequency',
+      'Box Plots',
+      'Conditional Probability',
+      'Statistical Distributions',
     ]),
   ]),
   'year11': Level('Year 11 - Age 15–16', [
-    Module('Number', [
-      'Exact values',
-      'Bounds and error intervals',
-      'Exam-ready number skills',
+    Module('Number & Proportion', [
+      'Exact Calculations',
+      'Advanced Ratio & Proportion',
+      'Bounds & Accuracy',
+      'Numerical Methods',
+      'Financial Mathematics',
     ]),
     Module('Algebra', [
-      'Advanced quadratics',
-      'Algebraic fractions',
-      'Graph transformations',
+      'Algebraic Proof',
+      'Functions',
+      'Equations & Inequalities',
+      'Sequences',
+      'Mathematical Modelling',
     ]),
-    Module('Geometry', [
-      'Advanced trigonometry',
-      'Vectors and proof',
-      'Similarity',
+    Module('Geometry & Measures', [
+      'Circle Theorems',
+      'Advanced Trigonometry',
+      'Vectors',
+      'Similarity & Congruence',
+      '3D Geometry',
     ]),
     Module('Statistics & Probability', [
-      'Distributions',
-      'Probability trees',
-      'Venn diagrams',
+      'Cumulative Frequency',
+      'Histograms',
+      'Box Plots',
+      'Conditional Probability',
+      'Data Interpretation',
     ]),
-    Module('GCSE Problem Solving', [
-      'Multi-step problems',
-      'Mathematical proof',
-      'Exam technique',
+    Module('Problem Solving', [
+      'Multi-Step Problems',
+      'Mathematical Reasoning',
+      'Real-World Problems',
+      'Problem-Solving Strategies',
+      'Mathematical Communication',
     ]),
   ]),
 };
 
 const englishLevels = <String, Level>{
   'age5': Level('Age 5', [
-    Module('Reading', [
-      'Phonics and letter sounds',
-      'Blending simple words',
-      'Common exception words',
+    Module('Phonics & Sounds', [
+      'Recognising letter sounds',
+      'Blending sounds',
+      'Segmenting words',
+      'Reading simple words',
+      'Spelling simple words',
+    ]),
+    Module('Early Reading', [
+      'Reading simple sentences',
+      'Recognising common words',
+      'Reading aloud',
+      "Understanding what you've read",
       'Talking about stories',
     ]),
-    Module('Writing', [
+    Module('Early Writing', [
       'Forming letters',
-      'Writing simple words',
-      'Writing short sentences',
-      'Capital letters and full stops',
+      'Writing words',
+      'Writing simple sentences',
+      'Using capital letters',
+      'Using full stops',
     ]),
-    Module('Speaking & Listening', [
-      'Listening carefully',
-      'Taking turns',
-      'Retelling familiar stories',
+    Module('Stories & Imagination', [
+      'Listening to stories',
+      'Characters',
+      'Settings',
+      'Retelling a story',
+      'Creating simple stories',
+    ]),
+    Module('Speaking & Vocabulary', [
+      'Speaking clearly',
+      'Listening to others',
+      'Learning new words',
+      'Describing things',
+      'Sharing ideas',
     ]),
   ]),
   'age6': Level('Age 6', [
-    Module('Reading', [
-      'Secure phonics',
-      'Reading aloud fluently',
-      'Predicting events',
-      'Answering questions about a text',
+    Module('Reading Skills', [
+      'Reading independently',
+      'Reading unfamiliar words',
+      'Understanding sentences',
+      'Finding information',
+      'Predicting what happens next',
     ]),
-    Module('Writing', [
-      'Spelling common words',
-      'Joining ideas with and',
-      'Sentence punctuation',
-      'Checking written work',
+    Module('Writing Skills', [
+      'Writing complete sentences',
+      'Using capital letters and punctuation',
+      'Joining ideas',
+      'Describing people and places',
+      'Writing short stories',
     ]),
-    Module('Grammar', [
+    Module('Grammar & Spelling', [
       'Nouns and verbs',
-      'Capital letters',
-      'Question marks and exclamation marks',
+      'Adjectives',
+      'Past and present tense',
+      'Common spelling patterns',
+      'Using commas',
+    ]),
+    Module('Stories & Books', [
+      'Exploring characters',
+      'Exploring settings',
+      'Retelling stories',
+      'Comparing stories',
+      'Responding to books',
+    ]),
+    Module('Speaking & Communication', [
+      'Asking questions',
+      'Giving explanations',
+      'Listening carefully',
+      'Expressing opinions',
+      'Speaking to an audience',
     ]),
   ]),
   'age7': Level('Age 7', [
-    Module('Reading', [
-      'Reading with expression',
+    Module('Reading & Understanding', [
+      'Reading longer texts',
+      'Finding key information',
       'Making predictions',
-      'Finding information',
-      'Discussing new vocabulary',
+      'Making simple inferences',
+      "Summarising what you've read",
     ]),
     Module('Writing', [
-      'Planning short pieces',
-      'Using expanded noun phrases',
-      'Past and present tense',
-      'Editing and improving',
+      'Paragraphs',
+      'Descriptive writing',
+      'Narrative writing',
+      'Writing instructions',
+      'Editing your work',
     ]),
-    Module('Spelling & Grammar', [
-      'Spelling patterns',
-      'Commas in lists',
+    Module('Grammar & Vocabulary', [
+      'Adverbs',
+      'Conjunctions',
+      'Sentence structures',
       'Apostrophes',
-      'Sentence types',
+      'Expanding vocabulary',
+    ]),
+    Module('Stories & Poetry', [
+      'Character development',
+      'Story structure',
+      'Exploring themes',
+      'Reading poetry',
+      'Writing poetry',
+    ]),
+    Module('Communication', [
+      'Presenting ideas',
+      'Asking and answering questions',
+      'Group discussions',
+      'Giving opinions',
+      'Adapting how you speak',
     ]),
   ]),
   'age8': Level('Age 8', [
-    Module('Reading', [
-      'Reading a range of texts',
-      'Retrieving information',
-      'Making inferences',
-      'Summarising main ideas',
+    Module('Reading & Inference', [
+      'Reading between the lines',
+      'Using evidence from texts',
+      'Identifying viewpoints',
+      'Summarising information',
+      'Comparing texts',
     ]),
-    Module('Writing', [
-      'Organising paragraphs',
-      'Writing for different purposes',
+    Module('Creative Writing', [
+      'Building characters',
+      'Creating settings',
+      'Narrative structure',
+      'Using descriptive language',
+      'Improving your writing',
+    ]),
+    Module('Grammar & Language', [
+      'Sentence structures',
       'Direct speech',
-      'Proofreading',
+      'Paragraph organisation',
+      'Vocabulary choices',
+      'Punctuation for effect',
     ]),
-    Module('Language', [
-      'Prefixes and suffixes',
-      'Word families',
-      'Conjunctions',
-      'Present perfect tense',
+    Module('Poetry & Literature', [
+      'Exploring poems',
+      'Imagery',
+      'Rhyme and rhythm',
+      'Comparing poems',
+      'Responding to literature',
+    ]),
+    Module('Non-Fiction & Communication', [
+      'Information texts',
+      'Persuasive writing',
+      'Letters and emails',
+      'Presentations',
+      'Debates and discussions',
     ]),
   ]),
   'age9': Level('Age 9', [
-    Module('Reading', [
-      'Fluent independent reading',
-      'Explaining vocabulary',
-      'Inference with evidence',
-      'Comparing texts',
+    Module('Reading Critically', [
+      'Identifying themes',
+      'Exploring characters',
+      'Analysing language',
+      'Comparing viewpoints',
+      'Supporting ideas with evidence',
     ]),
-    Module('Writing', [
-      'Planning and drafting',
-      'Building cohesion',
-      'Descriptive language',
-      'Editing for accuracy',
+    Module('Writing Effectively', [
+      'Planning longer pieces',
+      'Developing paragraphs',
+      'Creating atmosphere',
+      'Writing persuasively',
+      'Editing and improving',
     ]),
-    Module('Grammar & Punctuation', [
-      'Relative clauses',
-      'Modal verbs',
-      'Parenthesis',
-      'Commas for clarity',
+    Module('Language & Grammar', [
+      'Complex sentences',
+      'Word classes',
+      'Formal and informal language',
+      'Punctuation choices',
+      'Vocabulary and tone',
+    ]),
+    Module('Literature & Poetry', [
+      'Exploring literary themes',
+      'Analysing poems',
+      'Comparing characters',
+      "Exploring the writer's choices",
+      'Giving personal responses',
+    ]),
+    Module('Non-Fiction & Speaking', [
+      'Articles',
+      'Reports',
+      'Speeches',
+      'Presenting arguments',
+      'Evaluating information',
     ]),
   ]),
   'age10': Level('Age 10', [
-    Module('Reading', [
-      'Analysing language choices',
-      'Summarising across paragraphs',
-      'Identifying themes',
-      'Evaluating viewpoints',
+    Module('Reading Analysis', [
+      'Analysing language',
+      'Analysing structure',
+      'Exploring themes',
+      'Comparing texts',
+      'Building interpretations',
     ]),
-    Module('Writing', [
-      'Writing for audience and purpose',
-      'Cohesion across paragraphs',
-      'Formal and informal tone',
+    Module('Writing with Purpose', [
+      'Narrative writing',
+      'Descriptive writing',
+      'Persuasive writing',
+      'Formal writing',
+      'Structuring extended responses',
+    ]),
+    Module('Language & Accuracy', [
+      'Complex grammar',
+      'Sentence variety',
       'Precise vocabulary',
+      'Punctuation for effect',
+      'Proofreading and editing',
     ]),
-    Module('Grammar & Punctuation', [
-      'Active and passive voice',
-      'Perfect verb forms',
-      'Colons and semicolons',
-      'Hyphens',
+    Module('Literature', [
+      'Analysing characters',
+      'Analysing themes',
+      'Exploring poetry',
+      'Comparing texts',
+      "Discussing the writer's intentions",
+    ]),
+    Module('Communication & Research', [
+      'Researching information',
+      'Evaluating sources',
+      'Presenting findings',
+      'Debating ideas',
+      'Speaking confidently',
     ]),
   ]),
   'age11': Level('Age 11', [
@@ -997,103 +1344,592 @@ const englishLevels = <String, Level>{
     ]),
   ]),
   'year7': Level('Year 7 - Age 11–12', [
-    Module('Reading Literature', [
-      'Character and theme',
-      'Language and structure',
-      'Using quotations',
-      'Poetry analysis',
-    ]),
-    Module('Writing', [
-      'Creative writing',
-      'Transactional writing',
-      'Paragraph cohesion',
-      'Technical accuracy',
+    Module('Reading & Understanding', [
+      'Understanding Fiction & Non-Fiction',
+      'Retrieving Information',
+      'Inference',
+      'Summarising',
+      'Using Evidence',
     ]),
     Module('Language', [
-      'Word classes',
-      'Sentence structures',
-      'Rhetorical devices',
-      'Spoken presentations',
+      'Vocabulary',
+      'Figurative Language',
+      'Word Choice',
+      'Sentence Types',
+      'Language Effects',
+    ]),
+    Module('Creative Writing', [
+      'Description',
+      'Narrative',
+      'Character',
+      'Setting',
+      'Dialogue',
+    ]),
+    Module('Writing Skills', [
+      'Audience & Purpose',
+      'Paragraphing',
+      'Sentence Structure',
+      'Planning',
+      'Editing',
+    ]),
+    Module('Grammar & Communication', [
+      'Spelling',
+      'Punctuation',
+      'Grammar',
+      'Standard English',
+      'Speaking & Listening',
     ]),
   ]),
   'year8': Level('Year 8 - Age 12–13', [
-    Module('Literature', [
-      'Analysing prose',
-      'Drama and performance',
-      'Poetic form',
-      'Context and interpretation',
+    Module('Reading & Analysis', [
+      'Explicit & Implicit Meaning',
+      'Inference & Interpretation',
+      'Evidence',
+      "Writer's Ideas",
+      'Reader Response',
     ]),
-    Module('Non-fiction', [
-      'Writers’ viewpoints',
-      'Comparing sources',
-      'Persuasive techniques',
-      'Summarising information',
+    Module('Language & Structure', [
+      'Language Techniques',
+      'Structural Techniques',
+      'Narrative Perspective',
+      'Openings & Endings',
+      'Effects on the Reader',
     ]),
-    Module('Writing Craft', [
-      'Voice and viewpoint',
-      'Structure and pace',
+    Module('Creative Writing', [
+      'Narrative Structure',
+      'Characterisation',
+      'Description',
       'Imagery',
-      'Editing for effect',
+      'Atmosphere',
+    ]),
+    Module('Non-Fiction Writing', [
+      'Articles',
+      'Speeches',
+      'Letters',
+      'Reviews',
+      'Informative Writing',
+    ]),
+    Module('Developing Writing', [
+      'Sentence Variety',
+      'Paragraph Cohesion',
+      'Vocabulary',
+      'Punctuation for Effect',
+      'Editing & Redrafting',
     ]),
   ]),
   'year9': Level('Year 9 - Age 13–14', [
-    Module('Shakespeare & Drama', [
-      'Character development',
-      'Themes',
-      'Dramatic methods',
-      'Using context',
+    Module('Critical Reading', [
+      'Language Analysis',
+      'Structure Analysis',
+      "Writer's Methods",
+      'Inference & Interpretation',
+      'Evaluation',
     ]),
-    Module('Prose & Poetry', [
-      'Close language analysis',
+    Module('Comparing Texts', [
+      'Viewpoints',
+      'Ideas & Themes',
+      'Language',
       'Structure',
-      'Comparing poems',
-      'Critical response',
+      'Supporting Evidence',
     ]),
-    Module('English Language', [
-      'Creative reading',
-      'Creative writing',
-      'Viewpoints and perspectives',
-      'Transactional writing',
+    Module('Creative Writing', [
+      'Narrative Voice',
+      'Character Development',
+      'Setting',
+      'Figurative Language',
+      'Narrative Structure',
+    ]),
+    Module('Persuasive Writing', [
+      'Persuasive Techniques',
+      'Rhetorical Devices',
+      'Articles & Blogs',
+      'Speeches',
+      'Building Arguments',
+    ]),
+    Module('Developing Style', [
+      'Sentence Structures',
+      'Cohesion',
+      'Vocabulary & Register',
+      'Punctuation for Effect',
+      'Redrafting & Refinement',
     ]),
   ]),
   'year10': Level('Year 10 - Age 14–15', [
-    Module('GCSE Literature', [
-      'Shakespeare',
-      'Nineteenth-century novel',
-      'Modern text',
-      'Poetry anthology',
+    Module('Advanced Reading', [
+      'Critical Reading',
+      'Language Analysis',
+      'Structural Analysis',
+      "Writer's Methods",
+      'Evaluating Texts',
     ]),
-    Module('GCSE Language', [
-      'Analysing fiction',
-      'Descriptive and narrative writing',
-      'Analysing non-fiction',
-      'Writing viewpoints',
+    Module('Perspectives & Ideas', [
+      'Identifying Perspectives',
+      'Comparing Viewpoints',
+      'Comparing Methods',
+      'Evidence & Interpretation',
+      'Evaluating Arguments',
     ]),
-    Module('Exam Skills', [
-      'Selecting evidence',
-      'Developing interpretations',
-      'Comparing texts',
-      'Timed responses',
+    Module('Creative Writing', [
+      'Narrative Voice',
+      'Characterisation',
+      'Description',
+      'Structure & Pacing',
+      'Writing from a Stimulus',
+    ]),
+    Module('Transactional Writing', [
+      'Audience & Purpose',
+      'Articles & Essays',
+      'Speeches',
+      'Letters & Reviews',
+      'Argument & Persuasion',
+    ]),
+    Module('Writing Craft', [
+      'Sentence Control',
+      'Vocabulary & Register',
+      'Paragraph Structure',
+      'Grammar & Punctuation',
+      'Editing for Impact',
     ]),
   ]),
   'year11': Level('Year 11 - Age 15–16', [
-    Module('Literature Revision', [
-      'Themes and characters',
-      'Key quotations',
-      'Context',
-      'Comparative poetry',
+    Module('Advanced Reading', [
+      'Critical Analysis',
+      'Language & Structure',
+      'Inference & Interpretation',
+      'Comparing Texts',
+      'Evaluation',
     ]),
-    Module('Language Revision', [
-      'Reading strategies',
-      'Language and structure',
-      'Creative writing',
-      'Transactional writing',
+    Module('Creative Writing', [
+      'Narrative Writing',
+      'Descriptive Writing',
+      'Character & Voice',
+      'Structure & Atmosphere',
+      'Developing a Personal Style',
     ]),
-    Module('Exam Preparation', [
-      'Planning answers',
-      'Timed practice',
-      'Technical accuracy',
-      'Reviewing responses',
+    Module('Perspectives & Arguments', [
+      'Analysing Viewpoints',
+      'Comparing Perspectives',
+      "Writer's Methods",
+      'Evidence & Evaluation',
+      'Developing Your Own Viewpoint',
+    ]),
+    Module('Purposeful Writing', [
+      'Audience & Purpose',
+      'Argument & Persuasion',
+      'Rhetorical Devices',
+      'Formal Writing',
+      'Informal & Personal Writing',
+    ]),
+    Module('Communication & Accuracy', [
+      'Advanced Sentence Construction',
+      'Vocabulary & Register',
+      'Grammar',
+      'Punctuation',
+      'Editing & Proofreading',
+    ]),
+  ]),
+};
+
+const scienceLevels = <String, Level>{
+  'age5': Level('Age 5', [
+    Module('Living Things', [
+      'Animals',
+      'Plants',
+      'Humans',
+      'Senses',
+      'Living and non-living things',
+    ]),
+    Module('Our World', [
+      'Weather',
+      'Seasons',
+      'Day and night',
+      'Light and dark',
+      'Materials around us',
+    ]),
+    Module('Materials', [
+      'Solids and liquids',
+      'Hard and soft',
+      'Rough and smooth',
+      'Changing materials',
+      'Choosing materials',
+    ]),
+    Module('Plants & Nature', [
+      'Parts of a plant',
+      'What plants need',
+      'Growing seeds',
+      'Flowers and trees',
+      'Nature around us',
+    ]),
+    Module('Exploring & Experiments', [
+      'Observing',
+      'Sorting and grouping',
+      'Measuring',
+      'Making predictions',
+      'Simple investigations',
+    ]),
+  ]),
+  'age6': Level('Age 6', [
+    Module('Animals & Humans', [
+      'Animal groups',
+      'Animal habitats',
+      'Human body',
+      'Healthy eating',
+      'Exercise and movement',
+    ]),
+    Module('Plants', [
+      'Plant parts',
+      'Roots, stems and leaves',
+      'What plants need',
+      'Seeds and growth',
+      'Plant life cycles',
+    ]),
+    Module('Materials', [
+      'Solids, liquids and gases',
+      'Properties of materials',
+      'Changing materials',
+      'Reversible changes',
+      'Choosing materials for a purpose',
+    ]),
+    Module('Earth & Space', [
+      'Our planet',
+      'The Sun',
+      'The Moon',
+      'Day and night',
+      'Seasons',
+    ]),
+    Module('Forces & Investigation', [
+      'Pushes and pulls',
+      'Movement',
+      'Magnets',
+      'Making predictions',
+      'Recording results',
+    ]),
+  ]),
+  'age7': Level('Age 7', [
+    Module('Living Things', [
+      'Life processes',
+      'Animal groups',
+      'Food chains',
+      'Habitats',
+      'Adaptation',
+    ]),
+    Module('Plants & Ecosystems', [
+      'Plant reproduction',
+      'Pollination',
+      'Seeds and dispersal',
+      'Plant life cycles',
+      'Ecosystems',
+    ]),
+    Module('Forces & Energy', [
+      'Forces',
+      'Friction',
+      'Magnets',
+      'Light',
+      'Shadows',
+    ]),
+    Module('Rocks & Earth', [
+      'Types of rocks',
+      'Fossils',
+      'Soils',
+      'The rock cycle',
+      'Erosion',
+    ]),
+    Module('Scientific Investigation', [
+      'Asking scientific questions',
+      'Making predictions',
+      'Fair tests',
+      'Measuring and recording',
+      'Drawing conclusions',
+    ]),
+  ]),
+  'age8': Level('Age 8', [
+    Module('Humans & Animals', [
+      'Skeletons',
+      'Muscles',
+      'Digestion',
+      'Teeth',
+      'Healthy bodies',
+    ]),
+    Module('Living Things & Habitats', [
+      'Classification',
+      'Food chains',
+      'Food webs',
+      'Habitats',
+      'Environmental change',
+    ]),
+    Module('Electricity & Energy', [
+      'Electrical circuits',
+      'Conductors and insulators',
+      'Switches',
+      'Renewable energy',
+      'Energy transfer',
+    ]),
+    Module('Light, Sound & Forces', [
+      'How light travels',
+      'Reflection',
+      'Sound',
+      'Vibrations',
+      'Forces and movement',
+    ]),
+    Module('Earth & Space', [
+      'The solar system',
+      'Planets',
+      'The Moon',
+      "Earth's rotation",
+      "Earth's orbit",
+    ]),
+  ]),
+  'age9': Level('Age 9', [
+    Module('Biology', [
+      'Cells',
+      'Organs',
+      'Life cycles',
+      'Reproduction',
+      'Classification',
+    ]),
+    Module('Ecosystems', [
+      'Food chains',
+      'Food webs',
+      'Producers and consumers',
+      'Adaptation',
+      'Human impact',
+    ]),
+    Module('Chemistry', [
+      'States of matter',
+      'Particles',
+      'Dissolving',
+      'Mixtures',
+      'Separating materials',
+    ]),
+    Module('Physics', ['Forces', 'Gravity', 'Friction', 'Light', 'Sound']),
+    Module('Earth & Space', [
+      'The solar system',
+      "Earth's structure",
+      'Rocks and minerals',
+      'Water cycle',
+      'Climate and weather',
+    ]),
+  ]),
+  'age10': Level('Age 10', [
+    Module('Biology', [
+      'Cells and microscopes',
+      'Organ systems',
+      'Reproduction',
+      'Variation',
+      'Adaptation and evolution',
+    ]),
+    Module('Ecology', [
+      'Ecosystems',
+      'Food webs',
+      'Interdependence',
+      'Biodiversity',
+      'Conservation',
+    ]),
+    Module('Chemistry', [
+      'Atoms and particles',
+      'Elements',
+      'Compounds',
+      'Chemical reactions',
+      'Acids and alkalis',
+    ]),
+    Module('Physics', [
+      'Forces and motion',
+      'Gravity',
+      'Electricity',
+      'Energy',
+      'Light and sound',
+    ]),
+    Module('Earth & Scientific Skills', [
+      "Earth's structure",
+      'The atmosphere',
+      'Climate change',
+      'Scientific experiments',
+      'Analysing and presenting data',
+    ]),
+  ]),
+  'year7': Level('Year 7 - Age 11–12', [
+    Module('Working Scientifically', [
+      'Laboratory Safety',
+      'Scientific Investigations',
+      'Variables & Fair Tests',
+      'Measuring & Recording Data',
+      'Tables & Graphs',
+    ]),
+    Module('Biology — Cells & Living Things', [
+      'Animal & Plant Cells',
+      'Specialised Cells',
+      'Microscopes',
+      'Tissues & Organs',
+      'Organ Systems',
+    ]),
+    Module('Chemistry — Matter', [
+      'States of Matter',
+      'Particle Model',
+      'Elements',
+      'Compounds',
+      'Separating Mixtures',
+    ]),
+    Module('Physics — Forces & Energy', [
+      'Forces',
+      'Gravity & Weight',
+      'Speed & Motion',
+      'Energy Stores',
+      'Energy Transfers',
+    ]),
+    Module('Biology — Ecosystems', [
+      'Habitats',
+      'Food Chains',
+      'Food Webs',
+      'Adaptation',
+      'Human Impact',
+    ]),
+  ]),
+  'year8': Level('Year 8 - Age 12–13', [
+    Module('Biology — Human Biology', [
+      'Nutrition',
+      'Digestion',
+      'Respiration',
+      'Circulation',
+      'Skeleton & Muscles',
+    ]),
+    Module('Biology — Reproduction', [
+      'Puberty',
+      'Reproductive Systems',
+      'Fertilisation',
+      'Sexual Reproduction',
+      'Plant Reproduction',
+    ]),
+    Module('Chemistry — Atoms & Elements', [
+      'Atomic Structure',
+      'The Periodic Table',
+      'Chemical Formulae',
+      'Chemical Properties',
+      'Compounds',
+    ]),
+    Module('Physics — Electricity & Magnetism', [
+      'Electric Circuits',
+      'Current & Voltage',
+      'Resistance',
+      'Magnets',
+      'Electromagnets',
+    ]),
+    Module('Physics — Light, Sound & Space', [
+      'Light',
+      'Reflection',
+      'Sound',
+      'Solar System',
+      'Universe',
+    ]),
+  ]),
+  'year9': Level('Year 9 - Age 13–14', [
+    Module('Biology — Genetics & Evolution', [
+      'DNA & Genes',
+      'Chromosomes',
+      'Inheritance',
+      'Variation',
+      'Natural Selection',
+    ]),
+    Module('Biology — Health & Disease', [
+      'Pathogens',
+      'Communicable Diseases',
+      'Immune System',
+      'Vaccination',
+      'Medicines',
+    ]),
+    Module('Chemistry — Chemical Reactions', [
+      'Chemical Equations',
+      'Acids & Alkalis',
+      'pH & Indicators',
+      'Reactivity',
+      'Rates of Reaction',
+    ]),
+    Module('Physics — Motion & Energy', [
+      'Distance & Displacement',
+      'Speed',
+      'Acceleration',
+      'Work & Power',
+      'Energy Efficiency',
+    ]),
+    Module('Biology — Ecology & Environment', [
+      'Populations',
+      'Biodiversity',
+      'Food & Energy',
+      'Carbon Cycle',
+      'Climate Change',
+    ]),
+  ]),
+  'year10': Level('Year 10 - Age 14–15', [
+    Module('Biology — Cell Biology', [
+      'Cell Division',
+      'Transport in Cells',
+      'Enzymes',
+      'Photosynthesis',
+      'Respiration',
+    ]),
+    Module('Biology — Organisation & Homeostasis', [
+      'Digestive System',
+      'Nervous System',
+      'Hormones',
+      'Homeostasis',
+      'Maintaining Internal Conditions',
+    ]),
+    Module('Chemistry — Bonding & Materials', [
+      'Ionic Bonding',
+      'Covalent Bonding',
+      'Metallic Bonding',
+      'Properties of Materials',
+      'Chemical Structure',
+    ]),
+    Module('Physics — Forces & Electricity', [
+      "Newton's Laws",
+      'Momentum',
+      'Electrical Resistance',
+      'Electrical Power',
+      'Electromagnetism',
+    ]),
+    Module('Physics — Waves & Radiation', [
+      'Wave Properties',
+      'Sound Waves',
+      'Electromagnetic Waves',
+      'Radiation',
+      'Uses & Risks of Radiation',
+    ]),
+  ]),
+  'year11': Level('Year 11 - Age 15–16', [
+    Module('Biology — Genetics, Evolution & Ecology', [
+      'Genetic Inheritance',
+      'Genetic Variation',
+      'Evolution',
+      'Ecosystems',
+      'Biodiversity & Conservation',
+    ]),
+    Module('Biology — Health & Homeostasis', [
+      'Disease & Immunity',
+      'Nervous System',
+      'Hormonal Control',
+      'Reproduction & Hormones',
+      'Homeostasis',
+    ]),
+    Module('Chemistry — Chemistry in the Real World', [
+      'Electrolysis',
+      'Chemical Analysis',
+      'Organic Chemistry',
+      'Fuels & Energy',
+      'Sustainable Chemistry',
+    ]),
+    Module('Physics — Physics in the Real World', [
+      'Energy Resources',
+      'Electricity in the Home',
+      'Forces & Motion',
+      'Magnetism & Electromagnetism',
+      'Space Physics',
+    ]),
+    Module('Scientific Skills', [
+      'Planning Investigations',
+      'Experimental Methods',
+      'Analysing Data',
+      'Evaluating Evidence',
+      'Scientific Communication',
     ]),
   ]),
 };

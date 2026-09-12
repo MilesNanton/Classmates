@@ -1,13 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../widgets/message_widget.dart';
 import '../../widgets/screen_info_popup.dart';
-import '../Timetable/timetable_screen.dart';
-import 'experience_details_screen.dart';
+import '../Profile/setting_screen.dart';
 import 'experience_image_widgets.dart';
 import 'experience_metadata.dart';
 
@@ -219,33 +217,10 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
                 final tab = _categoryTabFor(experience.data());
                 if (tab != null) setState(() => _category = tab);
               },
-              onSave: () => setState(() => _savedIds.add(experience.id)),
-              onAdd: () => showExperienceTimetablePopup(
-                context,
-                experienceId: experience.id,
-                title:
-                    experience.data()['name']?.toString().trim().isNotEmpty ==
-                        true
-                    ? experience.data()['name'].toString().trim()
-                    : 'Experience',
-              ),
-              onDone: () =>
-                  _markExperienceDone(experience.id, experience.data()),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute<void>(
-                  builder: (_) => ExperienceDetailsScreen(
-                    experience: experience.data(),
-                    initiallySaved: _savedIds.contains(experience.id),
-                    onSavedChanged: (saved) => setState(() {
-                      if (saved) {
-                        _savedIds.add(experience.id);
-                      } else {
-                        _savedIds.remove(experience.id);
-                      }
-                    }),
-                  ),
-                ),
-              ),
+              onSave: () => showSubscriptionPaywall(context),
+              onAdd: () => showSubscriptionPaywall(context),
+              onDone: () => showSubscriptionPaywall(context),
+              onTap: () => showSubscriptionPaywall(context),
             );
           },
         );
@@ -262,27 +237,6 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
       builder: (_) => _ExperienceFilterSheet(initialAgeRange: _ageRange),
     );
     if (selected != null && mounted) setState(() => _ageRange = selected);
-  }
-
-  Future<void> _markExperienceDone(
-    String experienceId,
-    Map<String, dynamic> experience,
-  ) async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return;
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('completedExperiences')
-        .doc(experienceId)
-        .set({
-          'experienceId': experienceId,
-          'name': experience['name'] ?? 'Experience',
-          'hostedBy': experience['hostedBy'] ?? '',
-          'category': experience['category'] ?? experience['subject'] ?? '',
-          'subject': experience['subject'] ?? experience['category'] ?? '',
-          'completedAt': FieldValue.serverTimestamp(),
-        });
   }
 
   Widget _buildViewSelector() {

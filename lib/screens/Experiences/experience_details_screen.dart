@@ -191,6 +191,54 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                       )
                     else
                       _BulletList(points: descriptionPoints),
+                    if (_text('assemblyDetails').isNotEmpty) ...[
+                      const SizedBox(height: 18),
+                      InkWell(
+                        onTap: _showAssemblyExplanation,
+                        borderRadius: BorderRadius.circular(6),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 2),
+                          child: Row(
+                            children: [
+                              Image.asset(
+                                'assets/assembly.png',
+                                width: 18,
+                                height: 18,
+                                fit: BoxFit.contain,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text.rich(
+                                  TextSpan(
+                                    children: [
+                                      TextSpan(
+                                        text: 'Assembly: ',
+                                        style: GoogleFonts.lato(
+                                          color: const Color(0xFF1A1A1A),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      TextSpan(
+                                        text: _text('assemblyDetails'),
+                                        style: GoogleFonts.lato(
+                                          color: _green,
+                                          fontSize: 14,
+                                          decoration: TextDecoration.underline,
+                                          decorationColor: _green,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     const Spacer(),
                     const SizedBox(height: 22),
                     if (metadata.isNotEmpty)
@@ -272,6 +320,37 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Future<void> _showAssemblyExplanation() {
+    return showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'What is an assembly point?',
+          style: GoogleFonts.lato(fontWeight: FontWeight.w800),
+        ),
+        content: Text(
+          'An assembly point is an optional time for Classmates families to '
+          'meet at this experience. You can join other parents, carers and '
+          'children, or enjoy the experience independently.',
+          style: GoogleFonts.lato(fontSize: 14, height: 1.45),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(
+              'Close',
+              style: GoogleFonts.lato(
+                color: _green,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
