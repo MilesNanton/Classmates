@@ -324,7 +324,15 @@ class _ExperiencesCard extends StatelessWidget {
   );
 
   Future<void> _showAddExperienceSheet(BuildContext context) =>
-      showSubscriptionPaywall(context);
+      runWithSubscriptionAccess(context, () async {
+        await showModalBottomSheet<void>(
+          context: context,
+          isScrollControlled: true,
+          useSafeArea: true,
+          backgroundColor: Colors.transparent,
+          builder: (_) => _AddExperienceSheet(userId: userId!),
+        );
+      });
 }
 
 class _ExperiencesHeader extends StatelessWidget {

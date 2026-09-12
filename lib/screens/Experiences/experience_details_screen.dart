@@ -201,37 +201,24 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                           child: Row(
                             children: [
                               Image.asset(
-                                'assets/assembly.png',
-                                width: 18,
-                                height: 18,
+                                'assets/greenassemblyicon.png',
+                                width: 15,
+                                height: 15,
                                 fit: BoxFit.contain,
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 4),
                               Expanded(
-                                child: Text.rich(
-                                  TextSpan(
-                                    children: [
-                                      TextSpan(
-                                        text: 'Assembly: ',
-                                        style: GoogleFonts.lato(
-                                          color: const Color(0xFF1A1A1A),
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      TextSpan(
-                                        text: _text('assemblyDetails'),
-                                        style: GoogleFonts.lato(
-                                          color: _green,
-                                          fontSize: 14,
-                                          decoration: TextDecoration.underline,
-                                          decorationColor: _green,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                child: Text(
+                                  'Optional assembly: '
+                                  '${_text('assemblyDetails')}',
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
+                                  style: GoogleFonts.lato(
+                                    color: _green,
+                                    fontSize: 14,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: _green,
+                                  ),
                                 ),
                               ),
                             ],
@@ -325,32 +312,65 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
   }
 
   Future<void> _showAssemblyExplanation() {
-    return showDialog<void>(
+    return showModalBottomSheet<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          'What is an assembly point?',
-          style: GoogleFonts.lato(fontWeight: FontWeight.w800),
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black45,
+      builder: (sheetContext) => Container(
+        padding: const EdgeInsets.fromLTRB(28, 42, 28, 22),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
         ),
-        content: Text(
-          'An assembly point is an optional time for Classmates families to '
-          'meet at this experience. You can join other parents, carers and '
-          'children, or enjoy the experience independently.',
-          style: GoogleFonts.lato(fontSize: 14, height: 1.45),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: Text(
-              'Close',
-              style: GoogleFonts.lato(
-                color: _green,
-                fontWeight: FontWeight.w700,
+        child: SafeArea(
+          top: false,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Optional assembly',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(
+                  color: const Color(0xFF1A1A1A),
+                  fontSize: 20,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
+              const SizedBox(height: 14),
+              Text(
+                'A time will be provided for parents and carers who’d like '
+                'to meet and introduce themselves before the experience. '
+                'The meeting point will always be at the main entrance of '
+                'the experience. Joining is completely optional.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(
+                  color: const Color(0xFF333333),
+                  fontSize: 14,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 30),
+              SizedBox(
+                width: double.infinity,
+                height: 44,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _green,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                  ),
+                  child: Text(
+                    'Got it',
+                    style: GoogleFonts.lato(fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

@@ -108,6 +108,67 @@ class _TimetableScreenState extends State<TimetableScreen> {
     });
   }
 
+  Future<void> _openAddScreen({
+    required bool isSubject,
+    required int childNumber,
+  }) async {
+    final overlay = Overlay.of(context, rootOverlay: true);
+    final entry = await showModalBottomSheet<_TimetableEntry>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black45,
+      builder: (_) => _TimetableEntrySheet(
+        category: isSubject ? 'Subject' : 'Other',
+        heading: isSubject ? 'Add a subject' : 'Add to timetable',
+        subjectMode: isSubject,
+        childNumber: childNumber,
+      ),
+    );
+    if (entry == null || !mounted) return;
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    final document = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('timetableEntries')
+        .doc();
+    try {
+      await document.set({
+        'entryId': document.id,
+        'category': entry.category,
+        'title': entry.title,
+        'type': entry.type.name,
+        'days': entry.days,
+        'date': Timestamp.fromDate(entry.date),
+        'startMinutes': entry.start.hour * 60 + entry.start.minute,
+        'endMinutes': entry.end.hour * 60 + entry.end.minute,
+        'recurring': entry.recurring,
+        'childNumber': childNumber,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+      if (mounted) {
+        setState(() {
+          _selectedDate = entry.date;
+          _showAddChoices = false;
+        });
+        widget.onDateChanged?.call(entry.date);
+        showMessagePopupInOverlay(
+          overlay,
+          message: 'Timetable entry added successfully.',
+        );
+      }
+    } on FirebaseException {
+      if (!mounted) return;
+      showMessagePopupInOverlay(
+        overlay,
+        message: 'Could not save timetable entry.',
+        type: MessageType.error,
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -163,8 +224,20 @@ class _TimetableScreenState extends State<TimetableScreen> {
                           setState(() => _showSubjectHint = false),
                       showAddChoices: _showAddChoices,
                       onAdd: () => setState(() => _showAddChoices = true),
-                      onAddSubject: () => showSubscriptionPaywall(context),
-                      onAddOther: () => showSubscriptionPaywall(context),
+                      onAddSubject: () => runWithSubscriptionAccess(
+                        context,
+                        () => _openAddScreen(
+                          isSubject: true,
+                          childNumber: activeChild,
+                        ),
+                      ),
+                      onAddOther: () => runWithSubscriptionAccess(
+                        context,
+                        () => _openAddScreen(
+                          isSubject: false,
+                          childNumber: activeChild,
+                        ),
+                      ),
                       onCloseAddChoices: () =>
                           setState(() => _showAddChoices = false),
                     ),
@@ -1199,8 +1272,6 @@ class _TimetableEntrySheet extends StatefulWidget {
     this.initialTitle,
     this.titleLocked = false,
     this.upcomingOnly = false,
-    // Kept for the subscriber flow that re-enables subject entry.
-    // ignore: unused_element_parameter
     this.subjectMode = false,
     this.childNumber = 1,
   });

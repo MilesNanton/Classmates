@@ -11,6 +11,7 @@ import '../../widgets/home_post_popup.dart';
 import '../../widgets/message_widget.dart';
 import '../../widgets/post_interaction_popup.dart';
 import '../../widgets/screen_info_popup.dart';
+import '../Profile/add_parents_screen.dart';
 import '../Profile/profile_screen.dart';
 import '../Profile/setting_screen.dart';
 import '../Resources/resources_screen.dart';
@@ -504,7 +505,17 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
               color: _green,
               shape: const CircleBorder(),
               child: InkWell(
-                onTap: () => showSubscriptionPaywall(context),
+                onTap: () => runWithSubscriptionAccess(context, () async {
+                  if (_feedView == _FeedView.connections) {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const AddParentsScreen(),
+                      ),
+                    );
+                  } else {
+                    await showHomePostPopup(context);
+                  }
+                }),
                 customBorder: const CircleBorder(),
                 child: SizedBox(
                   width: 40,

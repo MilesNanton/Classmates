@@ -9,6 +9,31 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../widgets/message_widget.dart';
 import '../onbarding/home_screen.dart';
 
+Future<bool> hasSubscriptionAccess() async {
+  final user = FirebaseAuth.instance.currentUser;
+  if (user == null) return false;
+  try {
+    final profile = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    return profile.data()?['subscriptionActive'] == true;
+  } on FirebaseException {
+    return false;
+  }
+}
+
+Future<void> runWithSubscriptionAccess(
+  BuildContext context,
+  Future<void> Function() onGranted,
+) async {
+  if (await hasSubscriptionAccess()) {
+    await onGranted();
+    return;
+  }
+  if (context.mounted) await showSubscriptionPaywall(context);
+}
+
 Future<void> showSubscriptionPaywall(BuildContext context) {
   return showModalBottomSheet<void>(
     context: context,
@@ -1033,18 +1058,18 @@ class _Footer extends StatelessWidget {
   }
 
   Future<void> _confirmLogOut(BuildContext context) async {
-    await showDialog<void>(
+    final shouldLogOut = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Log out?'),
         content: const Text('Are you sure you want to log out?'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => Navigator.pop(dialogContext, false),
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => Navigator.pop(dialogContext, true),
             child: const Text(
               'Log out',
               style: TextStyle(color: SettingScreen._green),
@@ -1053,5 +1078,24 @@ class _Footer extends StatelessWidget {
         ],
       ),
     );
+    if (shouldLogOut != true || !context.mounted) return;
+
+    final overlay = Overlay.of(context, rootOverlay: true);
+    try {
+      await FirebaseAuth.instance.signOut();
+      if (!context.mounted) return;
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute<void>(builder: (_) => const HomeScreen()),
+        (_) => false,
+      );
+      showMessagePopupInOverlay(overlay, message: 'Logged out successfully.');
+    } on FirebaseAuthException {
+      if (!context.mounted) return;
+      showMessagePopup(
+        context,
+        message: 'Unable to log out. Please try again.',
+        type: MessageType.error,
+      );
+    }
   }
 }
