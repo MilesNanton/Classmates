@@ -30,6 +30,7 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
   bool _loading = true;
   bool _progressDocumentExists = false;
   String _englishTrack = 'Language';
+  String _pathway = 'GCSE';
 
   DocumentReference<Map<String, dynamic>>? get _document {
     final user = FirebaseAuth.instance.currentUser;
@@ -47,6 +48,10 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
       widget.subject == 'Science';
 
   Map<String, Level> get _subjectLevels => switch (widget.subject) {
+    'English' when _pathway == 'GCSE' && _englishTrack == 'Literature' => {
+      ...englishLevels,
+      ...englishLiteratureLevels,
+    },
     'English' => englishLevels,
     'Science' => scienceLevels,
     _ => mathsLevels,
@@ -56,7 +61,9 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
       _isSupported && _levelId != null ? _subjectLevels[_levelId] : null;
 
   bool get _showEnglishTrack =>
-      widget.subject == 'English' && (_levelId?.startsWith('year') ?? false);
+      widget.subject == 'English' &&
+      (_levelId?.startsWith('year') ?? false) &&
+      _pathway == 'GCSE';
 
   List<(String, String)> get _availableStartingPoints => startingPoints
       .where((point) => _subjectLevels.containsKey(point.$1))
@@ -92,6 +99,10 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
       if (englishTrack == 'Language' || englishTrack == 'Literature') {
         _englishTrack = englishTrack as String;
       }
+      final pathway = data?['curriculumPathway'];
+      if (pathway == 'Flexible' || pathway == 'GCSE') {
+        _pathway = pathway as String;
+      }
       final statuses = data?['topicStatuses'];
       if (statuses is Map) {
         _statuses = statuses.map((key, value) => MapEntry('$key', '$value'));
@@ -124,6 +135,8 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
         'childNumber': widget.childNumber,
         'startingPointId': _levelId,
         'topicStatuses': _statuses,
+        if (_levelId?.startsWith('year') ?? false)
+          'curriculumPathway': _pathway,
         if (_showEnglishTrack) 'englishTrack': _englishTrack,
         if (!_progressDocumentExists) 'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
@@ -269,7 +282,10 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
               _EnglishTrackDropdown(
                 value: _englishTrack,
                 onChanged: (value) {
-                  setState(() => _englishTrack = value);
+                  setState(() {
+                    _englishTrack = value;
+                    _expanded = _level?.modules.firstOrNull?.name;
+                  });
                   _save();
                 },
               ),
@@ -343,9 +359,29 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _PathButton(label: 'Flexible Pathway', selected: false),
+                      _PathButton(
+                        label: 'Flexible Pathway',
+                        selected: _pathway == 'Flexible',
+                        onPressed: () {
+                          setState(() {
+                            _pathway = 'Flexible';
+                            _expanded = _level?.modules.firstOrNull?.name;
+                          });
+                          _save();
+                        },
+                      ),
                       const SizedBox(width: 12),
-                      _PathButton(label: 'GCSE Pathway', selected: true),
+                      _PathButton(
+                        label: 'GCSE Pathway',
+                        selected: _pathway == 'GCSE',
+                        onPressed: () {
+                          setState(() {
+                            _pathway = 'GCSE';
+                            _expanded = _level?.modules.firstOrNull?.name;
+                          });
+                          _save();
+                        },
+                      ),
                     ],
                   ),
                 ),
@@ -572,12 +608,17 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _PathButton extends StatelessWidget {
-  const _PathButton({required this.label, required this.selected});
+  const _PathButton({
+    required this.label,
+    required this.selected,
+    required this.onPressed,
+  });
   final String label;
   final bool selected;
+  final VoidCallback onPressed;
   @override
   Widget build(BuildContext context) => OutlinedButton(
-    onPressed: () {},
+    onPressed: onPressed,
     style: OutlinedButton.styleFrom(
       backgroundColor: selected
           ? _SubjectProgressScreenState.green
@@ -1526,6 +1567,194 @@ const englishLevels = <String, Level>{
       'Grammar',
       'Punctuation',
       'Editing & Proofreading',
+    ]),
+  ]),
+};
+
+const englishLiteratureLevels = <String, Level>{
+  'year7': Level('Year 7 - Age 11–12', [
+    Module('Reading Literature', [
+      'Understanding Characters',
+      'Setting',
+      'Plot & Narrative',
+      'Themes',
+      'Using Evidence',
+    ]),
+    Module('Poetry', [
+      'Reading Poetry',
+      'Imagery',
+      'Rhyme & Rhythm',
+      'Poetic Language',
+      'Comparing Poems',
+    ]),
+    Module('Prose', [
+      'Short Stories',
+      'Novels',
+      'Character Development',
+      'Narrative Voice',
+      'Themes & Ideas',
+    ]),
+    Module('Drama', [
+      'Reading Plays',
+      'Characters & Relationships',
+      'Dialogue',
+      'Stage Directions',
+      'Performance',
+    ]),
+    Module('Literary Skills', [
+      'Literary Vocabulary',
+      'Analysing Quotations',
+      'Making Inferences',
+      'Explaining Effects',
+      'Building Arguments',
+    ]),
+  ]),
+  'year8': Level('Year 8 - Age 12–13', [
+    Module('Literary Analysis', [
+      'Characterisation',
+      'Themes',
+      'Setting & Atmosphere',
+      'Narrative Structure',
+      "Writer's Intentions",
+    ]),
+    Module('Poetry', [
+      'Metaphor & Symbolism',
+      'Form & Structure',
+      'Sound & Rhythm',
+      'Tone & Mood',
+      'Comparing Poems',
+    ]),
+    Module('Prose', [
+      'Narrative Perspective',
+      'Character Relationships',
+      'Conflict',
+      'Themes & Motifs',
+      'Context',
+    ]),
+    Module('Drama', [
+      'Dramatic Structure',
+      'Characterisation',
+      'Relationships',
+      'Language & Dialogue',
+      'Stagecraft',
+    ]),
+    Module('Developing Analysis', [
+      'Selecting Quotations',
+      'Analysing Language',
+      'Analysing Structure',
+      'Exploring Themes',
+      'Developing Interpretations',
+    ]),
+  ]),
+  'year9': Level('Year 9 - Age 13–14', [
+    Module('Literary Analysis', [
+      "Writer's Methods",
+      'Character & Perspective',
+      'Themes & Motifs',
+      'Structure',
+      'Alternative Interpretations',
+    ]),
+    Module('Poetry', [
+      'Poetic Form',
+      'Imagery & Symbolism',
+      'Language & Tone',
+      'Structure & Rhythm',
+      'Comparative Analysis',
+    ]),
+    Module('Shakespeare', [
+      'Characters',
+      'Themes',
+      'Language',
+      'Dramatic Structure',
+      'Context',
+    ]),
+    Module('Prose & Drama', [
+      'Character Development',
+      'Relationships',
+      'Conflict',
+      'Social & Historical Context',
+      "Writer's Ideas",
+    ]),
+    Module('Critical Reading', [
+      'Close Analysis',
+      'Supporting Interpretations',
+      'Exploring Ambiguity',
+      'Contextual Understanding',
+      'Critical Arguments',
+    ]),
+  ]),
+  'year10': Level('Year 10 - Age 14–15', [
+    Module('Shakespeare', [
+      'Characterisation',
+      'Themes',
+      'Language & Imagery',
+      'Structure & Dramatic Methods',
+      'Context & Interpretations',
+    ]),
+    Module('19th-Century Prose', [
+      'Characters',
+      'Themes',
+      'Setting',
+      'Narrative Methods',
+      'Social & Historical Context',
+    ]),
+    Module('Modern Prose & Drama', [
+      'Character & Relationships',
+      'Themes & Ideas',
+      'Language',
+      'Structure',
+      'Context',
+    ]),
+    Module('Poetry', [
+      'Poetic Methods',
+      'Form & Structure',
+      'Language & Imagery',
+      'Tone & Perspective',
+      'Comparing Poems',
+    ]),
+    Module('GCSE Literary Analysis', [
+      'Selecting Evidence',
+      'Close Language Analysis',
+      "Writer's Methods",
+      'Context',
+      'Developing Critical Arguments',
+    ]),
+  ]),
+  'year11': Level('Year 11 - Age 15–16', [
+    Module('Shakespeare', [
+      'Character & Relationships',
+      'Themes & Ideas',
+      'Language Analysis',
+      'Dramatic Methods',
+      'Context & Interpretations',
+    ]),
+    Module('19th-Century Prose', [
+      'Characterisation',
+      'Themes',
+      'Narrative Structure',
+      'Language & Methods',
+      'Context & Interpretations',
+    ]),
+    Module('Modern Prose & Drama', [
+      'Characters & Relationships',
+      'Themes & Messages',
+      'Language & Structure',
+      "Writer's Methods",
+      'Context',
+    ]),
+    Module('Poetry Comparison', [
+      'Comparing Themes',
+      'Comparing Language',
+      'Comparing Structure',
+      'Comparing Perspectives',
+      'Comparative Arguments',
+    ]),
+    Module('GCSE Exam Skills', [
+      'Planning Essays',
+      'Selecting Quotations',
+      'Developing Interpretations',
+      'Integrating Context',
+      'Writing Critical Essays',
     ]),
   ]),
 };

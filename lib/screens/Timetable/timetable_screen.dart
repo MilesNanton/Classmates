@@ -672,6 +672,7 @@ class _SubjectHint extends StatelessWidget {
     width: double.infinity,
     padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
     decoration: BoxDecoration(
+      color: Colors.white,
       border: Border.all(color: const Color(0xFFD8D8D8)),
       borderRadius: BorderRadius.circular(9),
     ),

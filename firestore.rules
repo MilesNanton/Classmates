@@ -412,6 +412,10 @@ service cloud.firestore {
                 && request.resource.data.englishTrack in [
                   'Language', 'Literature'
                 ]))
+            && (!('curriculumPathway' in request.resource.data)
+              || request.resource.data.curriculumPathway in [
+                'Flexible', 'GCSE'
+              ])
             && request.resource.data.childNumber is int
             && request.resource.data.childNumber >= 1
             && request.resource.data.childNumber <= 4
@@ -425,6 +429,7 @@ service cloud.firestore {
             'startingPointId',
             'topicStatuses',
             'englishTrack',
+            'curriculumPathway',
             'childNumber',
             'createdAt',
             'updatedAt'
@@ -437,6 +442,7 @@ service cloud.firestore {
             'startingPointId',
             'topicStatuses',
             'englishTrack',
+            'curriculumPathway',
             'childNumber',
             'createdAt',
             'updatedAt'
