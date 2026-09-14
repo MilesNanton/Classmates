@@ -1528,6 +1528,9 @@ class _NoConnectionPosts extends StatelessWidget {
           'See the parents and carers you’ve connected with and message them directly.',
       actionText: 'To add a new connection, tap the add icon above.',
       actionTextColor: Color(0xFF171717),
+      actionTextWeight: FontWeight.w400,
+      actionTextSize: 17,
+      actionSpacing: 6,
     );
   }
 }
@@ -1553,6 +1556,9 @@ class _FeedMessage extends StatelessWidget {
     required this.description,
     this.actionText,
     this.actionTextColor = const Color(0xFF0DA64A),
+    this.actionTextWeight = FontWeight.w700,
+    this.actionTextSize = 16,
+    this.actionSpacing = 12,
     this.onActionTap,
   });
 
@@ -1560,6 +1566,9 @@ class _FeedMessage extends StatelessWidget {
   final String description;
   final String? actionText;
   final Color actionTextColor;
+  final FontWeight actionTextWeight;
+  final double actionTextSize;
+  final double actionSpacing;
   final VoidCallback? onActionTap;
 
   @override
@@ -1590,7 +1599,7 @@ class _FeedMessage extends StatelessWidget {
               ),
             ),
             if (actionText case final text?) ...[
-              const SizedBox(height: 12),
+              SizedBox(height: actionSpacing),
               InkWell(
                 onTap: onActionTap,
                 borderRadius: BorderRadius.circular(8),
@@ -1604,8 +1613,8 @@ class _FeedMessage extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: GoogleFonts.lato(
                       color: actionTextColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
+                      fontSize: actionTextSize,
+                      fontWeight: actionTextWeight,
                       height: 1.35,
                     ),
                   ),

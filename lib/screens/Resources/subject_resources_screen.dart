@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../widgets/message_widget.dart';
 
@@ -23,74 +25,48 @@ class SubjectResourcesScreen extends StatefulWidget {
 class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
   static const _green = Color(0xFF08A948);
 
-  static const _historyResources = <_SubjectResource>[
-    _SubjectResource(
-      'Vikings: Raiders, Traders & Explorers',
-      'History · PDF · 4 pages',
-      '7-11',
-      'KS2',
-    ),
-    _SubjectResource(
-      '1066: The Norman Conquest',
-      'History · PDF · 4 pages',
-      '7-11',
-      'KS2',
-    ),
-    _SubjectResource(
-      'The Victorians: Life in Britain',
-      'History · PDF · 4 pages',
-      '7-11',
-      'KS2',
-    ),
-    _SubjectResource(
-      'The Industrial Revolution',
-      'History · PDF · 4 pages',
-      '11-14',
-      'KS3',
-    ),
-    _SubjectResource(
-      'Life in Medieval Britain',
-      'History · PDF · 4 pages',
-      '7-11',
-      'KS2',
-    ),
-    _SubjectResource(
-      'The Romans: Britain & Beyond',
-      'History · PDF · 4 pages',
-      '7-11',
-      'KS2',
-    ),
-    _SubjectResource(
-      'Anglo-Saxons: Life in Britain',
-      'History · PDF · 4 pages',
-      '7-11',
-      'KS2',
-    ),
+  static const _ageFilters = [
+    '3-5',
+    '5-7',
+    '7-11',
+    '11-14',
+    '14-18',
+    'All ages',
   ];
-
-  static const _ageFilters = ['5-7', '7-11', '11-14', '14-16'];
-  static const _stageFilters = ['All', 'Early Years', 'KS1', 'KS2', 'KS3'];
+  static const _stageFilters = [
+    'All',
+    'Early Years',
+    'KS1',
+    'KS2',
+    'KS3',
+    'KS4',
+    'Post-16',
+  ];
 
   _FilterMode _mode = _FilterMode.age;
   String _age = '7-11';
   String _keyStage = 'All';
 
-  List<_SubjectResource> get _visibleResources {
-    final resources = widget.subject == 'History'
-        ? _historyResources
-        : const <_SubjectResource>[];
+  List<_SubjectResource> _visibleResources(List<_SubjectResource> resources) {
     if (_mode == _FilterMode.age) {
       return resources.where((resource) => resource.age == _age).toList();
     }
     if (_keyStage == 'All') return resources;
     return resources
-        .where((resource) => resource.keyStage == _keyStage)
+        .where((resource) => resource.keyStage == _expandedKeyStage(_keyStage))
         .toList();
   }
 
+  String _expandedKeyStage(String value) => switch (value) {
+    'KS1' => 'Key Stage 1',
+    'KS2' => 'Key Stage 2',
+    'KS3' => 'Key Stage 3',
+    'KS4' => 'Key Stage 4',
+    _ => value,
+  };
+
   @override
   Widget build(BuildContext context) {
-    final resources = _visibleResources;
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.dark.copyWith(
         statusBarColor: Colors.white,
@@ -109,36 +85,72 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
               const Divider(height: 1, color: Color(0xFFEAEAEA)),
               _buildFilters(),
               Expanded(
-                child: resources.isEmpty
-                    ? const _NoSubjectResources()
-                    : ListView.separated(
-                        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                        itemCount: resources.length,
-                        separatorBuilder: (_, _) => const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final resource = resources[index];
-                          return _SwipeableResourceTile(
-                            resource: resource,
-                            onSave: () {
-                              widget.onSave((resource.title, resource.details));
-                              showMessagePopup(
-                                context,
-                                message: 'Resource saved',
-                              );
-                            },
-                            onDownload: () => showMessagePopup(
+                child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                  stream: FirebaseFirestore.instance
+                      .collection('resources')
+                      .where('status', isEqualTo: 'published')
+                      .snapshots(),
+                  builder: (context, snapshot) {
+                    if (snapshot.hasError) {
+                      return const _NoSubjectResources();
+                    }
+                    if (!snapshot.hasData) {
+                      return const Center(
+                        child: CircularProgressIndicator(color: _green),
+                      );
+                    }
+                    final uploadedResources = snapshot.data!.docs
+                        .where(
+                          (document) =>
+                              document.data()['subject'] == widget.subject,
+                        )
+                        .map(_SubjectResource.fromDocument)
+                        .toList();
+                    final resources = _visibleResources(uploadedResources);
+                    if (resources.isEmpty) {
+                      return const _NoSubjectResources();
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+                      itemCount: resources.length,
+                      separatorBuilder: (_, _) => const SizedBox(height: 10),
+                      itemBuilder: (context, index) {
+                        final resource = resources[index];
+                        return _SwipeableResourceTile(
+                          resource: resource,
+                          onSave: () {
+                            widget.onSave((resource.title, resource.details));
+                            showMessagePopup(
                               context,
-                              message: 'Download coming soon',
-                            ),
-                          );
-                        },
-                      ),
+                              message: 'Resource saved',
+                            );
+                          },
+                          onDownload: () => _openResource(resource),
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
               _buildModeSelector(),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _openResource(_SubjectResource resource) async {
+    final uri = Uri.tryParse(resource.pdfUrl);
+    if (uri != null &&
+        await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      return;
+    }
+    if (!mounted) return;
+    showMessagePopup(
+      context,
+      message: 'Unable to open this resource.',
+      type: MessageType.error,
     );
   }
 
@@ -231,12 +243,35 @@ class _TopFilterChip extends StatelessWidget {
 }
 
 class _SubjectResource {
-  const _SubjectResource(this.title, this.details, this.age, this.keyStage);
+  const _SubjectResource({
+    required this.title,
+    required this.details,
+    required this.age,
+    required this.keyStage,
+    required this.pdfUrl,
+  });
+
+  factory _SubjectResource.fromDocument(
+    QueryDocumentSnapshot<Map<String, dynamic>> document,
+  ) {
+    final data = document.data();
+    final subject = data['subject']?.toString() ?? 'Resource';
+    final pages = (data['pages'] as num?)?.toInt();
+    return _SubjectResource(
+      title:
+          data['title']?.toString() ?? data['name']?.toString() ?? 'Resource',
+      details: '$subject · PDF${pages == null ? '' : ' · $pages pages'}',
+      age: data['ageRange']?.toString() ?? 'All ages',
+      keyStage: data['keyStage']?.toString() ?? '',
+      pdfUrl: data['pdfUrl']?.toString() ?? '',
+    );
+  }
 
   final String title;
   final String details;
   final String age;
   final String keyStage;
+  final String pdfUrl;
 }
 
 class _SubjectHeader extends StatelessWidget {

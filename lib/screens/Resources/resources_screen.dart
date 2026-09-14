@@ -38,12 +38,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     ('assets/resourcesIocns/english.png', Icons.circle_outlined, 'English'),
   ];
 
-  final List<(String, String)> _savedResources = [
-    ('1066: The Norman Conquest', 'History · PDF · 4 pages'),
-    ('The Victorians: Life in Britain', 'History · PDF · 4 pages'),
-    ('Life in Medieval Britain', 'History · PDF · 4 pages'),
-    ('The Romans: Britain & Beyond', 'History · PDF · 4 pages'),
-  ];
+  final List<(String, String)> _savedResources = [];
 
   _ResourcesView _view = _ResourcesView.bySubject;
 
