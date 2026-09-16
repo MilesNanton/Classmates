@@ -1,7 +1,12 @@
+import 'dart:async';
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../../widgets/message_widget.dart';
 import '../../widgets/screen_info_popup.dart';
 import 'subject_resources_screen.dart';
 
@@ -38,18 +43,101 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     ('assets/resourcesIocns/english.png', Icons.circle_outlined, 'English'),
   ];
 
-  final List<(String, String)> _savedResources = [];
+  final List<ResourceItem> _savedResources = [];
+  final Set<String> _savedResourceIds = {};
+  List<ResourceItem> _availableResources = [];
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+  _savedResourcesSubscription;
+  StreamSubscription<QuerySnapshot<Map<String, dynamic>>>?
+  _resourcesSubscription;
 
   _ResourcesView _view = _ResourcesView.bySubject;
 
   @override
   void initState() {
     super.initState();
+    _listenForSavedResources();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         showScreenInfoOnFirstVisit(context, ScreenInfoType.resources);
       }
     });
+  }
+
+  @override
+  void dispose() {
+    _savedResourcesSubscription?.cancel();
+    _resourcesSubscription?.cancel();
+    super.dispose();
+  }
+
+  void _listenForSavedResources() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    _savedResourcesSubscription = FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('savedResources')
+        .snapshots()
+        .listen((snapshot) {
+          if (!mounted) return;
+          setState(() {
+            _savedResourceIds
+              ..clear()
+              ..addAll(snapshot.docs.map((document) => document.id));
+            _syncSavedResources();
+          });
+        });
+
+    _resourcesSubscription = FirebaseFirestore.instance
+        .collection('resources')
+        .where('status', isEqualTo: 'published')
+        .snapshots()
+        .listen((snapshot) {
+          if (!mounted) return;
+          setState(() {
+            _availableResources = snapshot.docs
+                .map(ResourceItem.fromDocument)
+                .toList();
+            _syncSavedResources();
+          });
+        });
+  }
+
+  void _syncSavedResources() {
+    _savedResources
+      ..clear()
+      ..addAll(
+        _availableResources.where(
+          (resource) => _savedResourceIds.contains(resource.id),
+        ),
+      );
+  }
+
+  Future<void> _saveResource(ResourceItem resource) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw StateError('User is not signed in');
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('savedResources')
+        .doc(resource.id)
+        .set({
+          'resourceId': resource.id,
+          'savedAt': FieldValue.serverTimestamp(),
+        });
+  }
+
+  Future<void> _removeSavedResource(ResourceItem resource) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) throw StateError('User is not signed in');
+    await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('savedResources')
+        .doc(resource.id)
+        .delete();
   }
 
   @override
@@ -105,11 +193,9 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
               MaterialPageRoute<void>(
                 builder: (_) => SubjectResourcesScreen(
                   subject: subject.$3,
-                  onSave: (resource) => setState(() {
-                    if (!_savedResources.contains(resource)) {
-                      _savedResources.add(resource);
-                    }
-                  }),
+                  initialSavedResourceIds: {..._savedResourceIds},
+                  onSave: _saveResource,
+                  onRemove: _removeSavedResource,
                 ),
               ),
             ),
@@ -152,37 +238,26 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
       separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final resource = _savedResources[index];
-        return Material(
-          color: const Color(0xFFF4F9F6),
-          borderRadius: BorderRadius.circular(5),
-          child: InkWell(
-            onTap: () {},
-            borderRadius: BorderRadius.circular(5),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    resource.$1,
-                    style: GoogleFonts.lato(
-                      color: const Color(0xFF181818),
-                      fontSize: 14,
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    resource.$2,
-                    style: GoogleFonts.lato(
-                      color: const Color(0xFF777777),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        return _SavedResourceTile(
+          resource: resource,
+          onRemove: () {
+            _removeSavedResource(resource)
+                .then((_) {
+                  if (context.mounted) {
+                    showMessagePopup(context, message: 'Resource removed');
+                  }
+                })
+                .catchError((Object error) {
+                  if (context.mounted) {
+                    showMessagePopup(
+                      context,
+                      message: 'Unable to remove this resource.',
+                      type: MessageType.error,
+                    );
+                  }
+                });
+          },
+          onGet: () => downloadResourcePdf(context, resource),
         );
       },
     );
@@ -206,6 +281,169 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
             onTap: () => setState(() => _view = _ResourcesView.saved),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SavedResourceTile extends StatefulWidget {
+  const _SavedResourceTile({
+    required this.resource,
+    required this.onRemove,
+    required this.onGet,
+  });
+
+  final ResourceItem resource;
+  final VoidCallback onRemove;
+  final VoidCallback onGet;
+
+  @override
+  State<_SavedResourceTile> createState() => _SavedResourceTileState();
+}
+
+class _SavedResourceTileState extends State<_SavedResourceTile> {
+  static const _actionsWidth = 140.0;
+  static const _tileHeight = 88.0;
+  double _offset = 0;
+
+  void _run(VoidCallback action) {
+    setState(() => _offset = 0);
+    action();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(5),
+      child: Stack(
+        alignment: Alignment.centerRight,
+        children: [
+          SizedBox(
+            width: _actionsWidth,
+            height: _tileHeight,
+            child: Row(
+              children: [
+                _SavedResourceAction(
+                  label: 'Remove',
+                  iconAsset: 'assets/removeiconup.png',
+                  color: const Color(0xFFE00019),
+                  onTap: () => _run(widget.onRemove),
+                ),
+                const SizedBox(width: 8),
+                _SavedResourceAction(
+                  label: 'Get',
+                  iconAsset: 'assets/downloadIcon.png',
+                  color: const Color(0xFF08A948),
+                  onTap: () => _run(widget.onGet),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onHorizontalDragUpdate: (details) => setState(
+              () => _offset = (_offset + details.delta.dx).clamp(
+                -_actionsWidth,
+                0,
+              ),
+            ),
+            onHorizontalDragEnd: (details) {
+              final open =
+                  _offset.abs() > _actionsWidth / 3 ||
+                  (details.primaryVelocity ?? 0) < -250;
+              setState(() => _offset = open ? -_actionsWidth : 0);
+            },
+            child: Transform.translate(
+              offset: Offset(_offset, 0),
+              child: Container(
+                width: double.infinity,
+                height: _tileHeight,
+                color: const Color(0xFFF4F9F6),
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
+                  children: [
+                    ResourcePreviewThumbnail(resource: widget.resource),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.resource.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.lato(
+                              color: const Color(0xFF181818),
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.resource.details,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.lato(
+                              color: const Color(0xFF777777),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SavedResourceAction extends StatelessWidget {
+  const _SavedResourceAction({
+    required this.label,
+    required this.iconAsset,
+    required this.color,
+    required this.onTap,
+  });
+
+  final String label;
+  final String iconAsset;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Material(
+        color: color,
+        borderRadius: BorderRadius.circular(5),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(
+                width: 27,
+                height: 27,
+                child: Image.asset(iconAsset, fit: BoxFit.contain),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                label,
+                style: GoogleFonts.lato(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -290,7 +528,7 @@ class _ResourcesNavigation extends StatelessWidget {
   static const _items = [
     ('assets/HomeIcon.png', 'Home'),
     ('assets/experienceIconUpdated.png', 'Experiences'),
-    ('assets/calenderIcon.png', 'Timetable'),
+    ('assets/calenderIcon.png', 'Plan'),
     ('assets/Resources_Active.png', 'Resources'),
     ('assets/profileIcon.png', 'Profile'),
   ];

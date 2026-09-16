@@ -26,7 +26,7 @@ Future<void> showExperienceTimetablePopup(
     barrierColor: Colors.black45,
     builder: (_) => _TimetableEntrySheet(
       category: 'Other',
-      heading: 'Add to timetable',
+      heading: 'Add to plan',
       initialTitle: title,
       titleLocked: true,
       upcomingOnly: true,
@@ -55,12 +55,12 @@ Future<void> showExperienceTimetablePopup(
     });
     showMessagePopupInOverlay(
       overlay,
-      message: 'Experience added to your timetable.',
+      message: 'Experience added to your plan.',
     );
   } on FirebaseException {
     showMessagePopupInOverlay(
       overlay,
-      message: 'Could not add experience to timetable.',
+      message: 'Could not add experience to plan.',
       type: MessageType.error,
     );
   }
@@ -120,9 +120,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
       barrierColor: Colors.black45,
       builder: (_) => _TimetableEntrySheet(
         category: isSubject ? 'Subject' : 'Other',
-        heading: isSubject ? 'Add a subject' : 'Add to timetable',
+        heading: isSubject ? 'Add a subject' : 'Add to plan',
         subjectMode: isSubject,
         childNumber: childNumber,
+        initialDate: _selectedDate,
       ),
     );
     if (entry == null || !mounted) return;
@@ -156,14 +157,14 @@ class _TimetableScreenState extends State<TimetableScreen> {
         widget.onDateChanged?.call(entry.date);
         showMessagePopupInOverlay(
           overlay,
-          message: 'Timetable entry added successfully.',
+          message: 'Plan entry added successfully.',
         );
       }
     } on FirebaseException {
       if (!mounted) return;
       showMessagePopupInOverlay(
         overlay,
-        message: 'Could not save timetable entry.',
+        message: 'Could not save plan entry.',
         type: MessageType.error,
       );
     }
@@ -274,7 +275,7 @@ class _Header extends StatelessWidget {
       child: Row(
         children: [
           Text(
-            'Timetable',
+            'Plan',
             style: GoogleFonts.lato(
               color: const Color(0xFF171717),
               fontSize: 26,
@@ -287,7 +288,7 @@ class _Header extends StatelessWidget {
               initialValue: selectedChild,
               onSelected: onChildSelected,
               position: PopupMenuPosition.under,
-              tooltip: 'Switch timetable',
+              tooltip: 'Switch plan',
               itemBuilder: (_) => List.generate(
                 childCount,
                 (index) => PopupMenuItem<int>(
@@ -452,12 +453,12 @@ class _EmptyTimetable extends StatelessWidget {
     child: Column(
       children: [
         Text(
-          'Your timetable',
+          'Your plan',
           style: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.w800),
         ),
         const SizedBox(height: 10),
         Text(
-          'Add subjects, activities, clubs and regular routines\nto your timetable.',
+          'Add subjects, activities, clubs and regular routines\nto your plan.',
           textAlign: TextAlign.center,
           style: GoogleFonts.lato(
             color: const Color(0xFF777777),
@@ -523,7 +524,7 @@ class _TimetableEntries extends StatelessWidget {
         if (snapshot.hasError) {
           return Center(
             child: Text(
-              'Could not load your timetable.',
+              'Could not load your plan.',
               style: GoogleFonts.lato(color: const Color(0xFF777777)),
             ),
           );
@@ -731,7 +732,7 @@ class _AddTimetableButtons extends StatelessWidget {
       return OutlinedButton(
         onPressed: onAdd,
         style: buttonStyle,
-        child: const Text('Add to timetable'),
+        child: const Text('Add to plan'),
       );
     }
     return Row(
@@ -799,12 +800,12 @@ class _SwipeableTimetableEntryState extends State<_SwipeableTimetableEntry> {
       await document.delete();
       showMessagePopupInOverlay(
         overlay,
-        message: 'Timetable entry removed successfully.',
+        message: 'Plan entry removed successfully.',
       );
     } on FirebaseException {
       showMessagePopupInOverlay(
         overlay,
-        message: 'Could not remove timetable entry.',
+        message: 'Could not remove plan entry.',
         type: MessageType.error,
       );
     }
@@ -820,7 +821,7 @@ class _SwipeableTimetableEntryState extends State<_SwipeableTimetableEntry> {
       barrierColor: Colors.black45,
       builder: (_) => _TimetableEntrySheet(
         category: widget.entry.category,
-        heading: 'Edit timetable',
+        heading: 'Edit plan',
         initialEntry: widget.entry,
         titleLocked: widget.entry.experienceId != null,
         upcomingOnly: widget.entry.experienceId != null,
@@ -842,12 +843,12 @@ class _SwipeableTimetableEntryState extends State<_SwipeableTimetableEntry> {
       });
       showMessagePopupInOverlay(
         overlay,
-        message: 'Timetable entry updated successfully.',
+        message: 'Plan entry updated successfully.',
       );
     } on FirebaseException {
       showMessagePopupInOverlay(
         overlay,
-        message: 'Could not update timetable entry.',
+        message: 'Could not update plan entry.',
         type: MessageType.error,
       );
     }
@@ -1275,6 +1276,7 @@ class _TimetableEntrySheet extends StatefulWidget {
     this.upcomingOnly = false,
     this.subjectMode = false,
     this.childNumber = 1,
+    this.initialDate,
   });
 
   final String category;
@@ -1285,6 +1287,7 @@ class _TimetableEntrySheet extends StatefulWidget {
   final bool upcomingOnly;
   final bool subjectMode;
   final int childNumber;
+  final DateTime? initialDate;
 
   @override
   State<_TimetableEntrySheet> createState() => _TimetableEntrySheetState();
@@ -1334,8 +1337,16 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
       _end = initial.end;
       _date = initial.date;
       _repeat = initial.recurring;
-    } else if (widget.initialTitle != null) {
-      _titleController.text = widget.initialTitle!;
+    } else {
+      if (widget.initialTitle != null) {
+        _titleController.text = widget.initialTitle!;
+      }
+      if (widget.initialDate != null) {
+        _date = DateUtils.dateOnly(widget.initialDate!);
+        _selectedDays
+          ..clear()
+          ..add(_days[_date.weekday - 1]);
+      }
     }
     if (widget.upcomingOnly) _type = _EntryType.upcoming;
     _titleController.addListener(_refresh);
@@ -1504,10 +1515,12 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
   }
 
   DateTime _regularDate() {
-    final today = DateUtils.dateOnly(DateTime.now());
+    final anchorDate = DateUtils.dateOnly(widget.initialDate ?? DateTime.now());
     final firstDay = _selectedDays.isEmpty ? 'Monday' : _selectedDays.first;
     final targetWeekday = _days.indexOf(firstDay) + 1;
-    return today.add(Duration(days: (targetWeekday - today.weekday) % 7));
+    return anchorDate.add(
+      Duration(days: (targetWeekday - anchorDate.weekday) % 7),
+    );
   }
 
   Future<void> _submit() async {
@@ -1547,7 +1560,7 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
       if (!mounted) return;
       setState(() => _checkingConflict = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not check your timetable.')),
+        const SnackBar(content: Text('Could not check your plan.')),
       );
       return;
     }
@@ -1760,7 +1773,7 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    'This date and time is already in your timetable',
+                                    'This date and time is already in your plan',
                                     style: GoogleFonts.lato(fontSize: 13),
                                   ),
                                   const SizedBox(height: 5),
@@ -1829,9 +1842,7 @@ class _TimetableEntrySheetState extends State<_TimetableEntrySheet> {
                           ),
                         ),
                         child: Text(
-                          widget.subjectMode
-                              ? 'Add subject'
-                              : 'Add to timetable',
+                          widget.subjectMode ? 'Add subject' : 'Add to plan',
                           style: GoogleFonts.lato(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
@@ -1952,7 +1963,7 @@ class _TimetableNavigation extends StatelessWidget {
   static const _items = [
     ('assets/HomeIcon.png', 'Home'),
     ('assets/experienceIconUpdated.png', 'Experiences'),
-    ('assets/calenderIconselected.png', 'Timetable'),
+    ('assets/calenderIconselected.png', 'Plan'),
     ('assets/resorcessIcon.png', 'Resources'),
     ('assets/profileIcon.png', 'Profile'),
   ];

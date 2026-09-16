@@ -41,7 +41,7 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
 
   final Set<String> _savedIds = {};
   String _category = 'All';
-  String _ageRange = '7-11';
+  String _ageRange = '5-7';
   _ExperienceView _view = _ExperienceView.categories;
 
   @override
@@ -356,11 +356,24 @@ class _ExperiencesScreenState extends State<ExperiencesScreen> {
       'place': {'place', 'placeattraction', 'placesattraction', 'attraction'},
     };
     final acceptedValues = categoryAliases[selected] ?? {selected};
-    return <String>[
-      ...valuesFor(data['subject']),
-      ...valuesFor(data['category']),
-      ...valuesFor(data['experienceType']),
-    ].any((value) => acceptedValues.contains(normalize(value)));
+
+    final categories = valuesFor(data['category']).toList();
+    if (categories.isNotEmpty) {
+      return categories.any(
+        (value) => acceptedValues.contains(normalize(value)),
+      );
+    }
+
+    final legacyTypes = valuesFor(data['experienceType']).toList();
+    if (legacyTypes.isNotEmpty) {
+      return legacyTypes.any(
+        (value) => acceptedValues.contains(normalize(value)),
+      );
+    }
+
+    return valuesFor(
+      data['subject'],
+    ).any((value) => acceptedValues.contains(normalize(value)));
   }
 
   static bool _matchesAgeRange(Map<String, dynamic> data, String selected) {
@@ -417,7 +430,7 @@ class _ExperienceFilterSheet extends StatefulWidget {
 
 class _ExperienceFilterSheetState extends State<_ExperienceFilterSheet> {
   static const _green = Color(0xFF08A948);
-  static const _ageRanges = ['7-11', '11-14', '14-16'];
+  static const _ageRanges = ['5-7', '8-11', '11-14', '14-16'];
   late String _selectedAgeRange = widget.initialAgeRange;
 
   @override
@@ -914,7 +927,7 @@ class _ExperiencesNavigation extends StatelessWidget {
   static const _items = [
     ('assets/HomeIcon.png', 'Home'),
     ('assets/experienceIconSelected.png', 'Experiences'),
-    ('assets/calenderIcon.png', 'Timetable'),
+    ('assets/calenderIcon.png', 'Plan'),
     ('assets/resorcessIcon.png', 'Resources'),
     ('assets/profileIcon.png', 'Profile'),
   ];

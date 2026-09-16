@@ -201,12 +201,13 @@ class _ExperienceDetailsScreenState extends State<ExperienceDetailsScreen> {
                           child: Row(
                             children: [
                               Image.asset(
-                                'assets/greenassemblyicon.png',
-                                width: 15,
-                                height: 15,
+                                'assets/expreincepersonicon.png',
+                                width: 16,
+                                height: 16,
                                 fit: BoxFit.contain,
+                                alignment: Alignment.center,
                               ),
-                              const SizedBox(width: 4),
+                              const SizedBox(width: 6),
                               Expanded(
                                 child: Text(
                                   'Optional assembly: '

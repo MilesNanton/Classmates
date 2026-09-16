@@ -1420,7 +1420,7 @@ class _ProfileNavigation extends StatelessWidget {
   static const _items = [
     ('assets/HomeIcon.png', 'Home'),
     ('assets/experienceIconUpdated.png', 'Experiences'),
-    ('assets/calenderIcon.png', 'Timetable'),
+    ('assets/calenderIcon.png', 'Plan'),
     ('assets/resorcessIcon.png', 'Resources'),
     ('assets/Profile_Active.png', 'Profile'),
   ];

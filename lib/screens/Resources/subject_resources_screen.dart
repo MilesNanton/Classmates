@@ -1,22 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_file_saver/flutter_file_saver.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:internet_file/internet_file.dart';
+import 'package:pdfx/pdfx.dart';
 
 import '../../widgets/message_widget.dart';
 
-enum _FilterMode { age, keyStage }
+enum _SubjectResourcesView { bySubject, saved }
 
 class SubjectResourcesScreen extends StatefulWidget {
   const SubjectResourcesScreen({
     super.key,
     required this.subject,
+    required this.initialSavedResourceIds,
     required this.onSave,
+    required this.onRemove,
   });
 
   final String subject;
-  final ValueChanged<(String, String)> onSave;
+  final Set<String> initialSavedResourceIds;
+  final Future<void> Function(ResourceItem) onSave;
+  final Future<void> Function(ResourceItem) onRemove;
 
   @override
   State<SubjectResourcesScreen> createState() => _SubjectResourcesScreenState();
@@ -25,45 +31,34 @@ class SubjectResourcesScreen extends StatefulWidget {
 class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
   static const _green = Color(0xFF08A948);
 
-  static const _ageFilters = [
-    '3-5',
-    '5-7',
-    '7-11',
-    '11-14',
-    '14-18',
-    'All ages',
-  ];
-  static const _stageFilters = [
-    'All',
-    'Early Years',
-    'KS1',
-    'KS2',
-    'KS3',
-    'KS4',
-    'Post-16',
-  ];
+  static const _ageFilters = ['5-7', '7-11', '11-14', '14-16', 'All ages'];
+  late final Set<String> _savedResourceIds;
+  _SubjectResourcesView _view = _SubjectResourcesView.bySubject;
+  String _age = '5-7';
 
-  _FilterMode _mode = _FilterMode.age;
-  String _age = '7-11';
-  String _keyStage = 'All';
+  @override
+  void initState() {
+    super.initState();
+    _savedResourceIds = {...widget.initialSavedResourceIds};
+  }
 
-  List<_SubjectResource> _visibleResources(List<_SubjectResource> resources) {
-    if (_mode == _FilterMode.age) {
-      return resources.where((resource) => resource.age == _age).toList();
-    }
-    if (_keyStage == 'All') return resources;
+  List<ResourceItem> _visibleResources(List<ResourceItem> resources) {
+    final selectedAge = _normaliseValue(_age);
     return resources
-        .where((resource) => resource.keyStage == _expandedKeyStage(_keyStage))
+        .where(
+          (resource) =>
+              _normaliseValue(resource.age) == selectedAge &&
+              (_view == _SubjectResourcesView.bySubject ||
+                  _savedResourceIds.contains(resource.id)),
+        )
         .toList();
   }
 
-  String _expandedKeyStage(String value) => switch (value) {
-    'KS1' => 'Key Stage 1',
-    'KS2' => 'Key Stage 2',
-    'KS3' => 'Key Stage 3',
-    'KS4' => 'Key Stage 4',
-    _ => value,
-  };
+  String _normaliseValue(String value) => value
+      .trim()
+      .toLowerCase()
+      .replaceAll(RegExp(r'[–—−]'), '-')
+      .replaceAll(RegExp(r'\s+'), '');
 
   @override
   Widget build(BuildContext context) {
@@ -92,7 +87,8 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
-                      return const _NoSubjectResources();
+                      debugPrint('Unable to load resources: ${snapshot.error}');
+                      return const _ResourceLoadError();
                     }
                     if (!snapshot.hasData) {
                       return const Center(
@@ -102,13 +98,20 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
                     final uploadedResources = snapshot.data!.docs
                         .where(
                           (document) =>
-                              document.data()['subject'] == widget.subject,
+                              _normaliseValue(
+                                document.data()['subject']?.toString() ?? '',
+                              ).replaceAll('.', '') ==
+                              _normaliseValue(
+                                widget.subject,
+                              ).replaceAll('.', ''),
                         )
-                        .map(_SubjectResource.fromDocument)
+                        .map(ResourceItem.fromDocument)
                         .toList();
                     final resources = _visibleResources(uploadedResources);
                     if (resources.isEmpty) {
-                      return const _NoSubjectResources();
+                      return _NoSubjectResources(
+                        savedView: _view == _SubjectResourcesView.saved,
+                      );
                     }
                     return ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -118,21 +121,66 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
                         final resource = resources[index];
                         return _SwipeableResourceTile(
                           resource: resource,
+                          savedView: _view == _SubjectResourcesView.saved,
                           onSave: () {
-                            widget.onSave((resource.title, resource.details));
-                            showMessagePopup(
-                              context,
-                              message: 'Resource saved',
-                            );
+                            setState(() => _savedResourceIds.add(resource.id));
+                            widget
+                                .onSave(resource)
+                                .then((_) {
+                                  if (context.mounted) {
+                                    showMessagePopup(
+                                      context,
+                                      message: 'Resource saved',
+                                    );
+                                  }
+                                })
+                                .catchError((Object error) {
+                                  if (!context.mounted) return;
+                                  setState(
+                                    () => _savedResourceIds.remove(resource.id),
+                                  );
+                                  showMessagePopup(
+                                    context,
+                                    message: 'Unable to save this resource.',
+                                    type: MessageType.error,
+                                  );
+                                });
                           },
-                          onDownload: () => _openResource(resource),
+                          onRemove: () {
+                            setState(
+                              () => _savedResourceIds.remove(resource.id),
+                            );
+                            widget
+                                .onRemove(resource)
+                                .then((_) {
+                                  if (context.mounted) {
+                                    showMessagePopup(
+                                      context,
+                                      message: 'Resource removed',
+                                    );
+                                  }
+                                })
+                                .catchError((Object error) {
+                                  if (!context.mounted) return;
+                                  setState(
+                                    () => _savedResourceIds.add(resource.id),
+                                  );
+                                  showMessagePopup(
+                                    context,
+                                    message: 'Unable to remove this resource.',
+                                    type: MessageType.error,
+                                  );
+                                });
+                          },
+                          onDownload: () =>
+                              downloadResourcePdf(context, resource),
                         );
                       },
                     );
                   },
                 ),
               ),
-              _buildModeSelector(),
+              _buildViewSelector(),
             ],
           ),
         ),
@@ -140,66 +188,84 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
     );
   }
 
-  Future<void> _openResource(_SubjectResource resource) async {
-    final uri = Uri.tryParse(resource.pdfUrl);
-    if (uri != null &&
-        await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      return;
-    }
-    if (!mounted) return;
-    showMessagePopup(
-      context,
-      message: 'Unable to open this resource.',
-      type: MessageType.error,
-    );
-  }
-
   Widget _buildFilters() {
-    final filters = _mode == _FilterMode.age ? _ageFilters : _stageFilters;
-    final selected = _mode == _FilterMode.age ? _age : _keyStage;
     return SizedBox(
       height: 58,
       child: ListView.separated(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
         scrollDirection: Axis.horizontal,
-        itemCount: filters.length,
+        itemCount: _ageFilters.length,
         separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
-          final filter = filters[index];
+          final filter = _ageFilters[index];
           return _TopFilterChip(
             label: filter,
-            selected: filter == selected,
-            onTap: () => setState(() {
-              if (_mode == _FilterMode.age) {
-                _age = filter;
-              } else {
-                _keyStage = filter;
-              }
-            }),
+            selected: filter == _age,
+            onTap: () => setState(() => _age = filter),
           );
         },
       ),
     );
   }
 
-  Widget _buildModeSelector() {
+  Widget _buildViewSelector() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _SmallFilterChip(
-            label: 'Age',
-            selected: _mode == _FilterMode.age,
-            onTap: () => setState(() => _mode = _FilterMode.age),
+          _SubjectViewChip(
+            label: 'By Subject',
+            selected: _view == _SubjectResourcesView.bySubject,
+            onTap: () =>
+                setState(() => _view = _SubjectResourcesView.bySubject),
           ),
           const SizedBox(width: 12),
-          _SmallFilterChip(
-            label: 'Key Stage',
-            selected: _mode == _FilterMode.keyStage,
-            onTap: () => setState(() => _mode = _FilterMode.keyStage),
+          _SubjectViewChip(
+            label: 'Saved',
+            selected: _view == _SubjectResourcesView.saved,
+            onTap: () => setState(() => _view = _SubjectResourcesView.saved),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SubjectViewChip extends StatelessWidget {
+  const _SubjectViewChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? const Color(0xFF08A948) : Colors.white,
+      shape: StadiumBorder(
+        side: BorderSide(
+          color: selected ? const Color(0xFF08A948) : const Color(0xFFE0E0E0),
+        ),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        customBorder: const StadiumBorder(),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          child: Text(
+            label,
+            style: GoogleFonts.lato(
+              color: selected ? Colors.white : const Color(0xFF181818),
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -242,36 +308,89 @@ class _TopFilterChip extends StatelessWidget {
   }
 }
 
-class _SubjectResource {
-  const _SubjectResource({
+class ResourceItem {
+  const ResourceItem({
+    required this.id,
     required this.title,
     required this.details,
     required this.age,
-    required this.keyStage,
     required this.pdfUrl,
+    required this.thumbnailUrl,
   });
 
-  factory _SubjectResource.fromDocument(
+  factory ResourceItem.fromDocument(
     QueryDocumentSnapshot<Map<String, dynamic>> document,
   ) {
     final data = document.data();
     final subject = data['subject']?.toString() ?? 'Resource';
     final pages = (data['pages'] as num?)?.toInt();
-    return _SubjectResource(
+    return ResourceItem(
+      id: document.id,
       title:
           data['title']?.toString() ?? data['name']?.toString() ?? 'Resource',
       details: '$subject · PDF${pages == null ? '' : ' · $pages pages'}',
-      age: data['ageRange']?.toString() ?? 'All ages',
-      keyStage: data['keyStage']?.toString() ?? '',
+      age:
+          data['ageRange']?.toString() ?? data['age']?.toString() ?? 'All ages',
       pdfUrl: data['pdfUrl']?.toString() ?? '',
+      thumbnailUrl: data['thumbnailUrl']?.toString() ?? '',
     );
   }
 
+  final String id;
   final String title;
   final String details;
   final String age;
-  final String keyStage;
   final String pdfUrl;
+  final String thumbnailUrl;
+
+  String get detailsWithoutSubject {
+    final separator = details.indexOf(' · ');
+    return separator == -1 ? details : details.substring(separator + 3);
+  }
+
+  @override
+  bool operator ==(Object other) => other is ResourceItem && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
+}
+
+Future<void> downloadResourcePdf(
+  BuildContext context,
+  ResourceItem resource,
+) async {
+  if (resource.pdfUrl.isEmpty) {
+    showMessagePopup(
+      context,
+      message: 'This resource does not have a PDF file.',
+      type: MessageType.error,
+    );
+    return;
+  }
+
+  try {
+    final bytes = await InternetFile.get(resource.pdfUrl);
+    final safeName = resource.title
+        .trim()
+        .replaceAll(RegExp(r'[^a-zA-Z0-9 _-]'), '')
+        .replaceAll(RegExp(r'\s+'), '_');
+    await FlutterFileSaver().writeFileAsBytes(
+      fileName: '${safeName.isEmpty ? 'resource' : safeName}.pdf',
+      bytes: bytes,
+    );
+    if (!context.mounted) return;
+    showMessagePopup(context, message: 'PDF downloaded successfully');
+  } on FileSaverCancelledException {
+    return;
+  } catch (error) {
+    debugPrint('Unable to download resource: $error');
+    if (!context.mounted) return;
+    showMessagePopup(
+      context,
+      message: 'Unable to download this PDF.',
+      type: MessageType.error,
+    );
+  }
 }
 
 class _SubjectHeader extends StatelessWidget {
@@ -324,12 +443,16 @@ class _SubjectHeader extends StatelessWidget {
 class _SwipeableResourceTile extends StatefulWidget {
   const _SwipeableResourceTile({
     required this.resource,
+    required this.savedView,
     required this.onSave,
+    required this.onRemove,
     required this.onDownload,
   });
 
-  final _SubjectResource resource;
+  final ResourceItem resource;
+  final bool savedView;
   final VoidCallback onSave;
+  final VoidCallback onRemove;
   final VoidCallback onDownload;
 
   @override
@@ -337,7 +460,8 @@ class _SwipeableResourceTile extends StatefulWidget {
 }
 
 class _SwipeableResourceTileState extends State<_SwipeableResourceTile> {
-  static const _actionsWidth = 112.0;
+  static const _actionsWidth = 140.0;
+  static const _tileHeight = 88.0;
   double _offset = 0;
 
   void _run(VoidCallback action) {
@@ -354,18 +478,25 @@ class _SwipeableResourceTileState extends State<_SwipeableResourceTile> {
         children: [
           SizedBox(
             width: _actionsWidth,
-            height: 62,
+            height: _tileHeight,
             child: Row(
               children: [
                 _ResourceAction(
-                  label: 'Save',
-                  icon: Icons.favorite_border,
-                  color: const Color(0xFFF39A28),
-                  onTap: () => _run(widget.onSave),
+                  label: widget.savedView ? 'Remove' : 'Save',
+                  iconAsset: widget.savedView
+                      ? 'assets/removeiconup.png'
+                      : null,
+                  icon: widget.savedView ? null : Icons.favorite_border,
+                  color: widget.savedView
+                      ? const Color(0xFFE00019)
+                      : const Color(0xFF3159B7),
+                  onTap: () =>
+                      _run(widget.savedView ? widget.onRemove : widget.onSave),
                 ),
+                const SizedBox(width: 8),
                 _ResourceAction(
-                  label: 'DL',
-                  icon: Icons.download_outlined,
+                  label: 'Get',
+                  iconAsset: 'assets/downloadIcon.png',
                   color: const Color(0xFF08A948),
                   onTap: () => _run(widget.onDownload),
                 ),
@@ -389,28 +520,38 @@ class _SwipeableResourceTileState extends State<_SwipeableResourceTile> {
               offset: Offset(_offset, 0),
               child: Container(
                 width: double.infinity,
-                height: 62,
+                height: _tileHeight,
                 color: const Color(0xFFF4F9F6),
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Row(
                   children: [
-                    Text(
-                      widget.resource.title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.lato(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                    const SizedBox(height: 3),
-                    Text(
-                      widget.resource.details,
-                      style: GoogleFonts.lato(
-                        color: const Color(0xFF777777),
-                        fontSize: 12,
+                    ResourcePreviewThumbnail(resource: widget.resource),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.resource.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.lato(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            widget.resource.detailsWithoutSubject,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.lato(
+                              color: const Color(0xFF777777),
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
@@ -424,16 +565,126 @@ class _SwipeableResourceTileState extends State<_SwipeableResourceTile> {
   }
 }
 
+class ResourcePreviewThumbnail extends StatefulWidget {
+  const ResourcePreviewThumbnail({super.key, required this.resource});
+
+  final ResourceItem resource;
+
+  @override
+  State<ResourcePreviewThumbnail> createState() =>
+      _ResourcePreviewThumbnailState();
+}
+
+class _ResourcePreviewThumbnailState extends State<ResourcePreviewThumbnail> {
+  static final Map<String, Uint8List> _previewCache = {};
+  late Future<Uint8List?> _preview;
+
+  static const _fallback = Icon(
+    Icons.picture_as_pdf_outlined,
+    color: Color(0xFF777777),
+    size: 25,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _preview = _loadPreview();
+  }
+
+  @override
+  void didUpdateWidget(covariant ResourcePreviewThumbnail oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.resource.pdfUrl != widget.resource.pdfUrl) {
+      _preview = _loadPreview();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 54,
+      height: 66,
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: widget.resource.thumbnailUrl.isNotEmpty
+          ? Image.network(
+              widget.resource.thumbnailUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _buildAutomaticPreview(),
+            )
+          : _buildAutomaticPreview(),
+    );
+  }
+
+  Widget _buildAutomaticPreview() {
+    return FutureBuilder<Uint8List?>(
+      future: _preview,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(
+            child: SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.5,
+                color: Color(0xFF08A948),
+              ),
+            ),
+          );
+        }
+        final bytes = snapshot.data;
+        if (bytes == null) return _fallback;
+        return Image.memory(bytes, fit: BoxFit.cover);
+      },
+    );
+  }
+
+  Future<Uint8List?> _loadPreview() async {
+    final url = widget.resource.pdfUrl;
+    if (url.isEmpty) return null;
+    final cached = _previewCache[url];
+    if (cached != null) return cached;
+
+    PdfDocument? document;
+    PdfPage? page;
+    try {
+      final pdfBytes = await InternetFile.get(url);
+      document = await PdfDocument.openData(pdfBytes);
+      page = await document.getPage(1);
+      final image = await page.render(
+        width: 180,
+        height: 240,
+        format: PdfPageImageFormat.png,
+        backgroundColor: '#FFFFFF',
+      );
+      final bytes = image?.bytes;
+      if (bytes != null) _previewCache[url] = bytes;
+      return bytes;
+    } catch (error) {
+      debugPrint('Unable to create PDF preview: $error');
+      return null;
+    } finally {
+      await page?.close();
+      await document?.close();
+    }
+  }
+}
+
 class _ResourceAction extends StatelessWidget {
   const _ResourceAction({
     required this.label,
-    required this.icon,
+    this.iconAsset,
+    this.icon,
     required this.color,
     required this.onTap,
   });
 
   final String label;
-  final IconData icon;
+  final String? iconAsset;
+  final IconData? icon;
   final Color color;
   final VoidCallback onTap;
 
@@ -442,18 +693,32 @@ class _ResourceAction extends StatelessWidget {
     return Expanded(
       child: Material(
         color: color,
+        borderRadius: BorderRadius.circular(5),
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           onTap: onTap,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 18, color: Colors.white),
-              const SizedBox(height: 2),
+              SizedBox(
+                width: 27,
+                height: 27,
+                child: iconAsset != null
+                    ? Image.asset(iconAsset!, fit: BoxFit.contain)
+                    : DecoratedBox(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.white, width: 1.5),
+                          borderRadius: BorderRadius.circular(5),
+                        ),
+                        child: Icon(icon, size: 17, color: Colors.white),
+                      ),
+              ),
+              const SizedBox(height: 5),
               Text(
                 label,
                 style: GoogleFonts.lato(
                   color: Colors.white,
-                  fontSize: 10,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -465,49 +730,10 @@ class _ResourceAction extends StatelessWidget {
   }
 }
 
-class _SmallFilterChip extends StatelessWidget {
-  const _SmallFilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? _SubjectResourcesScreenState._green : Colors.white,
-      shape: StadiumBorder(
-        side: BorderSide(
-          color: selected
-              ? _SubjectResourcesScreenState._green
-              : const Color(0xFFE0E0E0),
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const StadiumBorder(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          child: Text(
-            label,
-            style: GoogleFonts.lato(
-              color: selected ? Colors.white : const Color(0xFF181818),
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _NoSubjectResources extends StatelessWidget {
-  const _NoSubjectResources();
+  const _NoSubjectResources({this.savedView = false});
+
+  final bool savedView;
 
   @override
   Widget build(BuildContext context) {
@@ -518,7 +744,7 @@ class _NoSubjectResources extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'No resources yet',
+              savedView ? 'No saved resources yet' : 'No resources yet',
               style: GoogleFonts.lato(
                 color: const Color(0xFF171717),
                 fontSize: 22,
@@ -527,7 +753,9 @@ class _NoSubjectResources extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'We’re adding resources to this subject. Check back soon for helpful activities, guides and learning materials.',
+              savedView
+                  ? 'Save a resource from the By Subject tab and it will appear here.'
+                  : 'We’re adding resources to this subject. Check back soon for helpful activities, guides and learning materials.',
               textAlign: TextAlign.center,
               style: GoogleFonts.lato(
                 color: const Color(0xFF333333),
@@ -536,6 +764,28 @@ class _NoSubjectResources extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ResourceLoadError extends StatelessWidget {
+  const _ResourceLoadError();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 48),
+        child: Text(
+          'Resources could not be loaded. Please check your connection and try again.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.lato(
+            color: const Color(0xFF333333),
+            fontSize: 16,
+            height: 1.35,
+          ),
         ),
       ),
     );

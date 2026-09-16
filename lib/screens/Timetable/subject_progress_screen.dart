@@ -980,7 +980,7 @@ const mathsLevels = <String, Level>{
     Module('Measures', [
       'Units & Conversions',
       'Area & Volume',
-      'Time & Timetables',
+      'Time & Plans',
       'Scale Drawings',
       'Compound Measures',
     ]),

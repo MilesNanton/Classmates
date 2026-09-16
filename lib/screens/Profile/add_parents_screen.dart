@@ -214,8 +214,8 @@ class _AddParentsScreenState extends State<AddParentsScreen> {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        'For your privacy and safety, only add parents, carers '
-                        'or guardians you’ve met at a Classmates experience or '
+                        'For your privacy and safety, only add parents, carers, '
+                        'or guardians you know or have met at a Classmates experience or '
                         'event. This helps keep your community connected to '
                         'people you know.',
                         textAlign: TextAlign.center,

@@ -4,7 +4,7 @@ description: "A new Flutter project."
 publish_to: 'none'
 
 
-version: 1.0.0+42
+version: 1.0.0+43
 
 environment:
   sdk: ^3.12.0
@@ -25,7 +25,9 @@ dependencies:
   url_launcher: ^6.3.2
   shared_preferences: ^2.5.4
   share_plus: ^13.3.0
-
+  pdfx: 2.11.0
+  internet_file: 1.3.0
+  flutter_file_saver: 0.10.0
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -51,7 +53,7 @@ flutter:
     - assets/updatedmessageicon.png
     - assets/latestmessagevector.png
     - assets/addconnectionicon.png
-    - assets/greenassemblyicon.png
+    - assets/expreincepersonicon.png
     - assets/messageiconupdateone.png
     - assets/messagesendicon.png
     - assets/noteicon.png
@@ -71,6 +73,8 @@ flutter:
     - assets/calenderIcon.png
     - assets/calenderIconselected.png
     - assets/removeIcon.png
+    - assets/removeiconup.png
+    - assets/downloadIcon.png
     - assets/editIconup.png
     - assets/iconflower.png
     - assets/note_icon.png

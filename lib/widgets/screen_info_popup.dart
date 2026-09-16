@@ -11,7 +11,7 @@ extension on ScreenInfoType {
   String get title => switch (this) {
     ScreenInfoType.community => 'Community',
     ScreenInfoType.experiences => 'Experiences',
-    ScreenInfoType.timetable => 'Timetable',
+    ScreenInfoType.timetable => 'Plan',
     ScreenInfoType.resources => 'Resources',
     ScreenInfoType.profile => 'Profile',
   };
@@ -31,7 +31,7 @@ extension on ScreenInfoType {
     ScreenInfoType.experiences =>
       'Explore museums, workshops, nature,\nattractions, heritage, sport and more. Find\nexperiences that connect to your child’s learning,\nturning everyday outings into opportunities to\nexplore, discover and learn.',
     ScreenInfoType.timetable =>
-      'Use your timetable to plan the things that\nhappen regularly — from lessons and study time\nto swimming, clubs and other weekly activities.\n\nYou can also add experiences to your Upcoming\ntimetable. Simply swipe left on an experience\nand add it to your upcoming activities.\n\nSee everything you have planned in one place\nand keep your week organised.',
+      'Use your plan to organise the things that\nhappen regularly — from lessons and study time\nto swimming, clubs and other weekly activities.\n\nYou can also add experiences to your Upcoming\nplan. Simply swipe left on an experience\nand add it to your upcoming activities.\n\nSee everything you have planned in one place\nand keep your week organised.',
     ScreenInfoType.resources =>
       'Explore resources by subject to find ideas,\nguidance and useful materials to support your\nchild’s learning.',
     ScreenInfoType.profile =>

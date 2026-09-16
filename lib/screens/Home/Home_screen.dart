@@ -21,6 +21,17 @@ import 'conversation_screen.dart';
 
 enum _FeedView { all, replies, connections, learn }
 
+String _homeFeedDisplayName(String fullName) {
+  final parts = fullName
+      .trim()
+      .split(RegExp(r'\s+'))
+      .where((part) => part.isNotEmpty)
+      .toList();
+  if (parts.isEmpty) return '';
+  if (parts.length == 1) return parts.first;
+  return '${parts.first} ${parts[1][0].toUpperCase()}.';
+}
+
 class CommunityHomeScreen extends StatefulWidget {
   const CommunityHomeScreen({super.key, this.showGuidelines = false});
 
@@ -81,7 +92,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
 
   static const _planningTopics = [
     'How to Build a Homeschool Routine',
-    'Do You Need a Timetable?',
+    'Do You Need a Plan?',
     'Planning a Week of Learning',
     'Planning a Term',
     "Planning Around Your Child's Interests",
@@ -128,7 +139,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
   static const _learnArticles = <String, List<String>>{
     'Where Do I Start With Homeschooling?': [
       'Starting homeschooling can feel overwhelming, but you don’t need to have everything planned before you begin. Start by understanding your child’s needs, interests and learning style, then look into the legal requirements for homeschooling where you live.',
-      'Next, explore the different approaches to homeschooling. You might prefer a structured timetable, learning through projects, following your child’s interests, or a mixture of different methods.',
+      'Next, explore the different approaches to homeschooling. You might prefer a structured plan, learning through projects, following your child’s interests, or a mixture of different methods.',
       'Keep your first routine simple. Choose a few subjects or topics to focus on, and balance learning at home with books, conversations, outdoor activities, museums, workshops and other real-world experiences.',
       'Most importantly, give yourself time to find what works. Your first plan doesn’t need to be perfect—you can change your approach as you learn more about your child and your own homeschooling style.',
     ],
@@ -138,7 +149,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
       'The rules are different across the UK, so make sure you check the guidance for where you live. For England, you can find the latest official guidance on GOV.UK.',
     ],
     'Your First 30 Days of Homeschooling': [
-      'The first 30 days are about finding your rhythm, not getting everything perfect. Spend time understanding how your child learns, what interests them and what they enjoy. Start with a simple routine rather than trying to recreate a school timetable.',
+      'The first 30 days are about finding your rhythm, not getting everything perfect. Spend time understanding how your child learns, what interests them and what they enjoy. Start with a simple routine rather than trying to recreate a school plan.',
       'Choose a few key areas to focus on, such as reading, maths and writing, then leave plenty of room for curiosity and exploration. Use books, conversations, practical activities, nature and experiences to make learning part of everyday life.',
       "Most importantly, give yourself permission to adjust. If something isn't working, change it. Keep notes on what your child is enjoying and where they may need more support. By the end of your first month, you'll have a much better idea of what works for your family.",
     ],
@@ -183,7 +194,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
       'This approach can suit families who enjoy structured learning, rich books and thoughtful discussion. It can also be adapted with projects, practical activities and educational experiences to make learning more engaging.',
     ],
     'Unschooling': [
-      "Unschooling is a child-led approach to learning where there is less emphasis on a fixed timetable or traditional curriculum. Instead, parents use their child's questions, interests and everyday experiences as starting points for learning.",
+      "Unschooling is a child-led approach to learning where there is less emphasis on a fixed plan or traditional curriculum. Instead, parents use their child's questions, interests and everyday experiences as starting points for learning.",
       'A child interested in dinosaurs might explore books, visit a museum, draw fossils, research evolution or create a project. The parent acts as a facilitator, helping provide resources, opportunities and guidance rather than directing every lesson.',
       'Unschooling can offer children significant freedom and autonomy, but it still requires an engaged parent who observes, supports and creates opportunities for learning. Families can also combine child-led learning with more structured activities where appropriate.',
     ],
@@ -225,12 +236,12 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
     'How to Build a Homeschool Routine': [
       'A good homeschool routine gives your child structure without making every day feel like school. Start with the essentials, such as reading, maths and other key subjects, then leave space for play, outdoor time, hobbies and following your child’s interests.',
       'You do not need to plan every minute. Some families work best with a simple morning routine, while others spread learning throughout the day. Think about when your child concentrates best and build your most focused activities around that time.',
-      'Keep your routine flexible enough to change. A museum visit, rainy afternoon, family day out or unexpected interest can all become learning opportunities. The goal is to create a rhythm that works for your family, rather than trying to recreate a school timetable at home.',
+      'Keep your routine flexible enough to change. A museum visit, rainy afternoon, family day out or unexpected interest can all become learning opportunities. The goal is to create a rhythm that works for your family, rather than trying to recreate a school plan at home.',
     ],
-    'Do You Need a Timetable?': [
-      'You do not need a strict timetable to homeschool successfully. Some families enjoy having set times for maths, reading and other subjects, while others prefer a looser routine that changes from day to day.',
-      'A timetable can provide structure and help children know what to expect, but it should work for your family rather than become a source of stress. You might simply have a morning routine, a list of things to complete each day or a weekly plan instead of scheduling every hour.',
-      'The important thing is that your child has regular opportunities to learn. If a rigid timetable is not working, change it. Homeschooling gives you the flexibility to build a routine around your child’s needs, interests and natural rhythm.',
+    'Do You Need a Plan?': [
+      'You do not need a strict plan to homeschool successfully. Some families enjoy having set times for maths, reading and other subjects, while others prefer a looser routine that changes from day to day.',
+      'A plan can provide structure and help children know what to expect, but it should work for your family rather than become a source of stress. You might simply have a morning routine, a list of things to complete each day or a weekly plan instead of scheduling every hour.',
+      'The important thing is that your child has regular opportunities to learn. If a rigid plan is not working, change it. Homeschooling gives you the flexibility to build a routine around your child’s needs, interests and natural rhythm.',
     ],
     'Planning a Week of Learning': [
       'Planning a week of homeschooling does not have to mean filling every hour. Start by choosing the key things you want your child to learn or practise, then spread those across the week. Include core subjects alongside reading, creative activities, outdoor time and experiences.',
@@ -240,7 +251,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
     'Planning a Term': [
       'Planning a homeschool term is about creating direction without planning every day in advance. Start by identifying the main subjects, topics or skills you would like your child to explore, then choose a few experiences, books and projects to support them.',
       'Think about the bigger picture. A topic such as Ancient Egypt could include history, reading, writing, art, geography and a museum visit. Connecting subjects around a shared theme can make learning feel more meaningful and easier to plan.',
-      'Leave room for your plans to change. Your child may become fascinated by something unexpected or need more time with a particular topic. A good term plan provides a framework, not a fixed timetable, allowing you to follow your child’s interests while still making steady progress.',
+      'Leave room for your plans to change. Your child may become fascinated by something unexpected or need more time with a particular topic. A good term plan provides a framework, not a fixed schedule, allowing you to follow your child’s interests while still making steady progress.',
     ],
     "Planning Around Your Child's Interests": [
       'Your child’s interests can be a powerful starting point for learning. If they love dinosaurs, for example, you can explore fossils in science, read dinosaur books, write a fact file, study prehistoric geography or visit a natural history museum.',
@@ -343,7 +354,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
       'Projects can also bring several subjects together. Building a model bridge might involve maths, science, design and writing, while creating a historical presentation could involve research, reading and communication. This makes projects useful evidence of both knowledge and practical skills.',
     ],
     'Home Education in England: What Parents Need to Know': [
-      'In England, parents have a legal duty to ensure their child receives a suitable full-time education, but this does not have to take place at school. You can choose to educate your child at home, and you do not have to follow the National Curriculum or copy a school timetable.',
+      'In England, parents have a legal duty to ensure their child receives a suitable full-time education, but this does not have to take place at school. You can choose to educate your child at home, and you do not have to follow the National Curriculum or copy a school plan.',
       'Your approach can be flexible, but the education should be suitable for your child’s age, ability, aptitude and any special educational needs they may have. You can use books, projects, online resources, tutors, community activities and real-world experiences as part of their education.',
       'If your child is registered at a mainstream school, you will normally need to notify the school in writing that you are educating them at home. Councils can make enquiries about whether a suitable education is being provided. Requirements can differ in specific circumstances, so check the latest guidance for your local authority before making changes.',
     ],
@@ -522,11 +533,18 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                   height: 40,
                   child: Center(
                     child: _feedView == _FeedView.connections
-                        ? const Image(
-                            image: AssetImage('assets/addconnectionicon.png'),
-                            width: 18,
-                            height: 18,
-                            fit: BoxFit.contain,
+                        ? Transform.translate(
+                            offset: const Offset(1.5, -0.5),
+                            child: const Image(
+                              image: AssetImage(
+                                'assets/addconnectionicon.png',
+                              ),
+                              width: 18,
+                              height: 18,
+                              fit: BoxFit.contain,
+                              filterQuality: FilterQuality.high,
+                              isAntiAlias: true,
+                            ),
                           )
                         : const Image(
                             image: AssetImage('assets/latestmessagevector.png'),
@@ -1085,6 +1103,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
           _FilterChip(
             label: 'Connections',
             selected: _feedView == _FeedView.connections,
+            fontWeight: FontWeight.w400,
             onTap: () => setState(() => _feedView = _FeedView.connections),
           ),
           const SizedBox(width: 12),
@@ -1102,7 +1121,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
     const items = [
       (Icons.home_rounded, 'Home'),
       (Icons.waving_hand_outlined, 'Experiences'),
-      (Icons.calendar_month_outlined, 'Timetable'),
+      (Icons.calendar_month_outlined, 'Plan'),
       (Icons.business_center_outlined, 'Resources'),
       (Icons.person_outline_rounded, 'Profile'),
     ];
@@ -1218,11 +1237,13 @@ class _FilterChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
+    this.fontWeight = FontWeight.w700,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
+  final FontWeight fontWeight;
 
   @override
   Widget build(BuildContext context) {
@@ -1244,7 +1265,7 @@ class _FilterChip extends StatelessWidget {
           style: GoogleFonts.lato(
             color: selected ? Colors.white : const Color(0xFF171717),
             fontSize: 14,
-            fontWeight: FontWeight.w700,
+            fontWeight: fontWeight,
           ),
         ),
       ),
@@ -1686,7 +1707,8 @@ class _ReplyThread extends StatelessWidget {
   }
 
   Widget _buildReply(Map<String, dynamic> reply) {
-    final author = _firstText(reply, ['authorName', 'userName', 'name']);
+    final fullAuthor = _firstText(reply, ['authorName', 'userName', 'name']);
+    final author = _homeFeedDisplayName(fullAuthor);
     final body = _firstText(reply, [
       'content',
       'text',
@@ -1841,7 +1863,8 @@ class _PostCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final author = _firstText(post, ['authorName', 'userName', 'name']);
+    final fullAuthor = _firstText(post, ['authorName', 'userName', 'name']);
+    final author = _homeFeedDisplayName(fullAuthor);
     final body = _firstText(post, ['content', 'text', 'body']);
     final isOwner = post['authorId'] == FirebaseAuth.instance.currentUser?.uid;
     final initials = author
@@ -2022,7 +2045,7 @@ class _PublicPostRepliesState extends State<_PublicPostReplies> {
   Widget _reply(Map<String, dynamic> reply) {
     final storedName = reply['authorName'];
     final author = storedName is String && storedName.trim().isNotEmpty
-        ? storedName.trim()
+        ? _homeFeedDisplayName(storedName)
         : 'Community member';
     final storedContent = reply['content'];
     final content = storedContent is String ? storedContent.trim() : '';

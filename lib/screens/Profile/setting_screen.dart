@@ -157,7 +157,7 @@ class _SettingsList extends StatelessWidget {
         _SettingsTile(
           iconAsset: 'assets/settingIcons/change_password.png',
           label: 'Change password',
-          onTap: () => _showUnavailable(context, 'Change password'),
+          onTap: () => _showChangePassword(context),
         ),
         _SettingsTile(
           iconAsset: 'assets/settingIcons/restore_purchases.png',
@@ -169,7 +169,6 @@ class _SettingsList extends StatelessWidget {
           label: 'Manage subscription',
           onTap: () => _showManageSubscription(context),
         ),
-        const _SectionTitle('Notifications'),
         const _SectionTitle('Danger'),
         _SettingsTile(
           iconAsset: 'assets/settingIcons/delete.png',
@@ -177,11 +176,6 @@ class _SettingsList extends StatelessWidget {
           onTap: () => _confirmDeleteAccount(context),
         ),
         const _SectionTitle('Help'),
-        _SettingsTile(
-          iconAsset: 'assets/settingIcons/faq.png',
-          label: 'FAQs',
-          onTap: () => _showUnavailable(context, 'FAQs'),
-        ),
         _SettingsTile(
           iconAsset: 'assets/settingIcons/terms_conditions.png',
           label: 'Terms and Conditions',
@@ -201,6 +195,43 @@ class _SettingsList extends StatelessWidget {
 
   static void _showUnavailable(BuildContext context, String feature) {
     showMessagePopup(context, message: '$feature coming soon');
+  }
+
+  static Future<void> _showChangePassword(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      showMessagePopup(
+        context,
+        message: 'Please sign in again to change your password.',
+        type: MessageType.error,
+      );
+      return;
+    }
+
+    final usesPassword = user.providerData.any(
+      (provider) => provider.providerId == EmailAuthProvider.PROVIDER_ID,
+    );
+    if (!usesPassword || user.email == null) {
+      showMessagePopup(
+        context,
+        message:
+            'Password changes are only available for email and password accounts.',
+        type: MessageType.error,
+      );
+      return;
+    }
+
+    final passwordChanged = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.transparent,
+      builder: (_) => _ChangePasswordSheet(user: user),
+    );
+    if (passwordChanged == true && context.mounted) {
+      await _showPasswordChanged(context);
+    }
   }
 
   static Future<void> _confirmDeleteAccount(BuildContext context) async {
@@ -230,6 +261,7 @@ class _SettingsList extends StatelessWidget {
 
     if (shouldDelete != true || !context.mounted) return;
 
+    final overlay = Overlay.of(context, rootOverlay: true);
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       _openGetStarted(context);
@@ -270,6 +302,10 @@ class _SettingsList extends StatelessWidget {
       if (!context.mounted) return;
       Navigator.of(context).pop();
       _openGetStarted(context);
+      showMessagePopupInOverlay(
+        overlay,
+        message: 'Account deleted successfully.',
+      );
     } on FirebaseAuthException catch (error) {
       if (!context.mounted) return;
       Navigator.of(context).pop();
@@ -296,6 +332,7 @@ class _SettingsList extends StatelessWidget {
   ) async {
     for (final collectionName in const [
       'completedExperiences',
+      'savedResources',
       'parents',
       'subjectProgress',
       'timetableEntries',
@@ -493,6 +530,448 @@ class _SettingsList extends StatelessWidget {
   ];
 }
 
+class _ChangePasswordSheet extends StatefulWidget {
+  const _ChangePasswordSheet({required this.user});
+
+  final User user;
+
+  @override
+  State<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+}
+
+class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
+  static const _green = Color(0xFF08A948);
+
+  final _currentPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+  bool _isChangingPassword = false;
+  bool _isSendingReset = false;
+  bool _currentPasswordHasError = false;
+  bool _newPasswordHasError = false;
+  bool _confirmPasswordHasError = false;
+
+  bool get _canSubmit {
+    return !_isChangingPassword &&
+        !_isSendingReset &&
+        _currentPasswordController.text.isNotEmpty &&
+        _newPasswordController.text.isNotEmpty &&
+        _confirmPasswordController.text.isNotEmpty;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _currentPasswordController.addListener(_refresh);
+    _newPasswordController.addListener(_refresh);
+    _confirmPasswordController.addListener(_refresh);
+  }
+
+  void _refresh() {
+    if (!mounted) return;
+    setState(() {
+      _currentPasswordHasError = false;
+      _newPasswordHasError = false;
+      _confirmPasswordHasError = false;
+    });
+  }
+
+  @override
+  void dispose() {
+    _currentPasswordController.dispose();
+    _newPasswordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _changePassword() async {
+    final email = widget.user.email;
+    if (!_canSubmit || email == null) return;
+
+    final newPassword = _newPasswordController.text;
+    if (newPassword.length < 6) {
+      setState(() {
+        _newPasswordHasError = true;
+        _confirmPasswordHasError = true;
+      });
+      showMessagePopup(
+        context,
+        message: 'Password must contain at least 6 characters',
+        type: MessageType.error,
+      );
+      return;
+    }
+    if (_confirmPasswordController.text != newPassword) {
+      setState(() {
+        _newPasswordHasError = true;
+        _confirmPasswordHasError = true;
+      });
+      showMessagePopup(
+        context,
+        message: "Passwords don't match",
+        type: MessageType.error,
+      );
+      return;
+    }
+    if (newPassword == _currentPasswordController.text) {
+      setState(() {
+        _newPasswordHasError = true;
+        _confirmPasswordHasError = true;
+      });
+      showMessagePopup(
+        context,
+        message: 'Your new password must be different',
+        type: MessageType.error,
+      );
+      return;
+    }
+
+    setState(() {
+      _isChangingPassword = true;
+      _currentPasswordHasError = false;
+      _newPasswordHasError = false;
+      _confirmPasswordHasError = false;
+    });
+
+    try {
+      final credential = EmailAuthProvider.credential(
+        email: email,
+        password: _currentPasswordController.text,
+      );
+      await widget.user.reauthenticateWithCredential(credential);
+      await widget.user.updatePassword(newPassword);
+
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } on FirebaseAuthException catch (error) {
+      if (!mounted) return;
+      final isCurrentPasswordError =
+          error.code == 'wrong-password' || error.code == 'invalid-credential';
+      setState(() {
+        _isChangingPassword = false;
+        _currentPasswordHasError = isCurrentPasswordError;
+        _newPasswordHasError = error.code == 'weak-password';
+        _confirmPasswordHasError = error.code == 'weak-password';
+      });
+      showMessagePopup(
+        context,
+        message: switch (error.code) {
+          'wrong-password' ||
+          'invalid-credential' => 'Current password is incorrect',
+          'weak-password' => 'Please choose a stronger password',
+          'too-many-requests' => 'Too many attempts. Please wait and try again',
+          'network-request-failed' =>
+            'Please check your internet connection and try again',
+          _ => 'Unable to change your password. Please try again',
+        },
+        type: MessageType.error,
+      );
+    }
+  }
+
+  Future<void> _sendPasswordReset() async {
+    final email = widget.user.email;
+    if (email == null || _isSendingReset) return;
+
+    setState(() {
+      _isSendingReset = true;
+    });
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (!mounted) return;
+      final overlay = Overlay.of(context, rootOverlay: true);
+      Navigator.pop(context);
+      showMessagePopupInOverlay(
+        overlay,
+        message: 'Password reset email sent to $email.',
+      );
+    } on FirebaseAuthException catch (error) {
+      if (!mounted) return;
+      setState(() => _isSendingReset = false);
+      showMessagePopup(
+        context,
+        message: error.code == 'network-request-failed'
+            ? 'Please check your internet connection and try again'
+            : 'Unable to send the reset email. Please try again',
+        type: MessageType.error,
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedPadding(
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOut,
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: Material(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+        clipBehavior: Clip.antiAlias,
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(20, 18, 20, 22),
+          child: AutofillGroup(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Change password',
+                        style: GoogleFonts.lato(
+                          color: const Color(0xFF181818),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    Material(
+                      color: Colors.white,
+                      shape: const CircleBorder(
+                        side: BorderSide(color: Color(0xFFE2E2E2)),
+                      ),
+                      child: InkWell(
+                        onTap: _isChangingPassword || _isSendingReset
+                            ? null
+                            : () => Navigator.pop(context),
+                        customBorder: const CircleBorder(),
+                        child: const SizedBox(
+                          width: 34,
+                          height: 34,
+                          child: Icon(Icons.close, size: 18),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                _PasswordField(
+                  controller: _currentPasswordController,
+                  hintText: 'Current password',
+                  autofillHints: const [AutofillHints.password],
+                  textInputAction: TextInputAction.next,
+                  hasError: _currentPasswordHasError,
+                ),
+                const SizedBox(height: 12),
+                _PasswordField(
+                  controller: _newPasswordController,
+                  hintText: 'New password',
+                  autofillHints: const [AutofillHints.newPassword],
+                  textInputAction: TextInputAction.next,
+                  hasError: _newPasswordHasError,
+                ),
+                const SizedBox(height: 12),
+                _PasswordField(
+                  controller: _confirmPasswordController,
+                  hintText: 'Confirm new password',
+                  autofillHints: const [AutofillHints.newPassword],
+                  textInputAction: TextInputAction.done,
+                  onSubmitted: (_) => _changePassword(),
+                  hasError: _confirmPasswordHasError,
+                ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 46,
+                  child: FilledButton(
+                    onPressed: _canSubmit ? _changePassword : null,
+                    style: FilledButton.styleFrom(
+                      backgroundColor: _green,
+                      disabledBackgroundColor: const Color(0xFFB7B7B7),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                    ),
+                    child: _isChangingPassword
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(
+                            'Change password',
+                            style: GoogleFonts.lato(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextButton(
+                  onPressed: _isChangingPassword || _isSendingReset
+                      ? null
+                      : _sendPasswordReset,
+                  child: _isSendingReset
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: _green,
+                          ),
+                        )
+                      : Text(
+                          'Forgot password?',
+                          style: GoogleFonts.lato(
+                            color: _green,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PasswordField extends StatelessWidget {
+  const _PasswordField({
+    required this.controller,
+    required this.hintText,
+    required this.autofillHints,
+    required this.textInputAction,
+    this.hasError = false,
+    this.onSubmitted,
+  });
+
+  final TextEditingController controller;
+  final String hintText;
+  final Iterable<String> autofillHints;
+  final TextInputAction textInputAction;
+  final bool hasError;
+  final ValueChanged<String>? onSubmitted;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      obscureText: true,
+      enableSuggestions: false,
+      autocorrect: false,
+      autofillHints: autofillHints,
+      textInputAction: textInputAction,
+      onSubmitted: onSubmitted,
+      style: GoogleFonts.lato(fontSize: 14, color: const Color(0xFF181818)),
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: GoogleFonts.lato(
+          fontSize: 13,
+          color: const Color(0xFF8C8C8C),
+        ),
+        filled: true,
+        fillColor: const Color(0xFFF4F4F6),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 15,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: hasError
+              ? const BorderSide(color: Color(0xFFFF3B4E))
+              : BorderSide.none,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: hasError
+              ? const BorderSide(color: Color(0xFFFF3B4E))
+              : BorderSide.none,
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(7),
+          borderSide: BorderSide(
+            color: hasError
+                ? const Color(0xFFFF3B4E)
+                : _ChangePasswordSheetState._green,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+Future<void> _showPasswordChanged(BuildContext context) {
+  return showModalBottomSheet<void>(
+    context: context,
+    useRootNavigator: true,
+    backgroundColor: Colors.transparent,
+    barrierColor: Colors.black45,
+    builder: (sheetContext) => Material(
+      color: Colors.white,
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 22, 20, 24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      'Password changed',
+                      style: GoogleFonts.lato(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: const Color(0xFF181818),
+                      ),
+                    ),
+                  ),
+                  Material(
+                    color: Colors.white,
+                    shape: const CircleBorder(
+                      side: BorderSide(color: Color(0xFFE2E2E2)),
+                    ),
+                    child: InkWell(
+                      onTap: () => Navigator.pop(sheetContext),
+                      customBorder: const CircleBorder(),
+                      child: const SizedBox(
+                        width: 34,
+                        height: 34,
+                        child: Icon(Icons.close, size: 18),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 52),
+              SizedBox(
+                height: 46,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(sheetContext),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: _ChangePasswordSheetState._green,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(7),
+                    ),
+                  ),
+                  child: Text(
+                    'Done',
+                    style: GoogleFonts.lato(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 class _SafetyGuidanceSheet extends StatelessWidget {
   const _SafetyGuidanceSheet({
     required this.title,
@@ -635,7 +1114,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
           'Follow structured subject pathways or choose a flexible route that fits your child.',
     ),
     (
-      title: 'Plan your week with Timetable',
+      title: 'Plan your week',
       description:
           'Organise subjects, activities, clubs and regular routines in one place.',
     ),
@@ -665,7 +1144,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
           children: [
             SizedBox(
               width: double.infinity,
-              height: 174,
+              height: 154,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -675,7 +1154,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                       alignment: Alignment.bottomCenter,
                       child: SizedBox(
                         width: double.infinity,
-                        height: 170,
+                        height: 150,
                         child: Image.asset(
                           'assets/screensIcons/ExprienceIcon.png',
                           fit: BoxFit.contain,
@@ -712,7 +1191,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                 textAlign: TextAlign.center,
                 style: GoogleFonts.lato(
                   color: const Color(0xFF181818),
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.w800,
                 ),
               ),
@@ -761,7 +1240,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                       Expanded(
                         child: Row(
                           children: [
-                            const Icon(Icons.check, size: 16),
+                            const Icon(Icons.check, size: 18),
                             const SizedBox(width: 14),
                             Expanded(
                               child: Column(
@@ -771,7 +1250,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                                   Text(
                                     feature.title,
                                     style: GoogleFonts.lato(
-                                      fontSize: 13,
+                                      fontSize: 14,
                                       fontWeight: FontWeight.w700,
                                     ),
                                   ),
@@ -782,7 +1261,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.lato(
                                       color: const Color(0xFF333333),
-                                      fontSize: 10.5,
+                                      fontSize: 11.5,
                                       height: 1.2,
                                     ),
                                   ),
@@ -818,7 +1297,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                         ? 'Subscribe for £49.99 / year'
                         : 'Subscribe for £4.99 / month',
                     style: GoogleFonts.lato(
-                      fontSize: 14,
+                      fontSize: 15,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -842,7 +1321,7 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
               ),
               style: GoogleFonts.lato(
                 color: const Color(0xFF6D6D6D),
-                fontSize: 10,
+                fontSize: 11,
               ),
             ),
             const SizedBox(height: 28),
@@ -896,7 +1375,7 @@ class _PlanCard extends StatelessWidget {
                     price,
                     maxLines: 1,
                     style: GoogleFonts.lato(
-                      fontSize: 16,
+                      fontSize: 17,
                       height: 1.1,
                       fontWeight: FontWeight.w700,
                     ),
@@ -907,7 +1386,7 @@ class _PlanCard extends StatelessWidget {
                     maxLines: 1,
                     style: GoogleFonts.lato(
                       color: const Color(0xFF777777),
-                      fontSize: 12,
+                      fontSize: 13,
                       height: 1.1,
                     ),
                   ),
