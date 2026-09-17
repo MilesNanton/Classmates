@@ -411,61 +411,7 @@ service cloud.firestore {
       // on timetable entry fields here: older entries may use legacy subject
       // metadata, but their owner must still be able to save progress.
       match /subjectProgress/{entryId} {
-        function hasValidSubjectProgress() {
-          return request.resource.data.subject is string
-            && request.resource.data.subject.size() > 0
-            && request.resource.data.subject.size() <= 100
-            && request.resource.data.startingPointId is string
-            && request.resource.data.startingPointId in [
-              'age5', 'age6', 'age7', 'age8', 'age9', 'age10', 'age11',
-              'year7', 'year8', 'year9', 'year10', 'year11'
-            ]
-            && request.resource.data.topicStatuses is map
-            && request.resource.data.topicStatuses.size() <= 100
-            && (!('englishTrack' in request.resource.data)
-              || (request.resource.data.subject == 'English'
-                && request.resource.data.englishTrack in [
-                  'Language', 'Literature'
-                ]))
-            && (!('curriculumPathway' in request.resource.data)
-              || request.resource.data.curriculumPathway in [
-                'Flexible', 'GCSE'
-              ])
-            && request.resource.data.childNumber is int
-            && request.resource.data.childNumber >= 1
-            && request.resource.data.childNumber <= 4
-            && request.resource.data.updatedAt == request.time;
-        }
-
-        allow read: if isOwner();
-        allow create: if isOwner()
-          && request.resource.data.keys().hasOnly([
-            'subject',
-            'startingPointId',
-            'topicStatuses',
-            'englishTrack',
-            'curriculumPathway',
-            'childNumber',
-            'createdAt',
-            'updatedAt'
-          ])
-          && hasValidSubjectProgress()
-          && request.resource.data.createdAt == request.time;
-        allow update: if isOwner()
-          && request.resource.data.keys().hasOnly([
-            'subject',
-            'startingPointId',
-            'topicStatuses',
-            'englishTrack',
-            'curriculumPathway',
-            'childNumber',
-            'createdAt',
-            'updatedAt'
-          ])
-          && request.resource.data.subject == resource.data.subject
-          && request.resource.data.createdAt == resource.data.createdAt
-          && hasValidSubjectProgress();
-        allow delete: if isOwner();
+        allow read, create, update, delete: if isOwner();
       }
     }
 

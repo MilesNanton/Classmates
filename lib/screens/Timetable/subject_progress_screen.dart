@@ -6,8 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import '../../widgets/message_widget.dart';
-
 class SubjectProgressScreen extends StatefulWidget {
   const SubjectProgressScreen({
     super.key,
@@ -48,11 +46,31 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
       widget.subject == 'Science';
 
   Map<String, Level> get _subjectLevels => switch (widget.subject) {
+    'Mathematics' when _pathway == 'Flexible' => {
+      ...mathsLevels,
+      ...flexibleMathsLevels,
+    },
+    'Mathematics' when _pathway == 'GCSE' => {
+      ...mathsLevels,
+      ...gcseMathsLevels,
+    },
+    'English' when _pathway == 'Flexible' => {
+      ...englishLevels,
+      ...flexibleEnglishLevels,
+    },
+    'English' when _pathway == 'GCSE' && _englishTrack == 'Language' => {
+      ...englishLevels,
+      ...gcseEnglishLanguageLevels,
+    },
     'English' when _pathway == 'GCSE' && _englishTrack == 'Literature' => {
       ...englishLevels,
       ...englishLiteratureLevels,
     },
     'English' => englishLevels,
+    'Science' when _pathway == 'Flexible' => {
+      ...scienceLevels,
+      ...flexibleScienceLevels,
+    },
     'Science' => scienceLevels,
     _ => mathsLevels,
   };
@@ -142,24 +160,10 @@ class _SubjectProgressScreenState extends State<SubjectProgressScreen> {
         'updatedAt': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
       _progressDocumentExists = true;
-      if (mounted) {
-        showMessagePopup(
-          context,
-          message: 'Progress saved successfully.',
-          duration: const Duration(seconds: 2),
-        );
-      }
     } on FirebaseException catch (error) {
       if (kDebugMode) {
         debugPrint(
           '[SubjectProgress] Save failed (${error.code}): ${error.message}',
-        );
-      }
-      if (mounted) {
-        showMessagePopup(
-          context,
-          message: 'Could not save this progress. Please try again.',
-          type: MessageType.error,
         );
       }
     }
@@ -1142,6 +1146,382 @@ const mathsLevels = <String, Level>{
   ]),
 };
 
+const flexibleMathsLevels = <String, Level>{
+  'year7': Level('Year 7 - Age 11–12', [
+    Module('Number in Everyday Life', [
+      'Positive & Negative Numbers',
+      'Fractions in Context',
+      'Decimals & Rounding',
+      'Percentages Around Us',
+      'Estimation & Mental Maths',
+    ]),
+    Module('Patterns & Relationships', [
+      'Number Sequences',
+      'Patterns & Rules',
+      'Coordinates',
+      'Simple Expressions',
+      'Using Formulae',
+    ]),
+    Module('Shape & Space', [
+      'Angles & Turns',
+      'Properties of 2D Shapes',
+      'Properties of 3D Shapes',
+      'Symmetry',
+      'Transformations',
+    ]),
+    Module('Measuring the World', [
+      'Units of Measurement',
+      'Perimeter',
+      'Area',
+      'Volume',
+      'Scale & Maps',
+    ]),
+    Module('Maths with Data', [
+      'Collecting Data',
+      'Tables & Charts',
+      'Averages',
+      'Probability',
+      'Interpreting Information',
+    ]),
+  ]),
+  'year8': Level('Year 8 - Age 12–13', [
+    Module('Number & Proportion', [
+      'Powers & Roots',
+      'Fractions & Mixed Numbers',
+      'Ratio',
+      'Proportion',
+      'Percentage Change',
+    ]),
+    Module('Algebraic Thinking', [
+      'Algebraic Expressions',
+      'Expanding & Simplifying',
+      'Equations',
+      'Sequences',
+      'Graphs & Relationships',
+    ]),
+    Module('Geometry in Context', [
+      'Angle Relationships',
+      'Triangles & Quadrilaterals',
+      'Circles',
+      'Constructions',
+      'Bearings & Scale Drawings',
+    ]),
+    Module('Measurement & Space', [
+      'Compound Measures',
+      'Area of Compound Shapes',
+      'Volume of Prisms',
+      'Surface Area',
+      'Scale Factors',
+    ]),
+    Module('Statistics & Chance', [
+      'Sampling',
+      'Frequency Tables',
+      'Comparing Data',
+      'Probability Experiments',
+      'Risk & Uncertainty',
+    ]),
+  ]),
+  'year9': Level('Year 9 - Age 13–14', [
+    Module('Mathematical Reasoning', [
+      'Number Systems',
+      'Indices',
+      'Standard Form',
+      'Accuracy & Bounds',
+      'Problem-Solving Strategies',
+    ]),
+    Module('Algebra & Graphs', [
+      'Linear Relationships',
+      'Simultaneous Relationships',
+      'Inequalities',
+      'Sequences & General Terms',
+      'Real-Life Graphs',
+    ]),
+    Module('Geometry & Trigonometry', [
+      'Similarity',
+      'Pythagoras',
+      'Right-Angled Triangles',
+      'Scale & Enlargement',
+      'Introductory Trigonometry',
+    ]),
+    Module('Financial Mathematics', [
+      'Best Buys',
+      'Wages & Salaries',
+      'Tax & Discounts',
+      'Loans & Interest',
+      'Household Budgets',
+    ]),
+    Module('Data & Decision Making', [
+      'Data Collection',
+      'Representing Large Data Sets',
+      'Scatter Graphs',
+      'Correlation',
+      'Making Predictions',
+    ]),
+  ]),
+  'year10': Level('Year 10 - Age 14–15', [
+    Module('Mathematical Modelling', [
+      'Creating Mathematical Models',
+      'Rates of Change',
+      'Direct Proportion',
+      'Inverse Relationships',
+      'Interpreting Models',
+    ]),
+    Module('Algebraic Problem Solving', [
+      'Quadratic Relationships',
+      'Algebraic Fractions',
+      'Simultaneous Equations',
+      'Graphical Solutions',
+      'Algebraic Proof',
+    ]),
+    Module('Geometry in the Real World', [
+      'Circle Geometry',
+      'Similar Shapes',
+      'Trigonometric Relationships',
+      'Vectors',
+      'Geometric Proof',
+    ]),
+    Module('Mathematics for Life', [
+      'Personal Finance',
+      'Compound Interest',
+      'Growth & Decay',
+      'Exchange Rates',
+      'Financial Planning',
+    ]),
+    Module('Statistics & Investigation', [
+      'Designing Investigations',
+      'Statistical Distributions',
+      'Comparing Data',
+      'Probability Models',
+      'Evaluating Conclusions',
+    ]),
+  ]),
+  'year11': Level('Year 11 - Age 15–16', [
+    Module('Advanced Problem Solving', [
+      'Multi-Step Problems',
+      'Mathematical Arguments',
+      'Proof & Reasoning',
+      'Optimisation',
+      'Mathematical Modelling',
+    ]),
+    Module('Algebra in Action', [
+      'Functions',
+      'Non-Linear Relationships',
+      'Algebraic Methods',
+      'Iteration',
+      'Mathematical Patterns',
+    ]),
+    Module('Space & Measurement', [
+      '3D Geometry',
+      'Advanced Trigonometry',
+      'Vectors in Geometry',
+      'Transformations',
+      'Mathematical Constructions',
+    ]),
+    Module('Mathematics for the Future', [
+      'Mortgages & Borrowing',
+      'Investments',
+      'Business Mathematics',
+      'Probability in Decision Making',
+      'Mathematics in Careers',
+    ]),
+    Module('Independent Investigation', [
+      'Planning a Mathematical Investigation',
+      'Choosing Methods',
+      'Analysing Results',
+      'Presenting Findings',
+      'Evaluating Solutions',
+    ]),
+  ]),
+};
+
+const gcseMathsLevels = <String, Level>{
+  'year7': Level('Year 7 - Age 11–12', [
+    Module('Number Foundations', [
+      'Integers & Place Value',
+      'Fractions, Decimals & Percentages',
+      'Factors, Multiples & Primes',
+      'Powers & Roots',
+      'Order of Operations',
+    ]),
+    Module('Algebra Foundations', [
+      'Algebraic Notation',
+      'Simplifying Expressions',
+      'Substitution',
+      'Linear Equations',
+      'Sequences',
+    ]),
+    Module('Geometry Foundations', [
+      'Angles & Lines',
+      'Triangles & Quadrilaterals',
+      'Properties of Polygons',
+      'Perimeter & Area',
+      'Transformations',
+    ]),
+    Module('Ratio & Proportion', [
+      'Ratio',
+      'Sharing in a Ratio',
+      'Proportion',
+      'Percentages',
+      'Scale & Maps',
+    ]),
+    Module('Statistics & Probability', [
+      'Collecting Data',
+      'Tables & Charts',
+      'Mean, Median, Mode & Range',
+      'Probability',
+      'Interpreting Data',
+    ]),
+  ]),
+  'year8': Level('Year 8 - Age 12–13', [
+    Module('Number & Proportion', [
+      'Fractions & Percentages',
+      'Ratio & Proportion',
+      'Standard Form',
+      'Powers & Roots',
+      'Estimation',
+    ]),
+    Module('Algebra', [
+      'Expanding & Simplifying',
+      'Linear Equations',
+      'Inequalities',
+      'Sequences',
+      'Coordinates & Linear Graphs',
+    ]),
+    Module('Geometry & Measures', [
+      'Angle Rules',
+      'Polygons',
+      'Area & Volume',
+      'Constructions & Loci',
+      'Transformations',
+    ]),
+    Module('Pythagoras & Probability', [
+      "Pythagoras' Theorem",
+      'Right-Angled Triangles',
+      'Probability Experiments',
+      'Probability Diagrams',
+      'Expected Outcomes',
+    ]),
+    Module('Statistics', [
+      'Data Collection',
+      'Averages',
+      'Scatter Graphs',
+      'Statistical Diagrams',
+      'Comparing Data',
+    ]),
+  ]),
+  'year9': Level('Year 9 - Age 13–14', [
+    Module('Number & Proportion', [
+      'Standard Form',
+      'Recurring Decimals',
+      'Percentage Change',
+      'Compound Interest',
+      'Direct & Inverse Proportion',
+    ]),
+    Module('Algebra', [
+      'Algebraic Manipulation',
+      'Simultaneous Equations',
+      'Quadratic Expressions',
+      'Quadratic Sequences',
+      'Inequalities',
+    ]),
+    Module('Geometry & Trigonometry', [
+      "Pythagoras' Theorem",
+      'Trigonometry',
+      'Similarity & Congruence',
+      'Circle Geometry',
+      'Vectors',
+    ]),
+    Module('Graphs & Functions', [
+      'Linear Graphs',
+      'Quadratic Graphs',
+      'Real-Life Graphs',
+      'Functions',
+      'Rates of Change',
+    ]),
+    Module('Statistics & Probability', [
+      'Sampling',
+      'Averages & Spread',
+      'Probability Trees',
+      'Scatter Graphs',
+      'Expected Values',
+    ]),
+  ]),
+  'year10': Level('Year 10 - Age 14–15', [
+    Module('Advanced Number', [
+      'Surds',
+      'Indices',
+      'Bounds & Error Intervals',
+      'Compound Measures',
+      'Numerical Methods',
+    ]),
+    Module('Advanced Algebra', [
+      'Quadratic Equations',
+      'Completing the Square',
+      'Algebraic Fractions',
+      'Iteration',
+      'Simultaneous Equations',
+    ]),
+    Module('Advanced Geometry', [
+      'Sine & Cosine Rules',
+      'Circle Theorems',
+      'Advanced Trigonometry',
+      'Vectors',
+      'Similarity & Enlargement',
+    ]),
+    Module('Graphs & Functions', [
+      'Quadratic Graphs',
+      'Cubic & Reciprocal Graphs',
+      'Functions & Inverses',
+      'Transformations of Graphs',
+      'Gradients & Rates of Change',
+    ]),
+    Module('Statistics & Probability', [
+      'Histograms',
+      'Cumulative Frequency',
+      'Box Plots',
+      'Conditional Probability',
+      'Statistical Distributions',
+    ]),
+  ]),
+  'year11': Level('Year 11 - Age 15–16', [
+    Module('Number & Algebra', [
+      'Advanced Ratio & Proportion',
+      'Algebraic Proof',
+      'Exact Values',
+      'Iteration',
+      'Numerical Problem Solving',
+    ]),
+    Module('Advanced Algebra', [
+      'Quadratic Equations',
+      'Algebraic Fractions',
+      'Functions',
+      'Equations & Inequalities',
+      'Sequences',
+    ]),
+    Module('Geometry & Measures', [
+      'Circle Theorems',
+      'Advanced Trigonometry',
+      'Vectors',
+      'Similarity & Congruence',
+      '3D Geometry & Measures',
+    ]),
+    Module('Statistics & Probability', [
+      'Cumulative Frequency',
+      'Histograms',
+      'Box Plots',
+      'Conditional Probability',
+      'Statistical Analysis',
+    ]),
+    Module('GCSE Problem Solving', [
+      'Multi-Step Problems',
+      'Mathematical Modelling',
+      'Financial Mathematics',
+      'Proof & Reasoning',
+      'Exam Problem Solving',
+    ]),
+  ]),
+};
+
 const englishLevels = <String, Level>{
   'age5': Level('Age 5', [
     Module('Phonics & Sounds', [
@@ -1567,6 +1947,382 @@ const englishLevels = <String, Level>{
       'Grammar',
       'Punctuation',
       'Editing & Proofreading',
+    ]),
+  ]),
+};
+
+const flexibleEnglishLevels = <String, Level>{
+  'year7': Level('Year 7 - Age 11–12', [
+    Module('Finding Your Voice', [
+      'Personal Writing',
+      'Descriptive Writing',
+      'Writing with Detail',
+      'Developing Vocabulary',
+      'Writing for an Audience',
+    ]),
+    Module('Stories & Storytelling', [
+      'Story Structure',
+      'Character Creation',
+      'Setting & Atmosphere',
+      'Dialogue',
+      'Narrative Voice',
+    ]),
+    Module('Reading the World', [
+      'Reading for Meaning',
+      'Character & Relationships',
+      'Themes & Ideas',
+      'Language Choices',
+      'Comparing Texts',
+    ]),
+    Module('Poetry & Imagination', [
+      'Exploring Poems',
+      'Imagery',
+      'Sound & Rhythm',
+      'Poetic Voice',
+      'Writing Poetry',
+    ]),
+    Module('Speaking & Listening', [
+      'Expressing Ideas',
+      'Group Discussion',
+      'Presenting Information',
+      'Debate',
+      'Active Listening',
+    ]),
+  ]),
+  'year8': Level('Year 8 - Age 12–13', [
+    Module('Crafting Language', [
+      'Figurative Language',
+      'Vocabulary & Tone',
+      'Sentence Variety',
+      'Structure & Pacing',
+      'Editing & Refining',
+    ]),
+    Module('Exploring Fiction', [
+      'Narrators',
+      'Character Development',
+      'Conflict',
+      'Themes',
+      "Writer's Craft",
+    ]),
+    Module('Voices & Perspectives', [
+      'Different Points of View',
+      'Identity & Belonging',
+      'Comparing Perspectives',
+      'Context',
+      'Responding to Writers',
+    ]),
+    Module('Poetry & Performance', [
+      'Poetic Form',
+      'Metaphor & Symbolism',
+      'Rhythm & Sound',
+      'Contemporary Poetry',
+      'Performing Poetry',
+    ]),
+    Module('Real-World Writing', [
+      'Articles',
+      'Reviews',
+      'Speeches',
+      'Letters',
+      'Writing to Persuade',
+    ]),
+  ]),
+  'year9': Level('Year 9 - Age 13–14', [
+    Module('Reading Critically', [
+      "Writer's Purpose",
+      'Language & Effect',
+      'Structural Choices',
+      'Inference',
+      'Critical Response',
+    ]),
+    Module('Literature Through Time', [
+      'Historical Fiction',
+      'Social Context',
+      'Changing Values',
+      'Character & Society',
+      'Comparing Eras',
+    ]),
+    Module('Writing with Purpose', [
+      'Persuasive Techniques',
+      'Argument & Counterargument',
+      'Rhetoric',
+      'Formal Writing',
+      'Editorial Writing',
+    ]),
+    Module('Poetry & Identity', [
+      'Voice & Identity',
+      'Symbolism',
+      'Form & Structure',
+      'Comparing Poems',
+      'Writing Critical Responses',
+    ]),
+    Module('Media & Communication', [
+      'News & Journalism',
+      'Advertising',
+      'Social Media',
+      'Bias & Representation',
+      'Evaluating Sources',
+    ]),
+  ]),
+  'year10': Level('Year 10 - Age 14–15', [
+    Module('Literature & Ideas', [
+      'Power & Conflict',
+      'Relationships',
+      'Identity',
+      'Morality',
+      'Social Change',
+    ]),
+    Module('Language & Influence', [
+      'Rhetoric',
+      'Persuasive Language',
+      'Tone & Register',
+      'Audience',
+      "Writer's Intent",
+    ]),
+    Module('Creative Craft', [
+      'Narrative Structure',
+      'Characterisation',
+      'Setting',
+      'Description',
+      'Narrative Perspective',
+    ]),
+    Module('Poetry in Context', [
+      'Poetic Traditions',
+      'Voice & Perspective',
+      'Form & Structure',
+      'Imagery & Symbolism',
+      'Comparative Reading',
+    ]),
+    Module('Independent Reading', [
+      'Choosing a Text',
+      'Close Reading',
+      'Researching Context',
+      'Forming Interpretations',
+      'Presenting a Critical Response',
+    ]),
+  ]),
+  'year11': Level('Year 11 - Age 15–16', [
+    Module('Literature & Society', [
+      'Literature & Culture',
+      'Power & Authority',
+      'Justice & Morality',
+      'Human Experience',
+      'Challenging Perspectives',
+    ]),
+    Module('The Art of Argument', [
+      'Building Arguments',
+      'Rhetorical Devices',
+      'Evidence & Reasoning',
+      'Counterarguments',
+      'Persuasive Speaking',
+    ]),
+    Module('Advanced Creative Writing', [
+      'Narrative Voice',
+      'Complex Characters',
+      'Structural Experimentation',
+      'Atmosphere & Mood',
+      'Editing for Impact',
+    ]),
+    Module('Reading & Interpretation', [
+      'Multiple Interpretations',
+      'Comparing Writers',
+      'Evaluating Language',
+      'Evaluating Structure',
+      'Developing Critical Judgement',
+    ]),
+    Module('English Beyond School', [
+      'Professional Communication',
+      'Presentations',
+      'Interviews',
+      'Digital Communication',
+      'Writing for Adult Life',
+    ]),
+  ]),
+};
+
+const gcseEnglishLanguageLevels = <String, Level>{
+  'year7': Level('Year 7 - Age 11–12', [
+    Module('Reading', [
+      'Understanding Texts',
+      'Retrieving Information',
+      'Inference',
+      'Using Evidence',
+      'Summarising',
+    ]),
+    Module('Language', [
+      'Vocabulary',
+      'Figurative Language',
+      'Word Choices',
+      'Sentence Types',
+      'Language Effects',
+    ]),
+    Module('Creative Writing', [
+      'Description',
+      'Narrative',
+      'Character',
+      'Setting',
+      'Dialogue',
+    ]),
+    Module('Writing Skills', [
+      'Audience & Purpose',
+      'Paragraphs',
+      'Sentence Structure',
+      'Vocabulary',
+      'Planning & Editing',
+    ]),
+    Module('Grammar & Accuracy', [
+      'Spelling',
+      'Punctuation',
+      'Grammar',
+      'Sentence Construction',
+      'Standard English',
+    ]),
+  ]),
+  'year8': Level('Year 8 - Age 12–13', [
+    Module('Reading & Analysis', [
+      'Explicit & Implicit Meaning',
+      'Inference',
+      'Evidence',
+      "Writer's Ideas",
+      'Evaluation',
+    ]),
+    Module('Language & Structure', [
+      'Language Techniques',
+      'Structural Techniques',
+      'Narrative Perspective',
+      'Openings & Endings',
+      'Effects on the Reader',
+    ]),
+    Module('Creative Writing', [
+      'Narrative Structure',
+      'Characterisation',
+      'Description',
+      'Imagery',
+      'Atmosphere',
+    ]),
+    Module('Non-Fiction Writing', [
+      'Articles',
+      'Speeches',
+      'Letters',
+      'Reviews',
+      'Informative Writing',
+    ]),
+    Module('Writing Accuracy', [
+      'Sentence Variety',
+      'Paragraphing',
+      'Vocabulary',
+      'Punctuation',
+      'Editing',
+    ]),
+  ]),
+  'year9': Level('Year 9 - Age 13–14', [
+    Module('Critical Reading', [
+      'Language Analysis',
+      'Structure Analysis',
+      "Writer's Methods",
+      'Inference & Interpretation',
+      'Evaluation',
+    ]),
+    Module('Comparing Texts', [
+      'Viewpoints',
+      'Ideas',
+      'Language',
+      'Structure',
+      'Evidence',
+    ]),
+    Module('Creative Writing', [
+      'Narrative Voice',
+      'Character Development',
+      'Setting',
+      'Figurative Language',
+      'Narrative Structure',
+    ]),
+    Module('Persuasive Writing', [
+      'Persuasive Techniques',
+      'Rhetorical Devices',
+      'Articles & Blogs',
+      'Speeches',
+      'Arguments',
+    ]),
+    Module('Developing Writing', [
+      'Sentence Structures',
+      'Cohesion',
+      'Vocabulary',
+      'Punctuation for Effect',
+      'Redrafting',
+    ]),
+  ]),
+  'year10': Level('Year 10 - Age 14–15', [
+    Module('GCSE Reading', [
+      'Explicit & Implicit Information',
+      'Language Analysis',
+      'Structural Analysis',
+      "Writer's Methods",
+      'Critical Evaluation',
+    ]),
+    Module('Viewpoints & Perspectives', [
+      'Identifying Perspectives',
+      'Comparing Viewpoints',
+      'Comparing Methods',
+      'Evidence & Interpretation',
+      'Evaluating Perspectives',
+    ]),
+    Module('Creative Reading & Writing', [
+      'Fiction Analysis',
+      'Narrative',
+      'Description',
+      'Narrative Perspective',
+      'Writing from a Stimulus',
+    ]),
+    Module('Transactional Writing', [
+      'Audience & Purpose',
+      'Articles & Essays',
+      'Speeches',
+      'Letters & Reviews',
+      'Argument & Persuasion',
+    ]),
+    Module('Writing Accuracy', [
+      'Sentence Control',
+      'Vocabulary & Register',
+      'Paragraph Structure',
+      'Grammar & Punctuation',
+      'Editing for Impact',
+    ]),
+  ]),
+  'year11': Level('Year 11 - Age 15–16', [
+    Module('Reading Mastery', [
+      'Critical Reading',
+      'Language & Structure',
+      'Inference & Interpretation',
+      'Comparing Texts',
+      'Evaluation',
+    ]),
+    Module('Creative Writing', [
+      'Narrative Writing',
+      'Descriptive Writing',
+      'Character & Voice',
+      'Structure & Atmosphere',
+      'Writing from a Stimulus',
+    ]),
+    Module('Viewpoints & Perspectives', [
+      'Analysing Viewpoints',
+      'Comparing Perspectives',
+      "Writer's Methods",
+      'Evidence & Evaluation',
+      'Developing Your Own Viewpoint',
+    ]),
+    Module('Transactional Writing', [
+      'Audience & Purpose',
+      'Argument & Persuasion',
+      'Rhetorical Devices',
+      'Formal Writing',
+      'Informal Writing',
+    ]),
+    Module('GCSE Exam Skills', [
+      'Planning Responses',
+      'Selecting Evidence',
+      'Structuring Answers',
+      'Technical Accuracy',
+      'Exam Practice',
     ]),
   ]),
 };
@@ -2159,6 +2915,194 @@ const scienceLevels = <String, Level>{
       'Analysing Data',
       'Evaluating Evidence',
       'Scientific Communication',
+    ]),
+  ]),
+};
+
+const flexibleScienceLevels = <String, Level>{
+  'year7': Level('Year 7 - Age 11–12', [
+    Module('Discovering Living Things', [
+      'Classifying Organisms',
+      'Microorganisms',
+      'Cells in Context',
+      'Body Organisation',
+      'Life Processes',
+    ]),
+    Module('Materials Around Us', [
+      'Properties of Materials',
+      'Solids, Liquids & Gases',
+      'Solutions',
+      'Everyday Mixtures',
+      'Choosing Materials',
+    ]),
+    Module('Motion & Machines', [
+      'Describing Motion',
+      'Forces in Everyday Life',
+      'Simple Machines',
+      'Friction',
+      'Balanced & Unbalanced Forces',
+    ]),
+    Module('Our Changing Planet', [
+      "Earth's Layers",
+      'Weather & Climate',
+      'Rocks in the Landscape',
+      'Water on Earth',
+      'Natural Resources',
+    ]),
+    Module('Science in Everyday Life', [
+      'Science at Home',
+      'Food Science',
+      'Materials in Technology',
+      'Science & Sport',
+      'Science & Society',
+    ]),
+  ]),
+  'year8': Level('Year 8 - Age 12–13', [
+    Module('Life & Adaptation', [
+      'Classification',
+      'Microbes & Decomposition',
+      'Adaptation',
+      'Survival',
+      'Changing Environments',
+    ]),
+    Module('Chemistry Around Us', [
+      'Properties of Substances',
+      'Chemical Change',
+      'Acids in Everyday Life',
+      'Useful Chemical Reactions',
+      'Materials & Their Uses',
+    ]),
+    Module('Energy in Action', [
+      'Energy in Movement',
+      'Heating & Cooling',
+      'Energy Efficiency',
+      'Renewable Energy',
+      'Energy in Everyday Technology',
+    ]),
+    Module('Sound, Light & Communication', [
+      'How Sound Travels',
+      'Hearing',
+      'Light & Colour',
+      'Optical Devices',
+      'Communication Technologies',
+    ]),
+    Module('Earth & Beyond', [
+      "Earth's Cycles",
+      'Weather Systems',
+      'The Moon',
+      'Exploring Space',
+      'Technology in Space',
+    ]),
+  ]),
+  'year9': Level('Year 9 - Age 13–14', [
+    Module('Life Through Time', [
+      'Fossils',
+      'Evidence for Evolution',
+      'Extinction',
+      'Adaptation Over Time',
+      'Human Evolution',
+    ]),
+    Module('Chemistry of Everyday Life', [
+      'Fuels',
+      'Materials & Polymers',
+      'Chemical Reactions in Industry',
+      'Chemistry of Food',
+      'Chemistry & the Environment',
+    ]),
+    Module('Energy & Technology', [
+      'Energy Generation',
+      'Electricity in Society',
+      'Efficiency',
+      'Transport & Energy',
+      'Future Energy Technologies',
+    ]),
+    Module('Forces in the Modern World', [
+      'Motion',
+      'Acceleration',
+      'Forces in Sport',
+      'Forces in Transport',
+      'Forces in Engineering',
+    ]),
+    Module('Planet Earth', [
+      "Earth's Changing Climate",
+      'Oceans',
+      'Natural Hazards',
+      'Human Impact',
+      'Sustainable Futures',
+    ]),
+  ]),
+  'year10': Level('Year 10 - Age 14–15', [
+    Module('Biology in the Real World', [
+      'Maintaining Health',
+      'Human Development',
+      'Genetics in Society',
+      'Disease & Prevention',
+      'Biotechnology',
+    ]),
+    Module('Chemistry & Modern Materials', [
+      'Materials Design',
+      'Chemical Manufacturing',
+      'Fuels & Energy',
+      'Chemistry of the Environment',
+      'Sustainable Materials',
+    ]),
+    Module('Physics of Technology', [
+      'Electricity in Technology',
+      'Electronics',
+      'Communication Systems',
+      'Energy Efficiency',
+      'Engineering Applications',
+    ]),
+    Module('Our Changing Environment', [
+      'Climate Systems',
+      'Biodiversity',
+      'Resource Management',
+      'Pollution',
+      'Environmental Solutions',
+    ]),
+    Module('Science & Society', [
+      'Science in Medicine',
+      'Science in Food',
+      'Science in Sport',
+      'Science & Technology',
+      'Ethical Questions in Science',
+    ]),
+  ]),
+  'year11': Level('Year 11 - Age 15–16', [
+    Module('Science of Human Life', [
+      'Genetics & Society',
+      'Ageing',
+      'Human Health',
+      'Medical Technologies',
+      'Future Healthcare',
+    ]),
+    Module('Chemistry for the Future', [
+      'Sustainable Chemistry',
+      'New Materials',
+      'Clean Energy',
+      'Industrial Chemistry',
+      'Chemistry & Climate',
+    ]),
+    Module('Physics of the Future', [
+      'Space Technology',
+      'Renewable Technologies',
+      'Transport Innovation',
+      'Digital Technologies',
+      'Engineering the Future',
+    ]),
+    Module('Planetary Challenges', [
+      'Climate Change',
+      'Food Security',
+      'Water Security',
+      'Biodiversity Loss',
+      'Sustainable Development',
+    ]),
+    Module('Science Investigation', [
+      'Designing Investigations',
+      'Gathering Evidence',
+      'Analysing Results',
+      'Evaluating Claims',
+      'Communicating Scientific Ideas',
     ]),
   ]),
 };
