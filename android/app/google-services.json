@@ -14,6 +14,46 @@
       },
       "oauth_client": [
         {
+          "client_id": "1024150348141-ar3bhgacocajvmnvrbps5bje7acb7jjm.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.classmates.com",
+            "certificate_hash": "9c8b16e45493059ea434b2f934319a64e512dfff"
+          }
+        },
+        {
+          "client_id": "1024150348141-b1o04ptvck8hbukhl9s6vcpsikrt9l47.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.classmates.com",
+            "certificate_hash": "54005ef6f5936879b77aaa264391cfbe1176172b"
+          }
+        },
+        {
+          "client_id": "1024150348141-g1hrn5fog7d5vji0a5inqg6d8piu6m0a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.classmates.com",
+            "certificate_hash": "89021bdfc59246110c72b3661e1daf5b007f2954"
+          }
+        },
+        {
+          "client_id": "1024150348141-o35jgd5jnncjo5hsqm0j24s4d2hegduu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.classmates.com",
+            "certificate_hash": "f636fce13aec9366440a564cc2b596319cb00bba"
+          }
+        },
+        {
+          "client_id": "1024150348141-so2hsvhcu16kobi1jff9757t9u1rg8d4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "app.classmates.com",
+            "certificate_hash": "2b9bb986a032d879354954f9ca25ba325fc5cffe"
+          }
+        },
+        {
           "client_id": "1024150348141-cmvuaj312to4o5fj5tcnpe95vo9q21v5.apps.googleusercontent.com",
           "client_type": 3
         }

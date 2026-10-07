@@ -8,8 +8,6 @@ import 'package:pdfx/pdfx.dart';
 
 import '../../widgets/message_widget.dart';
 
-enum _SubjectResourcesView { bySubject, saved }
-
 class SubjectResourcesScreen extends StatefulWidget {
   const SubjectResourcesScreen({
     super.key,
@@ -31,9 +29,8 @@ class SubjectResourcesScreen extends StatefulWidget {
 class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
   static const _green = Color(0xFF08A948);
 
-  static const _ageFilters = ['5-7', '7-11', '11-14', '14-16', 'All ages'];
+  static const _ageFilters = ['5-7', '7-11', '11-14', '14-16'];
   late final Set<String> _savedResourceIds;
-  _SubjectResourcesView _view = _SubjectResourcesView.bySubject;
   String _age = '5-7';
 
   @override
@@ -45,12 +42,7 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
   List<ResourceItem> _visibleResources(List<ResourceItem> resources) {
     final selectedAge = _normaliseValue(_age);
     return resources
-        .where(
-          (resource) =>
-              _normaliseValue(resource.age) == selectedAge &&
-              (_view == _SubjectResourcesView.bySubject ||
-                  _savedResourceIds.contains(resource.id)),
-        )
+        .where((resource) => _normaliseValue(resource.age) == selectedAge)
         .toList();
   }
 
@@ -109,9 +101,7 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
                         .toList();
                     final resources = _visibleResources(uploadedResources);
                     if (resources.isEmpty) {
-                      return _NoSubjectResources(
-                        savedView: _view == _SubjectResourcesView.saved,
-                      );
+                      return const _NoSubjectResources();
                     }
                     return ListView.separated(
                       padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
@@ -121,7 +111,8 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
                         final resource = resources[index];
                         return _SwipeableResourceTile(
                           resource: resource,
-                          savedView: _view == _SubjectResourcesView.saved,
+                          savedView: false,
+                          onPreview: () => _previewResource(context, resource),
                           onSave: () {
                             setState(() => _savedResourceIds.add(resource.id));
                             widget
@@ -180,10 +171,25 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
                   },
                 ),
               ),
-              _buildViewSelector(),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _previewResource(BuildContext context, ResourceItem resource) {
+    if (resource.pdfUrl.isEmpty) {
+      showMessagePopup(
+        context,
+        message: 'This resource does not have a PDF file.',
+        type: MessageType.error,
+      );
+      return;
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => _ResourcePreviewScreen(resource: resource),
       ),
     );
   }
@@ -204,68 +210,6 @@ class _SubjectResourcesScreenState extends State<SubjectResourcesScreen> {
             onTap: () => setState(() => _age = filter),
           );
         },
-      ),
-    );
-  }
-
-  Widget _buildViewSelector() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _SubjectViewChip(
-            label: 'By Subject',
-            selected: _view == _SubjectResourcesView.bySubject,
-            onTap: () =>
-                setState(() => _view = _SubjectResourcesView.bySubject),
-          ),
-          const SizedBox(width: 12),
-          _SubjectViewChip(
-            label: 'Saved',
-            selected: _view == _SubjectResourcesView.saved,
-            onTap: () => setState(() => _view = _SubjectResourcesView.saved),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SubjectViewChip extends StatelessWidget {
-  const _SubjectViewChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: selected ? const Color(0xFF08A948) : Colors.white,
-      shape: StadiumBorder(
-        side: BorderSide(
-          color: selected ? const Color(0xFF08A948) : const Color(0xFFE0E0E0),
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        customBorder: const StadiumBorder(),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
-          child: Text(
-            label,
-            style: GoogleFonts.lato(
-              color: selected ? Colors.white : const Color(0xFF181818),
-              fontSize: 13,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ),
       ),
     );
   }
@@ -444,6 +388,7 @@ class _SwipeableResourceTile extends StatefulWidget {
   const _SwipeableResourceTile({
     required this.resource,
     required this.savedView,
+    required this.onPreview,
     required this.onSave,
     required this.onRemove,
     required this.onDownload,
@@ -451,6 +396,7 @@ class _SwipeableResourceTile extends StatefulWidget {
 
   final ResourceItem resource;
   final bool savedView;
+  final VoidCallback onPreview;
   final VoidCallback onSave;
   final VoidCallback onRemove;
   final VoidCallback onDownload;
@@ -504,6 +450,13 @@ class _SwipeableResourceTileState extends State<_SwipeableResourceTile> {
             ),
           ),
           GestureDetector(
+            onTap: () {
+              if (_offset != 0) {
+                setState(() => _offset = 0);
+              } else {
+                widget.onPreview();
+              }
+            },
             onHorizontalDragUpdate: (details) => setState(
               () => _offset = (_offset + details.delta.dx).clamp(
                 -_actionsWidth,
@@ -701,17 +654,11 @@ class _ResourceAction extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SizedBox(
-                width: 27,
-                height: 27,
+                width: 24,
+                height: 24,
                 child: iconAsset != null
                     ? Image.asset(iconAsset!, fit: BoxFit.contain)
-                    : DecoratedBox(
-                        decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white, width: 1.5),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Icon(icon, size: 17, color: Colors.white),
-                      ),
+                    : Icon(icon, size: 24, color: Colors.white),
               ),
               const SizedBox(height: 5),
               Text(
@@ -730,40 +677,133 @@ class _ResourceAction extends StatelessWidget {
   }
 }
 
-class _NoSubjectResources extends StatelessWidget {
-  const _NoSubjectResources({this.savedView = false});
+class _ResourcePreviewScreen extends StatefulWidget {
+  const _ResourcePreviewScreen({required this.resource});
 
-  final bool savedView;
+  final ResourceItem resource;
+
+  @override
+  State<_ResourcePreviewScreen> createState() => _ResourcePreviewScreenState();
+}
+
+class _ResourcePreviewScreenState extends State<_ResourcePreviewScreen> {
+  late final PdfControllerPinch _controller = PdfControllerPinch(
+    document: _loadDocument(),
+  );
+
+  Future<PdfDocument> _loadDocument() async {
+    final bytes = await InternetFile.get(widget.resource.pdfUrl);
+    return PdfDocument.openData(bytes);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark.copyWith(
+        statusBarColor: Colors.white,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          foregroundColor: const Color(0xFF181818),
+          surfaceTintColor: Colors.white,
+          elevation: 0,
+          title: Text(
+            widget.resource.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.lato(fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+          actions: [
+            IconButton(
+              tooltip: 'Download PDF',
+              onPressed: () => downloadResourcePdf(context, widget.resource),
+              icon: const Icon(Icons.file_download_outlined),
+            ),
+          ],
+        ),
+        body: PdfViewPinch(
+          controller: _controller,
+          builders: PdfViewPinchBuilders<DefaultBuilderOptions>(
+            options: const DefaultBuilderOptions(),
+            documentLoaderBuilder: (_) => const Center(
+              child: CircularProgressIndicator(
+                color: _SubjectResourcesScreenState._green,
+              ),
+            ),
+            errorBuilder: (_, error) => _ResourcePreviewError(error: error),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResourcePreviewError extends StatelessWidget {
+  const _ResourcePreviewError({required this.error});
+
+  final Object error;
+
+  @override
+  Widget build(BuildContext context) {
+    debugPrint('Unable to preview PDF: $error');
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Text(
+          'Unable to preview this PDF.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.lato(color: const Color(0xFF555555), fontSize: 16),
+        ),
+      ),
+    );
+  }
+}
+
+class _NoSubjectResources extends StatelessWidget {
+  const _NoSubjectResources();
 
   @override
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 48),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              savedView ? 'No saved resources yet' : 'No resources yet',
-              style: GoogleFonts.lato(
-                color: const Color(0xFF171717),
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'No resources yet',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(
+                  color: const Color(0xFF171717),
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              savedView
-                  ? 'Save a resource from the By Subject tab and it will appear here.'
-                  : 'We’re adding resources to this subject. Check back soon for helpful activities, guides and learning materials.',
-              textAlign: TextAlign.center,
-              style: GoogleFonts.lato(
-                color: const Color(0xFF333333),
-                fontSize: 16,
-                height: 1.35,
+              const SizedBox(height: 12),
+              Text(
+                'We’re adding resources to this subject. Check back soon for helpful activities, guides and learning materials.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(
+                  color: const Color(0xFF333333),
+                  fontSize: 16,
+                  height: 1.35,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

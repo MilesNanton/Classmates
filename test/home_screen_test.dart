@@ -12,8 +12,8 @@ void main() {
 
     expect(find.text('CLASSMATES'), findsOneWidget);
     expect(find.byType(Image), findsOneWidget);
-    expect(find.text('Homeschooling Adventures'), findsOneWidget);
-    expect(find.text('Take a tour'), findsOneWidget);
+    expect(find.text('Homeschooling, together'), findsOneWidget);
+    expect(find.text('Take a tour'), findsNothing);
     expect(find.text('Let’s get started'), findsOneWidget);
     expect(find.byType(Scrollable), findsNothing);
 

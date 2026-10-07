@@ -297,11 +297,11 @@ class _Header extends StatelessWidget {
                 ),
               ),
               child: Container(
-                height: 42,
-                padding: const EdgeInsets.only(left: 17, right: 10),
+                height: 36,
+                padding: const EdgeInsets.only(left: 14, right: 8),
                 decoration: BoxDecoration(
-                  border: Border.all(color: TimetableScreen._green, width: 2),
-                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: TimetableScreen._green, width: 1.5),
+                  borderRadius: BorderRadius.circular(20),
                 ),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
@@ -310,15 +310,15 @@ class _Header extends StatelessWidget {
                       'Child $selectedChild',
                       style: GoogleFonts.lato(
                         color: const Color(0xFF171717),
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(width: 5),
+                    const SizedBox(width: 3),
                     const Icon(
                       Icons.keyboard_arrow_down,
                       color: TimetableScreen._green,
-                      size: 23,
+                      size: 20,
                     ),
                   ],
                 ),
@@ -343,12 +343,12 @@ class _DateStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final today = DateTime.now();
     return SizedBox(
-      height: 74,
+      height: 58,
       child: ListView.separated(
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
         scrollDirection: Axis.horizontal,
         itemCount: 6,
-        separatorBuilder: (_, _) => const SizedBox(width: 14),
+        separatorBuilder: (_, _) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final date = today.add(Duration(days: index));
           return _DateChip(
@@ -398,22 +398,22 @@ class _DateChip extends StatelessWidget {
     final today = DateUtils.isSameDay(date, DateTime.now());
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(24),
+      borderRadius: BorderRadius.circular(20),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.symmetric(horizontal: 14),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: selected ? Colors.white : const Color(0xFFF4F9F6),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           border: selected
-              ? Border.all(color: TimetableScreen._green, width: 2)
+              ? Border.all(color: TimetableScreen._green, width: 1.5)
               : null,
         ),
         child: Text(
           today ? '(Today) $dateText' : dateText,
           style: GoogleFonts.lato(
             color: TimetableScreen._green,
-            fontSize: 14,
+            fontSize: 12,
             fontWeight: FontWeight.w700,
           ),
         ),
@@ -449,21 +449,25 @@ class _EmptyTimetable extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(34, 158, 34, 20),
+    padding: const EdgeInsets.fromLTRB(28, 158, 28, 20),
     child: Column(
       children: [
         Text(
           'Your plan',
-          style: GoogleFonts.lato(fontSize: 20, fontWeight: FontWeight.w800),
+          style: GoogleFonts.lato(
+            color: const Color(0xFF171717),
+            fontSize: 22,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         Text(
-          'Add subjects, activities, clubs and regular routines\nto your plan.',
+          'Add subjects, activities, clubs and regular routines to your plan.',
           textAlign: TextAlign.center,
           style: GoogleFonts.lato(
-            color: const Color(0xFF777777),
-            fontSize: 14,
-            height: 1.45,
+            color: const Color(0xFF333333),
+            fontSize: 16,
+            height: 1.35,
           ),
         ),
         const Spacer(),

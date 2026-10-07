@@ -16,6 +16,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(SplashScreen), findsNothing);
-    expect(find.text('Homeschooling Adventures'), findsOneWidget);
+    expect(find.text('Homeschooling, together'), findsOneWidget);
   });
 }

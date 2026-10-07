@@ -3,15 +3,22 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../widgets/message_widget.dart';
+import '../../services/revenue_cat_service.dart';
 import '../onbarding/home_screen.dart';
 
 Future<bool> hasSubscriptionAccess() async {
   final user = FirebaseAuth.instance.currentUser;
   if (user == null) return false;
+  try {
+    if (await RevenueCatService.hasPremiumAccess()) return true;
+  } on PlatformException {
+    // Fall back to the existing account flag if the store is unavailable.
+  }
   try {
     final profile = await FirebaseFirestore.instance
         .collection('users')
@@ -162,7 +169,7 @@ class _SettingsList extends StatelessWidget {
         _SettingsTile(
           iconAsset: 'assets/settingIcons/restore_purchases.png',
           label: 'Restore purchases',
-          onTap: () => _showUnavailable(context, 'Restore purchases'),
+          onTap: () => _restorePurchases(context),
         ),
         _SettingsTile(
           iconAsset: 'assets/settingIcons/manage_subscription.png',
@@ -193,8 +200,27 @@ class _SettingsList extends StatelessWidget {
     );
   }
 
-  static void _showUnavailable(BuildContext context, String feature) {
-    showMessagePopup(context, message: '$feature coming soon');
+  static Future<void> _restorePurchases(BuildContext context) async {
+    try {
+      final customerInfo = await RevenueCatService.restorePurchases();
+      if (!context.mounted) return;
+      showMessagePopup(
+        context,
+        message: RevenueCatService.hasPremium(customerInfo)
+            ? 'Your subscription has been restored.'
+            : 'No active subscription was found.',
+        type: RevenueCatService.hasPremium(customerInfo)
+            ? MessageType.success
+            : MessageType.error,
+      );
+    } on PlatformException {
+      if (!context.mounted) return;
+      showMessagePopup(
+        context,
+        message: 'Unable to restore purchases. Please try again.',
+        type: MessageType.error,
+      );
+    }
   }
 
   static Future<void> _showChangePassword(BuildContext context) async {
@@ -436,8 +462,17 @@ class _SettingsList extends StatelessWidget {
     );
   }
 
-  static Future<void> _showManageSubscription(BuildContext context) {
-    return showSubscriptionPaywall(context);
+  static Future<void> _showManageSubscription(BuildContext context) async {
+    try {
+      final url = await RevenueCatService.managementUrl();
+      if (url != null &&
+          await launchUrl(url, mode: LaunchMode.externalApplication)) {
+        return;
+      }
+    } on PlatformException {
+      // If no active store subscription exists, show the purchase options.
+    }
+    if (context.mounted) await showSubscriptionPaywall(context);
   }
 
   static const _bestPractices = <(String, String)>[
@@ -1102,6 +1137,11 @@ class _SubscriptionSheet extends StatefulWidget {
 }
 
 class _SubscriptionSheetState extends State<_SubscriptionSheet> {
+  static final _termsUri = Uri.parse('https://www.theclassmatesapp.com/terms');
+  static final _privacyUri = Uri.parse(
+    'https://www.theclassmatesapp.com/privacy',
+  );
+
   static const _features = <({String title, String description})>[
     (
       title: 'Discover learning experiences',
@@ -1131,11 +1171,97 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
   ];
 
   bool _yearly = false;
+  bool _loading = true;
+  bool _purchasing = false;
+  Package? _monthlyPackage;
+  Package? _yearlyPackage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadOffering();
+  }
+
+  Future<void> _loadOffering() async {
+    try {
+      final offering = await RevenueCatService.getCurrentOffering();
+      if (!mounted) return;
+      setState(() {
+        _monthlyPackage = offering?.monthly;
+        _yearlyPackage = offering?.annual;
+        _loading = false;
+      });
+    } on PlatformException {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _purchase() async {
+    final package = _yearly ? _yearlyPackage : _monthlyPackage;
+    if (package == null) {
+      showMessagePopup(
+        context,
+        message:
+            'Subscriptions are still being configured. Please try again later.',
+        type: MessageType.error,
+      );
+      return;
+    }
+
+    setState(() => _purchasing = true);
+    try {
+      final result = await RevenueCatService.purchasePackage(package);
+      if (!mounted) return;
+      if (RevenueCatService.hasPremium(result.customerInfo)) {
+        final overlay = Overlay.of(context, rootOverlay: true);
+        Navigator.pop(context);
+        showMessagePopupInOverlay(
+          overlay,
+          message:
+              'Subscription activated successfully! Premium features are now available.',
+        );
+      } else {
+        showMessagePopup(
+          context,
+          message: 'The purchase completed, but Premium is not active yet.',
+          type: MessageType.error,
+        );
+      }
+    } on PlatformException catch (error) {
+      if (!mounted) return;
+      if (PurchasesErrorHelper.getErrorCode(error) !=
+          PurchasesErrorCode.purchaseCancelledError) {
+        showMessagePopup(
+          context,
+          message: 'Unable to complete the purchase. Please try again.',
+          type: MessageType.error,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _purchasing = false);
+    }
+  }
+
+  Future<void> _openLegalPage(Uri uri, String pageName) async {
+    var opened = false;
+    try {
+      opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened && mounted) {
+      showMessagePopup(
+        context,
+        message: 'Unable to open the $pageName. Please try again.',
+        type: MessageType.error,
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return FractionallySizedBox(
-      heightFactor: 0.95,
+      heightFactor: 0.98,
       child: Material(
         color: Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
@@ -1203,7 +1329,8 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                 children: [
                   Expanded(
                     child: _PlanCard(
-                      price: '£4.99',
+                      price:
+                          _monthlyPackage?.storeProduct.priceString ?? '£4.99',
                       period: 'per month',
                       selected: !_yearly,
                       onTap: () => setState(() => _yearly = false),
@@ -1212,7 +1339,8 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _PlanCard(
-                      price: '£49.99',
+                      price:
+                          _yearlyPackage?.storeProduct.priceString ?? '£49.99',
                       period: 'per year',
                       badge: '16% off',
                       selected: _yearly,
@@ -1234,34 +1362,40 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                   color: const Color(0xFFF7F7F7),
                   borderRadius: BorderRadius.circular(14),
                 ),
-                child: Column(
-                  children: [
-                    for (final feature in _features)
-                      Expanded(
-                        child: Row(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      for (
+                        var index = 0;
+                        index < _features.length;
+                        index++
+                      ) ...[
+                        Row(
                           children: [
                             const Icon(Icons.check, size: 18),
                             const SizedBox(width: 14),
                             Expanded(
                               child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    feature.title,
+                                    _features[index].title,
                                     style: GoogleFonts.lato(
-                                      fontSize: 14,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.w700,
+                                      height: 1.15,
                                     ),
                                   ),
                                   const SizedBox(height: 2),
                                   Text(
-                                    feature.description,
+                                    _features[index].description,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: GoogleFonts.lato(
                                       color: const Color(0xFF333333),
-                                      fontSize: 11.5,
+                                      fontSize: 13,
                                       height: 1.2,
                                     ),
                                   ),
@@ -1270,22 +1404,22 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                             ),
                           ],
                         ),
-                      ),
-                  ],
+                        if (index != _features.length - 1)
+                          const SizedBox(height: 18),
+                      ],
+                    ],
+                  ),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 18),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: SizedBox(
                 width: double.infinity,
                 height: 42,
                 child: FilledButton(
-                  onPressed: () => showMessagePopup(
-                    context,
-                    message: 'Subscription checkout coming soon',
-                  ),
+                  onPressed: _loading || _purchasing ? null : _purchase,
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFF08A948),
                     shape: RoundedRectangleBorder(
@@ -1293,9 +1427,11 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                     ),
                   ),
                   child: Text(
-                    _yearly
-                        ? 'Subscribe for £49.99 / year'
-                        : 'Subscribe for £4.99 / month',
+                    _purchasing
+                        ? 'Processing...'
+                        : _yearly
+                        ? 'Subscribe for ${_yearlyPackage?.storeProduct.priceString ?? '£49.99'} / year'
+                        : 'Subscribe for ${_monthlyPackage?.storeProduct.priceString ?? '£4.99'} / month',
                     style: GoogleFonts.lato(
                       fontSize: 15,
                       fontWeight: FontWeight.w700,
@@ -1304,28 +1440,66 @@ class _SubscriptionSheetState extends State<_SubscriptionSheet> {
                 ),
               ),
             ),
-            const SizedBox(height: 8),
-            Text.rich(
-              TextSpan(
-                children: [
-                  TextSpan(
-                    text: _yearly
-                        ? '£49.99 billed yearly. '
-                        : '£4.99 billed monthly. ',
-                  ),
-                  const TextSpan(
-                    text: 'Terms apply',
-                    style: TextStyle(decoration: TextDecoration.underline),
-                  ),
-                ],
-              ),
-              style: GoogleFonts.lato(
-                color: const Color(0xFF6D6D6D),
-                fontSize: 11,
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                _yearly
+                    ? '${_yearlyPackage?.storeProduct.priceString ?? '£49.99'} billed yearly. Subscription automatically renews unless cancelled.'
+                    : '${_monthlyPackage?.storeProduct.priceString ?? '£4.99'} billed monthly. Subscription automatically renews unless cancelled.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.lato(
+                  color: const Color(0xFF6D6D6D),
+                  fontSize: 11,
+                  height: 1.25,
+                ),
               ),
             ),
-            const SizedBox(height: 28),
+            Wrap(
+              alignment: WrapAlignment.center,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 2,
+              children: [
+                _SubscriptionFooterLink(
+                  label: 'Terms of Use',
+                  onTap: () => _openLegalPage(_termsUri, 'Terms of Use'),
+                ),
+                const Text('|', style: TextStyle(color: Color(0xFF6D6D6D))),
+                _SubscriptionFooterLink(
+                  label: 'Privacy Policy',
+                  onTap: () => _openLegalPage(_privacyUri, 'Privacy Policy'),
+                ),
+              ],
+            ),
+            SizedBox(height: MediaQuery.paddingOf(context).bottom + 8),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SubscriptionFooterLink extends StatelessWidget {
+  const _SubscriptionFooterLink({required this.label, required this.onTap});
+
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
+        child: Text(
+          label,
+          style: GoogleFonts.lato(
+            color: const Color(0xFF505050),
+            fontSize: 11,
+            decoration: TextDecoration.underline,
+            decorationThickness: 1.2,
+          ),
         ),
       ),
     );

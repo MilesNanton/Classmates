@@ -14,6 +14,7 @@ import 'package:flutter_file_manager_web/flutter_file_manager_web.dart';
 import 'package:google_sign_in_web/google_sign_in_web.dart';
 import 'package:image_picker_for_web/image_picker_for_web.dart';
 import 'package:pdfx/src/renderer/web/pdfx_plugin.dart';
+import 'package:purchases_flutter/web/purchases_flutter_web.dart';
 import 'package:share_plus/src/share_plus_web.dart';
 import 'package:shared_preferences_web/shared_preferences_web.dart';
 import 'package:url_launcher_web/url_launcher_web.dart';
@@ -29,6 +30,7 @@ void registerPlugins([final Registrar? pluginRegistrar]) {
   GoogleSignInPlugin.registerWith(registrar);
   ImagePickerPlugin.registerWith(registrar);
   PdfxPlugin.registerWith(registrar);
+  PurchasesFlutterPlugin.registerWith(registrar);
   SharePlusWebPlugin.registerWith(registrar);
   SharedPreferencesPlugin.registerWith(registrar);
   UrlLauncherPlugin.registerWith(registrar);

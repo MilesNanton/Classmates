@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../services/auth_destination_service.dart';
 import '../../widgets/message_widget.dart';
@@ -19,18 +20,35 @@ Future<void>? _googleSignInInitialization;
 class HomeScreen extends StatelessWidget {
   const HomeScreen({
     super.key,
-    this.onTakeTour,
     this.onGetStarted,
     this.onCancel,
     this.onTermsOfService,
     this.onPrivacyPolicy,
   });
 
-  final VoidCallback? onTakeTour;
   final VoidCallback? onGetStarted;
   final VoidCallback? onCancel;
   final VoidCallback? onTermsOfService;
   final VoidCallback? onPrivacyPolicy;
+
+  Future<void> _openWebsitePage(BuildContext context, String url) async {
+    var opened = false;
+    try {
+      opened = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
+    } catch (_) {
+      opened = false;
+    }
+    if (!opened && context.mounted) {
+      showMessagePopup(
+        context,
+        message: 'Unable to open this page. Please try again.',
+        type: MessageType.error,
+      );
+    }
+  }
 
   Future<void> _showSignInOptions(BuildContext context) {
     return showModalBottomSheet<void>(
@@ -194,7 +212,7 @@ class HomeScreen extends StatelessWidget {
         backgroundColor: ClassmatesColors.green,
         body: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(21, 56, 21, 25),
+            padding: const EdgeInsets.fromLTRB(29, 56, 29, 25),
             child: Column(
               children: [
                 Text(
@@ -212,12 +230,15 @@ class HomeScreen extends StatelessWidget {
                 Flexible(
                   flex: 5,
                   child: Center(
-                    child: Image.asset(
-                      'assets/homeimage.png',
-                      width: 300,
-                      height: 330,
-                      fit: BoxFit.contain,
-                      semanticLabel: 'Classmates hugging',
+                    child: OverflowBox(
+                      maxWidth: MediaQuery.sizeOf(context).width,
+                      child: Image.asset(
+                        'assets/signUpimageupdated.png',
+                        width: MediaQuery.sizeOf(context).width,
+                        height: 400,
+                        fit: BoxFit.contain,
+                        semanticLabel: 'Parent and child together',
+                      ),
                     ),
                   ),
                 ),
@@ -227,41 +248,17 @@ class HomeScreen extends StatelessWidget {
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Text(
-                      'Homeschooling Adventures',
+                      'Homeschooling, together',
                       maxLines: 1,
                       softWrap: false,
                       textAlign: TextAlign.center,
                       style: GoogleFonts.lato(
                         color: Colors.white,
                         fontSize: 24,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w900,
                         height: 1,
                         letterSpacing: 0,
                       ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 10),
-                TextButton(
-                  onPressed: onTakeTour ?? () {},
-                  style: TextButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
-                    ),
-                    minimumSize: const Size(0, 36),
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: Text(
-                    'Take a tour',
-                    style: GoogleFonts.lato(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      height: 1,
-                      letterSpacing: 0,
-                      decoration: TextDecoration.underline,
-                      decorationColor: Colors.white,
                     ),
                   ),
                 ),
@@ -286,7 +283,7 @@ class HomeScreen extends StatelessWidget {
                       'Let’s get started',
                       style: GoogleFonts.lato(
                         fontSize: 18,
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
                   ),
@@ -294,7 +291,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 25),
 
                 Text(
-                  'By signing up, you agree with the Class Mates',
+                  'By signing up, you agree with the Classmates',
                   textAlign: TextAlign.center,
                   style: GoogleFonts.lato(
                     color: Colors.white,
@@ -308,8 +305,13 @@ class HomeScreen extends StatelessWidget {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     _FooterLink(
-                      label: 'Terms of Service',
-                      onPressed: onTermsOfService,
+                      label: 'Terms & Conditions',
+                      onPressed:
+                          onTermsOfService ??
+                          () => _openWebsitePage(
+                            context,
+                            'https://www.theclassmatesapp.com/terms',
+                          ),
                     ),
                     Text(
                       ' and ',
@@ -319,8 +321,13 @@ class HomeScreen extends StatelessWidget {
                       ),
                     ),
                     _FooterLink(
-                      label: 'Privacy Policies.',
-                      onPressed: onPrivacyPolicy,
+                      label: 'Privacy Policy',
+                      onPressed:
+                          onPrivacyPolicy ??
+                          () => _openWebsitePage(
+                            context,
+                            'https://www.theclassmatesapp.com/privacy',
+                          ),
                     ),
                   ],
                 ),

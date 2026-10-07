@@ -340,7 +340,7 @@ class _SafetyCopy extends StatelessWidget {
       textAlign: TextAlign.center,
       style: GoogleFonts.lato(
         color: const Color(0xFF9A9A9A),
-        fontSize: 13,
+        fontSize: 16,
         height: 1.35,
       ),
     );

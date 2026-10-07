@@ -516,17 +516,19 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
               color: _green,
               shape: const CircleBorder(),
               child: InkWell(
-                onTap: () => runWithSubscriptionAccess(context, () async {
+                onTap: () async {
                   if (_feedView == _FeedView.connections) {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const AddParentsScreen(),
-                      ),
-                    );
+                    await runWithSubscriptionAccess(context, () async {
+                      await Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const AddParentsScreen(),
+                        ),
+                      );
+                    });
                   } else {
                     await showHomePostPopup(context);
                   }
-                }),
+                },
                 customBorder: const CircleBorder(),
                 child: SizedBox(
                   width: 40,
@@ -536,9 +538,7 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
                         ? Transform.translate(
                             offset: const Offset(1.5, -0.5),
                             child: const Image(
-                              image: AssetImage(
-                                'assets/addconnectionicon.png',
-                              ),
+                              image: AssetImage('assets/addconnectionicon.png'),
                               width: 18,
                               height: 18,
                               fit: BoxFit.contain,
@@ -1103,7 +1103,6 @@ class _CommunityHomeScreenState extends State<CommunityHomeScreen> {
           _FilterChip(
             label: 'Connections',
             selected: _feedView == _FeedView.connections,
-            fontWeight: FontWeight.w400,
             onTap: () => setState(() => _feedView = _FeedView.connections),
           ),
           const SizedBox(width: 12),
@@ -1237,13 +1236,11 @@ class _FilterChip extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.onTap,
-    this.fontWeight = FontWeight.w700,
   });
 
   final String label;
   final bool selected;
   final VoidCallback onTap;
-  final FontWeight fontWeight;
 
   @override
   Widget build(BuildContext context) {
@@ -1265,7 +1262,7 @@ class _FilterChip extends StatelessWidget {
           style: GoogleFonts.lato(
             color: selected ? Colors.white : const Color(0xFF171717),
             fontSize: 14,
-            fontWeight: fontWeight,
+            fontWeight: FontWeight.bold,
           ),
         ),
       ),
@@ -1365,7 +1362,7 @@ class _HomeConnectionTile extends StatelessWidget {
                     initials.isEmpty ? '?' : initials,
                     style: GoogleFonts.lato(
                       color: const Color(0xFF3478C9),
-                      fontSize: 15,
+                      fontSize: 17,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -1380,7 +1377,7 @@ class _HomeConnectionTile extends StatelessWidget {
                         name,
                         style: GoogleFonts.lato(
                           color: const Color(0xFF171717),
-                          fontSize: 15,
+                          fontSize: 16,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -1391,7 +1388,7 @@ class _HomeConnectionTile extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: GoogleFonts.lato(
                           color: const Color(0xFF737373),
-                          fontSize: 11,
+                          fontSize: 15,
                         ),
                       ),
                     ],
@@ -1545,12 +1542,13 @@ class _NoConnectionPosts extends StatelessWidget {
   Widget build(BuildContext context) {
     return const _FeedMessage(
       title: 'Your connections',
+      titleTextWeight: FontWeight.w800,
       description:
           'See the parents and carers you’ve connected with and message them directly.',
       actionText: 'To add a new connection, tap the add icon above.',
-      actionTextColor: Color(0xFF171717),
+      actionTextColor: Color(0xFF333333),
       actionTextWeight: FontWeight.w400,
-      actionTextSize: 17,
+      actionTextSize: 16,
       actionSpacing: 6,
     );
   }
@@ -1575,6 +1573,7 @@ class _FeedMessage extends StatelessWidget {
   const _FeedMessage({
     required this.title,
     required this.description,
+    this.titleTextWeight = FontWeight.w800,
     this.actionText,
     this.actionTextColor = const Color(0xFF0DA64A),
     this.actionTextWeight = FontWeight.w700,
@@ -1585,6 +1584,7 @@ class _FeedMessage extends StatelessWidget {
 
   final String title;
   final String description;
+  final FontWeight titleTextWeight;
   final String? actionText;
   final Color actionTextColor;
   final FontWeight actionTextWeight;
@@ -1606,7 +1606,7 @@ class _FeedMessage extends StatelessWidget {
               style: GoogleFonts.lato(
                 color: const Color(0xFF171717),
                 fontSize: 22,
-                fontWeight: FontWeight.w800,
+                fontWeight: titleTextWeight,
               ),
             ),
             const SizedBox(height: 12),

@@ -105,3 +105,108 @@
 [debug] [2026-09-07T16:20:17.538Z] >>> [apiv2][query] POST https://accounts.google.com/o/oauth2/token [none]
 [debug] [2026-09-07T16:20:17.539Z] >>> [apiv2][body] POST https://accounts.google.com/o/oauth2/token [omitted]
 [debug] [2026-09-07T16:20:18.026Z] <<< [apiv2][status] POST https://accounts.google.com/o/oauth2/token 200
+[debug] [2026-09-18T06:15:30.042Z] ----------------------------------------------------------------------
+[debug] [2026-09-18T06:15:30.049Z] Command:       /opt/homebrew/Cellar/node/26.5.0_1/bin/node /opt/homebrew/bin/firebase apps:android:sha:list 1:1024150348141:android:dfe77060e2d0f866cafa64 --project classmates-23e84
+[debug] [2026-09-18T06:15:30.049Z] CLI Version:   15.24.0
+[debug] [2026-09-18T06:15:30.049Z] Platform:      darwin
+[debug] [2026-09-18T06:15:30.049Z] Node Version:  v26.5.0
+[debug] [2026-09-18T06:15:30.049Z] Detected Agent: codex_cli
+[debug] [2026-09-18T06:15:30.049Z] Time:          Fri Sep 18 2026 11:45:30 GMT+0530 (India Standard Time)
+[debug] [2026-09-18T06:15:30.049Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-18T06:15:30.061Z] >>> [apiv2][query] GET https://firebase-public.firebaseio.com/cli.json [none]
+[debug] [2026-09-18T06:15:30.194Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-18T06:15:30.194Z] > authorizing via signed-in user (nilanhansajith7@gmail.com)
+[debug] [2026-09-18T06:15:30.196Z] Checked if tokens are valid: false, expires at: 1788801617026
+[debug] [2026-09-18T06:15:30.196Z] Checked if tokens are valid: false, expires at: 1788801617026
+[debug] [2026-09-18T06:15:30.196Z] > refreshing access token with scopes: []
+[debug] [2026-09-18T06:15:30.198Z] >>> [apiv2][query] POST https://www.googleapis.com/oauth2/v3/token [none]
+[debug] [2026-09-18T06:15:30.198Z] >>> [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-09-18T06:15:30.806Z] <<< [apiv2][status] POST https://www.googleapis.com/oauth2/v3/token 200
+[debug] [2026-09-18T06:15:30.806Z] <<< [apiv2][body] POST https://www.googleapis.com/oauth2/v3/token [omitted]
+[debug] [2026-09-18T06:15:30.820Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha [none]
+[debug] [2026-09-18T06:15:31.131Z] <<< [apiv2][status] GET https://firebase-public.firebaseio.com/cli.json 200
+[debug] [2026-09-18T06:15:31.132Z] <<< [apiv2][body] GET https://firebase-public.firebaseio.com/cli.json {"cloudBuildErrorAfter":1594252800000,"cloudBuildWarnAfter":1590019200000,"defaultNode10After":1594252800000,"minVersion":"3.0.5","node8DeploysDisabledAfter":1613390400000,"node8RuntimeDisabledAfter":1615809600000,"node8WarnAfter":1600128000000}
+[debug] [2026-09-18T06:15:32.779Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha 200
+[debug] [2026-09-18T06:16:32.463Z] ----------------------------------------------------------------------
+[debug] [2026-09-18T06:16:32.469Z] Command:       /opt/homebrew/Cellar/node/26.5.0_1/bin/node /opt/homebrew/bin/firebase apps:android:sha:create 1:1024150348141:android:dfe77060e2d0f866cafa64 89:02:1B:DF:C5:92:46:11:0C:72:B3:66:1E:1D:AF:5B:00:7F:29:54 --project classmates-23e84
+[debug] [2026-09-18T06:16:32.470Z] CLI Version:   15.24.0
+[debug] [2026-09-18T06:16:32.470Z] Platform:      darwin
+[debug] [2026-09-18T06:16:32.470Z] Node Version:  v26.5.0
+[debug] [2026-09-18T06:16:32.470Z] Detected Agent: codex_cli
+[debug] [2026-09-18T06:16:32.470Z] Time:          Fri Sep 18 2026 11:46:32 GMT+0530 (India Standard Time)
+[debug] [2026-09-18T06:16:32.470Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-18T06:16:32.577Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-18T06:16:32.578Z] > authorizing via signed-in user (nilanhansajith7@gmail.com)
+[debug] [2026-09-18T06:16:32.587Z] Checked if tokens are valid: true, expires at: 1789715729806
+[debug] [2026-09-18T06:16:32.587Z] Checked if tokens are valid: true, expires at: 1789715729806
+[debug] [2026-09-18T06:16:32.588Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha [none]
+[debug] [2026-09-18T06:16:32.588Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha {"shaHash":"89:02:1B:DF:C5:92:46:11:0C:72:B3:66:1E:1D:AF:5B:00:7F:29:54","certType":"SHA_1"}
+[debug] [2026-09-18T06:16:35.669Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha 200
+[debug] [2026-09-18T06:16:35.935Z] ----------------------------------------------------------------------
+[debug] [2026-09-18T06:16:35.937Z] Command:       /opt/homebrew/Cellar/node/26.5.0_1/bin/node /opt/homebrew/bin/firebase apps:android:sha:create 1:1024150348141:android:dfe77060e2d0f866cafa64 D9:4E:4D:4C:E7:47:B3:E8:08:07:3A:2C:D9:34:79:8B:9A:2F:34:CE:0D:55:C2:81:7F:BB:59:08:3C:FD:88:EB --project classmates-23e84
+[debug] [2026-09-18T06:16:35.937Z] CLI Version:   15.24.0
+[debug] [2026-09-18T06:16:35.937Z] Platform:      darwin
+[debug] [2026-09-18T06:16:35.937Z] Node Version:  v26.5.0
+[debug] [2026-09-18T06:16:35.937Z] Detected Agent: codex_cli
+[debug] [2026-09-18T06:16:35.937Z] Time:          Fri Sep 18 2026 11:46:35 GMT+0530 (India Standard Time)
+[debug] [2026-09-18T06:16:35.937Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-18T06:16:36.021Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-18T06:16:36.021Z] > authorizing via signed-in user (nilanhansajith7@gmail.com)
+[debug] [2026-09-18T06:16:36.030Z] Checked if tokens are valid: true, expires at: 1789715729806
+[debug] [2026-09-18T06:16:36.030Z] Checked if tokens are valid: true, expires at: 1789715729806
+[debug] [2026-09-18T06:16:36.031Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha [none]
+[debug] [2026-09-18T06:16:36.031Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha {"shaHash":"D9:4E:4D:4C:E7:47:B3:E8:08:07:3A:2C:D9:34:79:8B:9A:2F:34:CE:0D:55:C2:81:7F:BB:59:08:3C:FD:88:EB","certType":"SHA_256"}
+[debug] [2026-09-18T06:16:37.376Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha 200
+[debug] [2026-09-18T06:16:37.660Z] ----------------------------------------------------------------------
+[debug] [2026-09-18T06:16:37.661Z] Command:       /opt/homebrew/Cellar/node/26.5.0_1/bin/node /opt/homebrew/bin/firebase apps:android:sha:create 1:1024150348141:android:dfe77060e2d0f866cafa64 54:00:5E:F6:F5:93:68:79:B7:7A:AA:26:43:91:CF:BE:11:76:17:2B --project classmates-23e84
+[debug] [2026-09-18T06:16:37.662Z] CLI Version:   15.24.0
+[debug] [2026-09-18T06:16:37.662Z] Platform:      darwin
+[debug] [2026-09-18T06:16:37.662Z] Node Version:  v26.5.0
+[debug] [2026-09-18T06:16:37.662Z] Detected Agent: codex_cli
+[debug] [2026-09-18T06:16:37.662Z] Time:          Fri Sep 18 2026 11:46:37 GMT+0530 (India Standard Time)
+[debug] [2026-09-18T06:16:37.662Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-18T06:16:37.754Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-18T06:16:37.754Z] > authorizing via signed-in user (nilanhansajith7@gmail.com)
+[debug] [2026-09-18T06:16:37.764Z] Checked if tokens are valid: true, expires at: 1789715729806
+[debug] [2026-09-18T06:16:37.764Z] Checked if tokens are valid: true, expires at: 1789715729806
+[debug] [2026-09-18T06:16:37.765Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha [none]
+[debug] [2026-09-18T06:16:37.765Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha {"shaHash":"54:00:5E:F6:F5:93:68:79:B7:7A:AA:26:43:91:CF:BE:11:76:17:2B","certType":"SHA_1"}
+[debug] [2026-09-18T06:16:41.904Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha 200
+[debug] [2026-09-18T06:16:42.156Z] ----------------------------------------------------------------------
+[debug] [2026-09-18T06:16:42.158Z] Command:       /opt/homebrew/Cellar/node/26.5.0_1/bin/node /opt/homebrew/bin/firebase apps:android:sha:create 1:1024150348141:android:dfe77060e2d0f866cafa64 EC:C0:99:F1:DB:3F:5B:8C:8F:00:C5:DE:55:73:4B:35:44:AF:EF:53:4A:54:8E:C2:23:2D:E6:2C:07:4B:70:E2 --project classmates-23e84
+[debug] [2026-09-18T06:16:42.158Z] CLI Version:   15.24.0
+[debug] [2026-09-18T06:16:42.158Z] Platform:      darwin
+[debug] [2026-09-18T06:16:42.158Z] Node Version:  v26.5.0
+[debug] [2026-09-18T06:16:42.158Z] Detected Agent: codex_cli
+[debug] [2026-09-18T06:16:42.158Z] Time:          Fri Sep 18 2026 11:46:42 GMT+0530 (India Standard Time)
+[debug] [2026-09-18T06:16:42.158Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-18T06:16:42.242Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-18T06:16:42.242Z] > authorizing via signed-in user (nilanhansajith7@gmail.com)
+[debug] [2026-09-18T06:16:42.251Z] Checked if tokens are valid: true, expires at: 1789715729806
+[debug] [2026-09-18T06:16:42.251Z] Checked if tokens are valid: true, expires at: 1789715729806
+[debug] [2026-09-18T06:16:42.251Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha [none]
+[debug] [2026-09-18T06:16:42.251Z] >>> [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha {"shaHash":"EC:C0:99:F1:DB:3F:5B:8C:8F:00:C5:DE:55:73:4B:35:44:AF:EF:53:4A:54:8E:C2:23:2D:E6:2C:07:4B:70:E2","certType":"SHA_256"}
+[debug] [2026-09-18T06:16:44.900Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1beta1/projects/classmates-23e84/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/sha 200
+[debug] [2026-09-18T06:17:32.683Z] ----------------------------------------------------------------------
+[debug] [2026-09-18T06:17:32.685Z] Command:       /opt/homebrew/Cellar/node/26.5.0_1/bin/node /opt/homebrew/bin/firebase apps:sdkconfig ANDROID 1:1024150348141:android:dfe77060e2d0f866cafa64 --project classmates-23e84 --out android/app/google-services.json
+[debug] [2026-09-18T06:17:32.685Z] CLI Version:   15.24.0
+[debug] [2026-09-18T06:17:32.685Z] Platform:      darwin
+[debug] [2026-09-18T06:17:32.685Z] Node Version:  v26.5.0
+[debug] [2026-09-18T06:17:32.685Z] Detected Agent: codex_cli
+[debug] [2026-09-18T06:17:32.685Z] Time:          Fri Sep 18 2026 11:47:32 GMT+0530 (India Standard Time)
+[debug] [2026-09-18T06:17:32.686Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-09-18T06:17:32.783Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-09-18T06:17:32.783Z] > authorizing via signed-in user (nilanhansajith7@gmail.com)
+[debug] [2026-09-18T06:17:32.798Z] Checked if tokens are valid: true, expires at: 1789715729806
+[debug] [2026-09-18T06:17:32.798Z] Checked if tokens are valid: true, expires at: 1789715729806
+[debug] [2026-09-18T06:17:32.798Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/config [none]
+[debug] [2026-09-18T06:17:38.725Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/config 200
+[debug] [2026-09-18T06:17:38.725Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects/-/androidApps/1:1024150348141:android:dfe77060e2d0f866cafa64/config {"configFilename":"google-services.json","configFileContents":"ewogICJwcm9qZWN0X2luZm8iOiB7CiAgICAicHJvamVjdF9udW1iZXIiOiAiMTAyNDE1MDM0ODE0MSIsCiAgICAicHJvamVjdF9pZCI6ICJjbGFzc21hdGVzLTIzZTg0IiwKICAgICJzdG9yYWdlX2J1Y2tldCI6ICJjbGFzc21hdGVzLTIzZTg0LmZpcmViYXNlc3RvcmFnZS5hcHAiCiAgfSwKICAiY2xpZW50IjogWwogICAgewogICAgICAiY2xpZW50X2luZm8iOiB7CiAgICAgICAgIm1vYmlsZXNka19hcHBfaWQiOiAiMToxMDI0MTUwMzQ4MTQxOmFuZHJvaWQ6ZGZlNzcwNjBlMmQwZjg2NmNhZmE2NCIsCiAgICAgICAgImFuZHJvaWRfY2xpZW50X2luZm8iOiB7CiAgICAgICAgICAicGFja2FnZV9uYW1lIjogImFwcC5jbGFzc21hdGVzLmNvbSIKICAgICAgICB9CiAgICAgIH0sCiAgICAgICJvYXV0aF9jbGllbnQiOiBbCiAgICAgICAgewogICAgICAgICAgImNsaWVudF9pZCI6ICIxMDI0MTUwMzQ4MTQxLWIxbzA0cHR2Y2s4aGJ1a2hsOXM2dmNwc2lrcnQ5bDQ3LmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwKICAgICAgICAgICJjbGllbnRfdHlwZSI6IDEsCiAgICAgICAgICAiYW5kcm9pZF9pbmZvIjogewogICAgICAgICAgICAicGFja2FnZV9uYW1lIjogImFwcC5jbGFzc21hdGVzLmNvbSIsCiAgICAgICAgICAgICJjZXJ0aWZpY2F0ZV9oYXNoIjogIjU0MDA1ZWY2ZjU5MzY4NzliNzdhYWEyNjQzOTFjZmJlMTE3NjE3MmIiCiAgICAgICAgICB9CiAgICAgICAgfSwKICAgICAgICB7CiAgICAgICAgICAiY2xpZW50X2lkIjogIjEwMjQxNTAzNDgxNDEtZzFocm41Zm9nN2Q1dmppMGE1aW5xZzZkOHBpdTZtMGEuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLAogICAgICAgICAgImNsaWVudF90eXBlIjogMSwKICAgICAgICAgICJhbmRyb2lkX2luZm8iOiB7CiAgICAgICAgICAgICJwYWNrYWdlX25hbWUiOiAiYXBwLmNsYXNzbWF0ZXMuY29tIiwKICAgICAgICAgICAgImNlcnRpZmljYXRlX2hhc2giOiAiODkwMjFiZGZjNTkyNDYxMTBjNzJiMzY2MWUxZGFmNWIwMDdmMjk1NCIKICAgICAgICAgIH0KICAgICAgICB9LAogICAgICAgIHsKICAgICAgICAgICJjbGllbnRfaWQiOiAiMTAyNDE1MDM0ODE0MS1jbXZ1YWozMTJ0bzRvNWZqNXRjbnBlOTV2bzlxMjF2NS5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsCiAgICAgICAgICAiY2xpZW50X3R5cGUiOiAzCiAgICAgICAgfQogICAgICBdLAogICAgICAiYXBpX2tleSI6IFsKICAgICAgICB7CiAgICAgICAgICAiY3VycmVudF9rZXkiOiAiQUl6YVN5RFd4MHl4dkhMWXhMUGZ1d01rVzFxcU84MkhTY3oyNWtvIgogICAgICAgIH0KICAgICAgXSwKICAgICAgInNlcnZpY2VzIjogewogICAgICAgICJhcHBpbnZpdGVfc2VydmljZSI6IHsKICAgICAgICAgICJvdGhlcl9wbGF0Zm9ybV9vYXV0aF9jbGllbnQiOiBbCiAgICAgICAgICAgIHsKICAgICAgICAgICAgICAiY2xpZW50X2lkIjogIjEwMjQxNTAzNDgxNDEtY212dWFqMzEydG80bzVmajV0Y25wZTk1dm85cTIxdjUuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLAogICAgICAgICAgICAgICJjbGllbnRfdHlwZSI6IDMKICAgICAgICAgICAgfSwKICAgICAgICAgICAgewogICAgICAgICAgICAgICJjbGllbnRfaWQiOiAiMTAyNDE1MDM0ODE0MS1tZWRuY29hazFndTNhZHFrNzBzMTdkMjBoamwxdGNtNC5hcHBzLmdvb2dsZXVzZXJjb250ZW50LmNvbSIsCiAgICAgICAgICAgICAgImNsaWVudF90eXBlIjogMiwKICAgICAgICAgICAgICAiaW9zX2luZm8iOiB7CiAgICAgICAgICAgICAgICAiYnVuZGxlX2lkIjogImFwcC5jbGFzc21hdGVzLmNvbSIKICAgICAgICAgICAgICB9CiAgICAgICAgICAgIH0KICAgICAgICAgIF0KICAgICAgICB9CiAgICAgIH0KICAgIH0KICBdLAogICJjb25maWd1cmF0aW9uX3ZlcnNpb24iOiAiMSIKfQ=="}
+[error] 
+[error] Error: android/app/google-services.json already exists
